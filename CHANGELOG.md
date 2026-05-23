@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **🔍 Reference analysis live stats for ALL providers.** New module
+  `stream_parsers.py` with per-CLI parsers (Claude, Codex, Gemini,
+  OpenCode) that normalise their structured-output events into one
+  canonical event shape consumed by the analysis dialog. As a result,
+  the **TTFT + tokens + cost meter** (previously Claude-only) now
+  works identically on the 7 ThemeForge providers. Cost is computed
+  locally via `cost_tracker.cost_for` when the agent doesn't report
+  it (currently only Claude reports `total_cost_usd` natively).
+- **Structured output flags wired in `oneshot_argv`.** Each CLI is
+  now invoked with its JSON event stream:
+  - claude `--output-format=stream-json --include-partial-messages --verbose`
+  - codex `exec --json --skip-git-repo-check -`
+  - gemini `-p - -o stream-json`
+  - opencode `run --format json [-m model]`
+- **Graceful fallback to text mode** when the CLI binary is unknown
+  or no parser is registered — old behaviour preserved.
+
 ## [1.1.0] - 2026-05-24
 
 ### Added

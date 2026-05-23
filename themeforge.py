@@ -1535,23 +1535,33 @@ class _ReferenceAnalysisDialog(QDialog):
     """Diálogo modal que ejecuta el agente CLI con un prompt sobre la
     referencia y muestra el resultado en streaming token-a-token.
 
-    Para Claude usamos `--output-format=stream-json --include-partial-messages
-    --verbose` y parseamos los eventos para tener cronómetro, contador de
-    tokens, TTFT, coste y respuesta en vivo.
+    Cada CLI emite output estructurado (Claude/Codex/Gemini/OpenCode →
+    stream-json o JSONL). El parser correspondiente vive en
+    `stream_parsers.py` y normaliza eventos al mismo shape canónico
+    (text_delta + ttft_ms + tokens + model + cost + status + done) que
+    consume `_handle_event`.
+
+    Si el parser_kind no se reconoce (caso edge), el diálogo cae a
+    modo texto plano sin métricas.
     """
 
-    def __init__(self, parent, agent_label: str, facts: dict, use_stream_json: bool):
+    def __init__(self, parent, agent_label: str, facts: dict, parser_kind: str):
         super().__init__(parent)
         self.setWindowTitle(f"🔍 Análisis de referencia con {agent_label}")
         self.resize(960, 820)
         self.proc: QProcess | None = None
-        self._use_stream_json = use_stream_json
+        # Parser dispatcher: 'claude' / 'codex' / 'gemini' / 'opencode' / 'text'
+        import stream_parsers as _sp
+        self._parser = _sp.parser_for(parser_kind)
+        self._use_stream_json = self._parser is not None  # back-compat flag
         self._stdout_buffer = ""
         # Métricas en vivo
         self._t0 = None
         self._ttft_ms = None
         self._input_tokens = 0
         self._output_tokens = 0
+        self._cache_creation_tokens = 0
+        self._cache_read_tokens = 0
         self._cost_usd = 0.0
         self._model_name = ""
         # Conversación multi-turno
@@ -1790,94 +1800,80 @@ class _ReferenceAnalysisDialog(QDialog):
         chunk = self.proc.readAllStandardOutput().data().decode(errors="replace")
         if not chunk:
             return
-        if not self._use_stream_json:
-            # Modo texto plano (codex o fallback): append directo
+        if self._parser is None:
+            # Modo texto plano (provider sin parser registrado): append directo
             self.out.moveCursor(self.out.textCursor().MoveOperation.End)
             self.out.insertPlainText(chunk)
             self.out.moveCursor(self.out.textCursor().MoveOperation.End)
             self._current_assistant_buf.append(chunk)
             return
-        # Modo stream-json: parsear líneas completas
+        # Modo stream estructurado: parsear líneas completas
         self._stdout_buffer += chunk
         while "\n" in self._stdout_buffer:
             line, self._stdout_buffer = self._stdout_buffer.split("\n", 1)
             line = line.strip()
             if not line:
                 continue
-            try:
-                evt = json.loads(line)
-            except Exception:
-                continue
-            self._handle_event(evt)
+            evt = self._parser(line)
+            if evt:
+                self._handle_event(evt)
 
     def _handle_event(self, evt: dict):
-        t = evt.get("type")
-        if t == "system":
-            sub = evt.get("subtype")
-            if sub == "init":
-                self._model_name = evt.get("model", "")
-                self._update_tokens_lbl()
-                self.status_lbl.setText("🔌 Conectado al modelo · esperando primer token…")
-            elif sub == "status":
-                st = evt.get("status", "")
-                self.status_lbl.setText(f"⏳ {st}…")
-        elif t == "rate_limit_event":
-            info = evt.get("rate_limit_info", {})
-            if info.get("status") and info["status"] != "allowed":
-                self.status_lbl.setText(f"⚠️ Rate limit: {info.get('status')}")
-        elif t == "stream_event":
-            ev = evt.get("event") or {}
-            ev_t = ev.get("type")
-            if ev_t == "message_start":
-                self._ttft_ms = evt.get("ttft_ms")
-                usage = (ev.get("message") or {}).get("usage") or {}
-                self._input_tokens = usage.get("input_tokens", self._input_tokens)
-                self.status_lbl.setText("✏️ Generando respuesta…")
-                self._update_tokens_lbl()
-            elif ev_t == "content_block_start":
-                # Detectar inicio de tool_use (WebSearch / WebFetch) y
-                # mostrar feedback en el status para que el user vea que
-                # claude está buscando en internet.
-                block = ev.get("content_block") or {}
-                if block.get("type") == "tool_use":
-                    tool_name = block.get("name", "tool")
-                    if tool_name == "WebSearch":
-                        self.status_lbl.setText("🔎 Buscando en internet…")
-                    elif tool_name == "WebFetch":
-                        self.status_lbl.setText("🌐 Descargando página web…")
-                    else:
-                        self.status_lbl.setText(f"🔧 Usando {tool_name}…")
-            elif ev_t == "content_block_delta":
-                delta_obj = ev.get("delta") or {}
-                delta_type = delta_obj.get("type")
-                if delta_type == "input_json_delta":
-                    # Es la query que está escribiendo a WebSearch — ignorar
-                    # (acumular no aporta valor al user).
-                    pass
-                else:
-                    delta = delta_obj.get("text", "")
-                    if delta:
-                        self.out.moveCursor(self.out.textCursor().MoveOperation.End)
-                        self.out.insertPlainText(delta)
-                        self.out.moveCursor(self.out.textCursor().MoveOperation.End)
-                        self._current_assistant_buf.append(delta)
-            elif ev_t == "content_block_stop":
-                # Al terminar un bloque tool_use, volver a "Generando…"
-                # para que el status no se quede en "Buscando…" si claude
-                # ya pasó al siguiente bloque de texto.
-                self.status_lbl.setText("✏️ Generando respuesta…")
-            elif ev_t == "message_delta":
-                usage = ev.get("usage") or {}
-                if "output_tokens" in usage:
-                    self._output_tokens = usage["output_tokens"]
-                    self._update_tokens_lbl()
-        elif t == "user":
-            # Bloque "user" con tool_result — claude acaba de recibir
-            # los resultados de WebSearch. Reflejamos brevemente.
-            self.status_lbl.setText("📥 Resultado recibido · procesando…")
-        elif t == "result":
-            self._cost_usd = evt.get("total_cost_usd", self._cost_usd) or 0.0
+        """Canonical event handler. Receives the normalised dict from
+        the per-provider parser in `stream_parsers.py`. All fields
+        are optional — the handler updates UI for whatever's present."""
+        # Model name
+        if evt.get("model") and not self._model_name:
+            self._model_name = evt["model"]
             self._update_tokens_lbl()
+
+        # TTFT (only set once — first delivered token wins)
+        if evt.get("ttft_ms") is not None and self._ttft_ms is None:
+            self._ttft_ms = evt["ttft_ms"]
+
+        # Token counts — additive when monotonic, replace when full
+        if evt.get("input_tokens") is not None:
+            self._input_tokens = evt["input_tokens"]
+            self._update_tokens_lbl()
+        if evt.get("output_tokens") is not None:
+            self._output_tokens = evt["output_tokens"]
+            self._update_tokens_lbl()
+        if evt.get("cache_read_tokens") is not None:
+            self._cache_read_tokens = evt["cache_read_tokens"]
+        if evt.get("cache_creation_tokens") is not None:
+            self._cache_creation_tokens = evt["cache_creation_tokens"]
+
+        # Status / tool-use feedback
+        if evt.get("status"):
+            self.status_lbl.setText(evt["status"])
+
+        # Text delta — append to output pane + history
+        delta = evt.get("text_delta")
+        if delta:
+            self.out.moveCursor(self.out.textCursor().MoveOperation.End)
+            self.out.insertPlainText(delta)
+            self.out.moveCursor(self.out.textCursor().MoveOperation.End)
+            self._current_assistant_buf.append(delta)
+
+        # Cost: prefer agent-reported (Claude `result.total_cost_usd`),
+        # otherwise compute locally from token counts + cost_tracker.PRICING
+        if evt.get("cost_usd") is not None:
+            self._cost_usd = evt["cost_usd"]
+            self._update_tokens_lbl()
+        elif self._model_name and (self._input_tokens or self._output_tokens):
+            try:
+                from cost_tracker import cost_for
+                cost, _known = cost_for(
+                    self._model_name,
+                    self._input_tokens,
+                    self._output_tokens,
+                    getattr(self, "_cache_creation_tokens", 0) or 0,
+                    getattr(self, "_cache_read_tokens", 0) or 0,
+                )
+                self._cost_usd = cost
+                self._update_tokens_lbl()
+            except Exception:
+                pass
 
     def _on_finished(self, code, exit_status):
         self._timer.stop()
@@ -1885,17 +1881,22 @@ class _ReferenceAnalysisDialog(QDialog):
         if self.proc:
             rest = self.proc.readAllStandardOutput().data().decode(errors="replace")
             if rest:
-                if self._use_stream_json:
+                if self._parser is not None:
                     self._stdout_buffer += rest
                     while "\n" in self._stdout_buffer:
                         line, self._stdout_buffer = self._stdout_buffer.split("\n", 1)
                         line = line.strip()
                         if not line:
                             continue
-                        try:
-                            self._handle_event(json.loads(line))
-                        except Exception:
-                            pass
+                        evt = self._parser(line)
+                        if evt:
+                            self._handle_event(evt)
+                    # Última línea sin newline (best-effort parse)
+                    if self._stdout_buffer.strip():
+                        evt = self._parser(self._stdout_buffer.strip())
+                        if evt:
+                            self._handle_event(evt)
+                        self._stdout_buffer = ""
                 else:
                     self.out.moveCursor(self.out.textCursor().MoveOperation.End)
                     self.out.insertPlainText(rest)
@@ -2424,12 +2425,12 @@ class ThemeForge(QWidget):
             return
 
         argv = aip.oneshot_argv(agent_key, allow_web=True)
-        use_stream_json = (aip.PROVIDERS[agent_key]["command"] == "claude")
+        parser_kind = aip.PROVIDERS[agent_key]["command"]
 
         # Env vars del provider (API keys) heredadas por el subproceso
         extra_env = aip.get_env(agent_key)
 
-        dlg = _ReferenceAnalysisDialog(self, agent_meta["name"], facts, use_stream_json)
+        dlg = _ReferenceAnalysisDialog(self, agent_meta["name"], facts, parser_kind)
         dlg.run(prompt, argv, extra_env=extra_env)
         dlg.exec()
         result_text = dlg.out.toPlainText().strip()
@@ -2499,10 +2500,10 @@ class ThemeForge(QWidget):
             return
 
         argv = aip.oneshot_argv(agent_key, allow_web=True)
-        use_stream_json = (aip.PROVIDERS[agent_key]["command"] == "claude")
+        parser_kind = aip.PROVIDERS[agent_key]["command"]
         extra_env = aip.get_env(agent_key)
 
-        dlg = _ReferenceAnalysisDialog(self, agent_meta["name"], facts, use_stream_json)
+        dlg = _ReferenceAnalysisDialog(self, agent_meta["name"], facts, parser_kind)
         dlg.run(prompt, argv, extra_env=extra_env)
         dlg.exec()
         # Tras cerrar el diálogo, guardar el resultado si se obtuvo respuesta

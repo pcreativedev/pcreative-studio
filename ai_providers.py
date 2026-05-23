@@ -264,7 +264,14 @@ def apply_all_known_keys() -> None:
 
 
 def oneshot_argv(provider_key: str, allow_web: bool = True) -> list[str]:
-    """Argv para una llamada one-shot (prompt vía stdin/argv, sin sesión)."""
+    """Argv para una llamada one-shot (prompt vía stdin/argv, sin sesión).
+
+    Cada CLI recibe el flag de output estructurado (JSON / stream-json)
+    para que el ReferenceAnalysisDialog parsee TTFT / tokens / coste live
+    via `stream_parsers`. Si en el futuro algún CLI rompe el schema
+    upstream, el parser correspondiente cae a None y el dialog sigue
+    mostrando texto plano sin métricas (degradación graceful).
+    """
     p = PROVIDERS[provider_key]
     cmd = p["command"]
     if cmd == "claude":
@@ -279,11 +286,17 @@ def oneshot_argv(provider_key: str, allow_web: bool = True) -> list[str]:
         argv += ["--permission-mode", "bypassPermissions"]
         return argv
     if cmd == "codex":
-        return ["codex", "exec", "-"]
+        # --json emite JSONL events (session_started, agent_message_delta,
+        # token_count, task_complete). --skip-git-repo-check evita el
+        # prompt "directorio no confiable" cuando se ejecuta en cwd del
+        # proyecto recién creado (puede no tener .git aún).
+        return ["codex", "exec", "--json", "--skip-git-repo-check", "-"]
     if cmd == "gemini":
-        return ["gemini", "-p", "-"]   # stdin
+        # -o stream-json emite eventos similares a Claude's stream-json
+        # con usageMetadata al final.
+        return ["gemini", "-p", "-", "-o", "stream-json"]
     if cmd == "opencode":
-        argv = ["opencode", "run"]
+        argv = ["opencode", "run", "--format", "json"]
         model = p.get("default_model")
         if model:
             argv += ["-m", model]
