@@ -14,7 +14,10 @@ Public API:
     apply_theme(app, pack)
     save_current_theme("dracula")
 """
-from .tokens import ThemePack, ColorTokens, TypographyTokens, SpacingTokens, ShapeTokens
+from .tokens import (
+    ThemePack, ColorTokens, TypographyTokens, SpacingTokens,
+    ShapeTokens, ComponentTokens,
+)
 from .builder import apply_theme
 from .registry import (
     list_themes,
@@ -29,7 +32,8 @@ from .registry import (
 )
 
 __all__ = [
-    "ThemePack", "ColorTokens", "TypographyTokens", "SpacingTokens", "ShapeTokens",
+    "ThemePack", "ColorTokens", "TypographyTokens", "SpacingTokens",
+    "ShapeTokens", "ComponentTokens",
     "apply_theme",
     "list_themes", "load_theme", "current_theme_name", "save_current_theme",
     "ensure_user_themes_dir", "ThemeInfo",

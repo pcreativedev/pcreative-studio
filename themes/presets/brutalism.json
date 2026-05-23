@@ -1,0 +1,44 @@
+{
+  "name": "Brutalism",
+  "author": "pcreativedev",
+  "is_dark": false,
+  "description": "Raw, high-contrast aesthetic — hard borders, no radius, no shadow. Designer / portfolio vibe.",
+  "color": {
+    "bg_primary":      "#fafafa",
+    "bg_secondary":    "#ffffff",
+    "bg_tertiary":     "#f0f0f0",
+    "bg_elevated":     "#ffffff",
+    "fg_primary":      "#000000",
+    "fg_secondary":    "#333333",
+    "fg_disabled":     "#999999",
+    "accent":          "#ff5722",
+    "accent_hover":    "#ff7043",
+    "accent_active":   "#e64a19",
+    "accent_fg":       "#ffffff",
+    "success":         "#00c853",
+    "warning":         "#ffc107",
+    "danger":          "#d50000",
+    "info":            "#0091ea",
+    "border":          "#000000",
+    "border_strong":   "#000000",
+    "selection_bg":    "#000000",
+    "selection_fg":    "#ffffff",
+    "scrollbar_bg":    "#f0f0f0",
+    "scrollbar_thumb": "#000000"
+  },
+  "shape": {
+    "radius_sm":    0,
+    "radius_md":    0,
+    "radius_lg":    0,
+    "radius_pill":  0,
+    "border_width": 2
+  },
+  "components": {
+    "button_variant":    "brutalist",
+    "tab_variant":       "card",
+    "input_variant":     "brutalist",
+    "scrollbar_variant": "thick",
+    "checkbox_variant":  "square",
+    "density":           "comfortable"
+  }
+}

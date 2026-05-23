@@ -1,0 +1,47 @@
+{
+  "name": "Linear",
+  "author": "pcreativedev (inspired by linear.app)",
+  "is_dark": true,
+  "description": "Productivity-app aesthetic — flat surfaces, segmented tabs, dense spacing, minimal chrome.",
+  "color": {
+    "bg_primary":      "#0d0d10",
+    "bg_secondary":    "#15151a",
+    "bg_tertiary":     "#1e1e24",
+    "bg_elevated":     "#28282f",
+    "fg_primary":      "#ededed",
+    "fg_secondary":    "#9b9ba3",
+    "fg_disabled":     "#56565e",
+    "accent":          "#5e6ad2",
+    "accent_hover":    "#7077dc",
+    "accent_active":   "#4a55b8",
+    "accent_fg":       "#ffffff",
+    "success":         "#4ade80",
+    "warning":         "#facc15",
+    "danger":          "#f87171",
+    "info":            "#60a5fa",
+    "border":          "#27272f",
+    "border_strong":   "#3a3a44",
+    "selection_bg":    "#3d4a8e",
+    "selection_fg":    "#ffffff",
+    "scrollbar_bg":    "#0d0d10",
+    "scrollbar_thumb": "#3a3a44"
+  },
+  "typography": {
+    "size_base": 11,
+    "size_sm":   10
+  },
+  "shape": {
+    "radius_sm":    4,
+    "radius_md":    6,
+    "radius_lg":    8,
+    "border_width": 1
+  },
+  "components": {
+    "button_variant":    "ghost",
+    "tab_variant":       "segmented",
+    "input_variant":     "outlined",
+    "scrollbar_variant": "thin",
+    "checkbox_variant":  "rounded",
+    "density":           "compact"
+  }
+}

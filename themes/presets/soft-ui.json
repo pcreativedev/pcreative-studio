@@ -1,0 +1,44 @@
+{
+  "name": "Soft UI",
+  "author": "pcreativedev",
+  "is_dark": false,
+  "description": "Soft elevation + pill buttons + generous spacing — wellness/lifestyle / Apple-ish vibe.",
+  "color": {
+    "bg_primary":      "#f5f5f7",
+    "bg_secondary":    "#ffffff",
+    "bg_tertiary":     "#ebebef",
+    "bg_elevated":     "#ffffff",
+    "fg_primary":      "#1d1d1f",
+    "fg_secondary":    "#6e6e73",
+    "fg_disabled":     "#b0b0b8",
+    "accent":          "#0071e3",
+    "accent_hover":    "#0080ff",
+    "accent_active":   "#005abb",
+    "accent_fg":       "#ffffff",
+    "success":         "#34c759",
+    "warning":         "#ff9500",
+    "danger":          "#ff3b30",
+    "info":            "#5ac8fa",
+    "border":          "#d2d2d7",
+    "border_strong":   "#a0a0a8",
+    "selection_bg":    "#b3d7ff",
+    "selection_fg":    "#000000",
+    "scrollbar_bg":    "#ebebef",
+    "scrollbar_thumb": "#c7c7cc"
+  },
+  "shape": {
+    "radius_sm":    8,
+    "radius_md":    12,
+    "radius_lg":    18,
+    "radius_pill":  999,
+    "border_width": 1
+  },
+  "components": {
+    "button_variant":    "pill",
+    "tab_variant":       "pill",
+    "input_variant":     "filled",
+    "scrollbar_variant": "thin",
+    "checkbox_variant":  "rounded",
+    "density":           "spacious"
+  }
+}

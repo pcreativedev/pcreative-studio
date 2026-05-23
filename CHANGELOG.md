@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **🎨 App theme system Sprint 2 — component variants.** Adds
+  per-widget variant tokens to the theme schema. Each ThemePack now
+  carries a `components` section that selects between visual rule
+  blocks:
+  - **button_variant**: `flat` | `raised` | `pill` | `brutalist` | `ghost`
+  - **tab_variant**: `underline` | `card` | `pill` | `segmented`
+  - **input_variant**: `outlined` | `filled` | `underlined` | `brutalist`
+  - **scrollbar_variant**: `thin` | `thick` | `hidden`
+  - **checkbox_variant**: `square` | `rounded` | `pill`
+  - **density**: `compact` | `comfortable` | `spacious`
+  The QSS renderer is now a dispatch system — `_qss_button`,
+  `_qss_tab`, etc. emit different rules per variant. Density modifies
+  padding across all interactive widgets. 3 new builtin themes
+  showcase the system end-to-end:
+  - **Brutalism** — light, hard borders (2px), no radius, brutalist
+    buttons/inputs, card tabs, orange accent.
+  - **Linear** — dark, ghost buttons, segmented tabs (iOS-style),
+    compact density, blue-violet accent (inspired by linear.app).
+  - **Soft UI** — light, pill buttons + pill tabs + filled inputs,
+    spacious density, generous radii (Apple-ish wellness vibe).
+  Existing themes (Dark/Light/Dracula/Nord/Tokyo Night) keep their
+  defaults (flat/underline/outlined/comfortable) for backwards
+  compatibility — no visual regression.
 - **🎨 App theme system (Sprint 1).** New `themes/` module with
   JSON-token-driven theming for the ThemeForge UI itself. Ships with
   5 builtin themes:

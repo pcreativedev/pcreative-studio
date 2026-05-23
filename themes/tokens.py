@@ -78,6 +78,15 @@ _DEFAULT_SHAPE = {
     "border_width": 1,
 }
 
+_DEFAULT_COMPONENTS = {
+    "button_variant":    "flat",       # flat | raised | pill | brutalist | ghost
+    "tab_variant":       "underline",  # underline | card | pill | segmented
+    "input_variant":     "outlined",   # outlined | filled | underlined | brutalist
+    "scrollbar_variant": "thin",       # thin | thick | hidden
+    "checkbox_variant":  "square",     # square | rounded | pill
+    "density":           "comfortable",# compact | comfortable | spacious
+}
+
 
 @dataclass
 class ColorTokens:
@@ -137,6 +146,19 @@ class ShapeTokens:
 
 
 @dataclass
+class ComponentTokens:
+    """Per-widget visual style variant. Each token is a string from a
+    fixed set — the QSS builder dispatches to a different rule block
+    depending on the value."""
+    button_variant:    str = _DEFAULT_COMPONENTS["button_variant"]
+    tab_variant:       str = _DEFAULT_COMPONENTS["tab_variant"]
+    input_variant:     str = _DEFAULT_COMPONENTS["input_variant"]
+    scrollbar_variant: str = _DEFAULT_COMPONENTS["scrollbar_variant"]
+    checkbox_variant:  str = _DEFAULT_COMPONENTS["checkbox_variant"]
+    density:           str = _DEFAULT_COMPONENTS["density"]
+
+
+@dataclass
 class ThemePack:
     """In-memory representation of a theme. Loaded from a JSON file
     via `themes.registry.load_theme(name)` and applied via
@@ -149,6 +171,7 @@ class ThemePack:
     typography: TypographyTokens = field(default_factory=TypographyTokens)
     spacing: SpacingTokens = field(default_factory=SpacingTokens)
     shape: ShapeTokens = field(default_factory=ShapeTokens)
+    components: ComponentTokens = field(default_factory=ComponentTokens)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -173,4 +196,5 @@ class ThemePack:
             typography=TypographyTokens(**_filtered(TypographyTokens, data.get("typography"))),
             spacing=SpacingTokens(**_filtered(SpacingTokens, data.get("spacing"))),
             shape=ShapeTokens(**_filtered(ShapeTokens, data.get("shape"))),
+            components=ComponentTokens(**_filtered(ComponentTokens, data.get("components"))),
         )
