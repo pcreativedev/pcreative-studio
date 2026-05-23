@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **📥 App theme system Sprint 5 — Figma import + DTCG support.**
+  Two new modules:
+  - `themes/figma_import.py` — DTCG v2025.10 JSON parser (W3C Design
+    Tokens Community Group spec, the standard used by Tokens Studio,
+    Style Dictionary, and 20+ tool vendors). Handles nested groups,
+    `$type` inheritance, multi-mode `$value`, and DTCG aliases like
+    `{color.brand.primary}` (resolved transitively up to 8 levels).
+    Plus a Figma REST API client that calls
+    `GET /v1/files/<key>/variables/local` with a Personal Access
+    Token (Enterprise plan required by Figma) and translates the
+    response into the same DTCG intermediate shape so the rest of
+    the pipeline is unified.
+  - `figma_import_dialog.py` — UI with two tabs: paste/load Tokens
+    Studio JSON (free path) or fill Figma URL + PAT (Enterprise
+    path). Auto-detected mappings appear in an editable table where
+    every row has a checkbox to accept/skip, a confidence score
+    (green ≥ 95 / yellow ≥ 85 / red < 85), a dropdown to re-target
+    the ThemeForge slot, and editable raw value.
+  - **Semantic mapping engine** with 26 color patterns + 5 shape
+    patterns that score Figma token paths against ThemeForge slots
+    (`color.brand.primary` → `accent`, `color.bg.elevated` →
+    `bg_elevated`, `radius.full` → `radius_pill`, etc.). Higher
+    score = more specific match wins per slot.
+  - **Light/dark mode detection** via luminance heuristic on the
+    detected `bg_primary` — imports default to the right tier
+    automatically.
+  - **Reverse path** `themepack_to_dtcg()` exports any ThemePack
+    back to a DTCG JSON tree so designers can re-import it to Figma
+    via Tokens Studio.
+  Button **📥 Importar desde Figma…** added next to the theme picker
+  in Settings.
 - **✏️ App theme system Sprint 4 — Live theme editor.** New
   `theme_editor.py` module with `ThemeEditorDialog` opened from
   Settings → 🎨 Tema de la app → *"Personalizar tema actual…"*.

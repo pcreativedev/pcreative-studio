@@ -106,6 +106,15 @@ class SettingsPanel(QWidget):
             )
             self.btn_theme_edit.clicked.connect(self._open_theme_editor)
 
+            self.btn_theme_figma = QPushButton("📥 Importar desde Figma…")
+            self.btn_theme_figma.setToolTip(
+                "Importa un theme desde un archivo DTCG JSON (exportado por "
+                "el plugin Tokens Studio de Figma, plan gratuito) o "
+                "directamente vía Figma REST API (requiere plan Enterprise "
+                "+ Personal Access Token)."
+            )
+            self.btn_theme_figma.clicked.connect(self._open_figma_import)
+
             # Refresh the dropdown if a new theme is saved while the
             # editor is open (or when applied externally).
             try:
@@ -118,6 +127,7 @@ class SettingsPanel(QWidget):
             tb.addWidget(QLabel("Theme:"))
             tb.addWidget(self.theme_combo, 1)
             tb.addWidget(self.btn_theme_edit)
+            tb.addWidget(self.btn_theme_figma)
             theme_outer = QVBoxLayout()
             theme_outer.addLayout(tb)
             theme_outer.addWidget(self.theme_help)
@@ -396,6 +406,15 @@ class SettingsPanel(QWidget):
             dlg.exec()
         except Exception as e:
             QMessageBox.critical(self, "Theme editor", f"Error: {e}")
+
+    def _open_figma_import(self):
+        """Open the Figma DTCG / REST API import dialog."""
+        try:
+            from figma_import_dialog import FigmaImportDialog
+            dlg = FigmaImportDialog(self)
+            dlg.exec()
+        except Exception as e:
+            QMessageBox.critical(self, "Figma import", f"Error: {e}")
 
     def _refresh_theme_combo(self, _name: str = ""):
         """Repopulate the dropdown so newly-saved custom themes appear.
