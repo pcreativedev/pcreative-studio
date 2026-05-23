@@ -98,10 +98,26 @@ class SettingsPanel(QWidget):
             self.theme_help.setTextFormat(Qt.TextFormat.RichText)
             self.theme_help.setWordWrap(True)
 
+            self.btn_theme_edit = QPushButton("✏️ Personalizar tema actual…")
+            self.btn_theme_edit.setToolTip(
+                "Abre el editor visual: color pickers + sliders + dropdowns "
+                "de variants. Los cambios se aplican en vivo a toda la app. "
+                "Guarda como nuevo tema custom o cancela para revertir."
+            )
+            self.btn_theme_edit.clicked.connect(self._open_theme_editor)
+
+            # Refresh the dropdown if a new theme is saved while the
+            # editor is open (or when applied externally).
+            try:
+                themes.theme_signals.theme_changed.connect(self._refresh_theme_combo)
+            except Exception:
+                pass
+
             theme_box = QGroupBox("🎨 Tema de la app")
             tb = QHBoxLayout()
             tb.addWidget(QLabel("Theme:"))
             tb.addWidget(self.theme_combo, 1)
+            tb.addWidget(self.btn_theme_edit)
             theme_outer = QVBoxLayout()
             theme_outer.addLayout(tb)
             theme_outer.addWidget(self.theme_help)
@@ -370,6 +386,37 @@ class SettingsPanel(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Office", f"No se pudo parar: {e}")
         self._pixel_refresh()
+
+    def _open_theme_editor(self):
+        """Open the visual theme editor dialog. Changes apply live;
+        Save persists as a new custom theme."""
+        try:
+            from theme_editor import ThemeEditorDialog
+            dlg = ThemeEditorDialog(self)
+            dlg.exec()
+        except Exception as e:
+            QMessageBox.critical(self, "Theme editor", f"Error: {e}")
+
+    def _refresh_theme_combo(self, _name: str = ""):
+        """Repopulate the dropdown so newly-saved custom themes appear.
+        Triggered by the `theme_signals.theme_changed` signal."""
+        try:
+            current = self._themes_module.current_theme_name()
+            self.theme_combo.blockSignals(True)
+            self.theme_combo.clear()
+            self._theme_keys = []
+            for info in self._themes_module.list_themes():
+                self._theme_keys.append(info.name)
+                icon = "🌑" if info.is_dark else "☀️"
+                label = f"{icon}  {info.display_name}"
+                if info.is_user:
+                    label += "   (custom)"
+                self.theme_combo.addItem(label)
+                if info.name == current:
+                    self.theme_combo.setCurrentIndex(self.theme_combo.count() - 1)
+            self.theme_combo.blockSignals(False)
+        except Exception as e:
+            print(f"[settings_panel] refresh combo failed: {e}")
 
     def _on_theme_changed(self, idx: int):
         """Aplica el tema seleccionado al QApplication en caliente,

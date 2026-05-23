@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **✏️ App theme system Sprint 4 — Live theme editor.** New
+  `theme_editor.py` module with `ThemeEditorDialog` opened from
+  Settings → 🎨 Tema de la app → *"Personalizar tema actual…"*.
+  Exposes every token of the active ThemePack as an editable widget:
+  - **21 color rows** with hex text input + clickable color swatch
+    that opens `QColorDialog` (organized into 5 sections:
+    Fondos / Textos / Accent / Semánticos / Bordes-selección).
+  - **5 shape sliders** (radius_sm/md/lg/pill, border_width).
+  - **6 component dropdowns** (button/tab/input/scrollbar/checkbox/density).
+  - Metadata fields (name, author, description, dark/light toggle).
+  The whole app re-paints on every edit because the dialog calls
+  `apply_theme()` after each change — there's no separate preview
+  pane, the app itself IS the preview. **💾 Guardar como…** writes
+  the working pack to `~/.config/themeforge/themes/<slug>.json` and
+  switches the active theme to the new custom. **Cancelar** restores
+  the theme that was active when the dialog opened.
 - **🎨 App theme system Sprint 3 — Lucide iconography.** Tabs of the
   main window (`Nuevo proyecto`, `Galería`, `Coste IA`, `Comparar`,
   `licencias`, `Settings`) now render with Lucide SVG icons tinted
