@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-24
+
 ### Added
 
 - **🔍 Reference analysis live stats for ALL providers.** New module
@@ -25,11 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - opencode `run --format json [-m model]`
 - **Graceful fallback to text mode** when the CLI binary is unknown
   or no parser is registered — old behaviour preserved.
-
-## [1.1.0] - 2026-05-24
-
-### Added
-
 - **autoskills coverage expanded to Gemini + OpenCode.** `autoskills`
   v0.3.6+ supports `gemini` / `opencode` / `cursor` / `windsurf` /
   `copilot` agents. Updated `ai_providers.py` to set
