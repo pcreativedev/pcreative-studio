@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **🎨 App theme system (Sprint 1).** New `themes/` module with
+  JSON-token-driven theming for the ThemeForge UI itself. Ships with
+  5 builtin themes:
+  - **ThemeForge Dark** (default) — blue accent, VSCode-inspired.
+  - **ThemeForge Light** — paper-white with blue accent.
+  - **Dracula** — purple + green pastel.
+  - **Nord** — cool polar blues.
+  - **Tokyo Night** — deep blues with neon accents.
+  Each theme is ~20 lines of JSON exposing color, typography,
+  spacing and shape tokens. User themes go in
+  `~/.config/themeforge/themes/*.json` and override builtins with
+  the same name. Theme picker in Settings → 🎨 Tema de la app, with
+  instant hot-reload (no restart). Selection persists in
+  `~/.config/themeforge/settings.json`. Architecture inspired by
+  qt-material + PyQtDarkTheme but written from scratch to give full
+  control over future component-variant + motion + effects layers
+  (deferred to later sprints).
+
 ## [1.1.0] - 2026-05-24
 
 ### Added

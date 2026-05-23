@@ -1,0 +1,29 @@
+{
+  "name": "ThemeForge Light",
+  "author": "pcreativedev",
+  "is_dark": false,
+  "description": "Default light variant — paper-white with blue accent.",
+  "color": {
+    "bg_primary":      "#ffffff",
+    "bg_secondary":    "#f5f5f5",
+    "bg_tertiary":     "#ebebeb",
+    "bg_elevated":     "#ffffff",
+    "fg_primary":      "#1a1a1a",
+    "fg_secondary":    "#666666",
+    "fg_disabled":     "#aaaaaa",
+    "accent":          "#0066cc",
+    "accent_hover":    "#0080ff",
+    "accent_active":   "#004fa3",
+    "accent_fg":       "#ffffff",
+    "success":         "#22c55e",
+    "warning":         "#f59e0b",
+    "danger":          "#dc2626",
+    "info":            "#0ea5e9",
+    "border":          "#e5e5e5",
+    "border_strong":   "#cccccc",
+    "selection_bg":    "#cce0ff",
+    "selection_fg":    "#000000",
+    "scrollbar_bg":    "#f5f5f5",
+    "scrollbar_thumb": "#cccccc"
+  }
+}

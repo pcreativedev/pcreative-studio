@@ -18,6 +18,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
+    QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -71,6 +72,43 @@ class SettingsPanel(QWidget):
         sb.addWidget(self.status_text)
         sb.addWidget(self.btn_refresh)
         status_box.setLayout(sb)
+
+        # ── Theme picker ────────────────────────────────────────────
+        try:
+            import themes
+            self._themes_module = themes
+            self.theme_combo = QComboBox()
+            self._theme_keys: list[str] = []
+            current = themes.current_theme_name()
+            for info in themes.list_themes():
+                self._theme_keys.append(info.name)
+                icon = "🌑" if info.is_dark else "☀️"
+                label = f"{icon}  {info.display_name}"
+                if info.is_user:
+                    label += "   (custom)"
+                self.theme_combo.addItem(label)
+                if info.name == current:
+                    self.theme_combo.setCurrentIndex(self.theme_combo.count() - 1)
+            self.theme_combo.currentIndexChanged.connect(self._on_theme_changed)
+
+            self.theme_help = QLabel(
+                "<small>Aplicación inmediata · sin reinicio. Los themes "
+                "custom van en <code>~/.config/themeforge/themes/*.json</code>.</small>"
+            )
+            self.theme_help.setTextFormat(Qt.TextFormat.RichText)
+            self.theme_help.setWordWrap(True)
+
+            theme_box = QGroupBox("🎨 Tema de la app")
+            tb = QHBoxLayout()
+            tb.addWidget(QLabel("Theme:"))
+            tb.addWidget(self.theme_combo, 1)
+            theme_outer = QVBoxLayout()
+            theme_outer.addLayout(tb)
+            theme_outer.addWidget(self.theme_help)
+            theme_box.setLayout(theme_outer)
+        except Exception as e:
+            theme_box = None
+            print(f"[settings_panel] theme picker disabled: {e}")
 
         # Skills por stack
         self.stack_list = QListWidget()
@@ -144,6 +182,8 @@ class SettingsPanel(QWidget):
         inner = QWidget()
         il = QVBoxLayout(inner)
         il.addWidget(title)
+        if theme_box is not None:
+            il.addWidget(theme_box)
         il.addWidget(status_box)
         il.addWidget(skills_box, 1)
         il.addWidget(pixel_box)
@@ -330,6 +370,20 @@ class SettingsPanel(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Office", f"No se pudo parar: {e}")
         self._pixel_refresh()
+
+    def _on_theme_changed(self, idx: int):
+        """Aplica el tema seleccionado al QApplication en caliente y
+        persiste la elección en `~/.config/themeforge/settings.json`."""
+        if idx < 0 or idx >= len(self._theme_keys):
+            return
+        name = self._theme_keys[idx]
+        try:
+            pack = self._themes_module.load_theme(name)
+            from PyQt6.QtWidgets import QApplication
+            self._themes_module.apply_theme(QApplication.instance(), pack)
+            self._themes_module.save_current_theme(name)
+        except Exception as e:
+            print(f"[settings_panel] failed to apply theme {name}: {e}")
 
     def _edit_stacks(self):
         path = Path.home() / "Proyectos" / "themeforge" / "stacks.py"

@@ -1,0 +1,29 @@
+{
+  "name": "Dracula",
+  "author": "Zeno Rocha (mapping by pcreativedev)",
+  "is_dark": true,
+  "description": "Classic Dracula palette — dark with purple+green pastel accents.",
+  "color": {
+    "bg_primary":      "#282a36",
+    "bg_secondary":    "#21222c",
+    "bg_tertiary":     "#191a21",
+    "bg_elevated":     "#343746",
+    "fg_primary":      "#f8f8f2",
+    "fg_secondary":    "#6272a4",
+    "fg_disabled":     "#44475a",
+    "accent":          "#bd93f9",
+    "accent_hover":    "#caa9fa",
+    "accent_active":   "#a374e9",
+    "accent_fg":       "#282a36",
+    "success":         "#50fa7b",
+    "warning":         "#f1fa8c",
+    "danger":          "#ff5555",
+    "info":            "#8be9fd",
+    "border":          "#44475a",
+    "border_strong":   "#6272a4",
+    "selection_bg":    "#44475a",
+    "selection_fg":    "#f8f8f2",
+    "scrollbar_bg":    "#21222c",
+    "scrollbar_thumb": "#44475a"
+  }
+}

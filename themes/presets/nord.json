@@ -1,0 +1,29 @@
+{
+  "name": "Nord",
+  "author": "Arctic Ice Studio (mapping by pcreativedev)",
+  "is_dark": true,
+  "description": "Cool, blueish polar palette — calm and balanced.",
+  "color": {
+    "bg_primary":      "#2e3440",
+    "bg_secondary":    "#3b4252",
+    "bg_tertiary":     "#434c5e",
+    "bg_elevated":     "#4c566a",
+    "fg_primary":      "#eceff4",
+    "fg_secondary":    "#d8dee9",
+    "fg_disabled":     "#677387",
+    "accent":          "#88c0d0",
+    "accent_hover":    "#8fbcbb",
+    "accent_active":   "#5e81ac",
+    "accent_fg":       "#2e3440",
+    "success":         "#a3be8c",
+    "warning":         "#ebcb8b",
+    "danger":          "#bf616a",
+    "info":            "#81a1c1",
+    "border":          "#434c5e",
+    "border_strong":   "#4c566a",
+    "selection_bg":    "#434c5e",
+    "selection_fg":    "#eceff4",
+    "scrollbar_bg":    "#3b4252",
+    "scrollbar_thumb": "#4c566a"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "Tokyo Night",
+  "author": "enkia (mapping by pcreativedev)",
+  "is_dark": true,
+  "description": "Inspired by the lights of Downtown Tokyo at night — deep blues with neon accents.",
+  "color": {
+    "bg_primary":      "#1a1b26",
+    "bg_secondary":    "#16161e",
+    "bg_tertiary":     "#13131a",
+    "bg_elevated":     "#24283b",
+    "fg_primary":      "#c0caf5",
+    "fg_secondary":    "#9aa5ce",
+    "fg_disabled":     "#565f89",
+    "accent":          "#7aa2f7",
+    "accent_hover":    "#89b4fa",
+    "accent_active":   "#5a7dd1",
+    "accent_fg":       "#1a1b26",
+    "success":         "#9ece6a",
+    "warning":         "#e0af68",
+    "danger":          "#f7768e",
+    "info":            "#7dcfff",
+    "border":          "#292e42",
+    "border_strong":   "#414868",
+    "selection_bg":    "#283457",
+    "selection_fg":    "#c0caf5",
+    "scrollbar_bg":    "#16161e",
+    "scrollbar_thumb": "#414868"
+  }
+}

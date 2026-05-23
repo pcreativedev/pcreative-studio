@@ -4308,6 +4308,16 @@ def main():
 
     app = QApplication(sys.argv)
 
+    # Apply theme. Reads `~/.config/themeforge/settings.json` for the
+    # saved theme; falls back to default if missing. Applied before
+    # any window opens so the splash / first dialog already match.
+    try:
+        import themes
+        _pack = themes.load_theme(themes.current_theme_name())
+        themes.apply_theme(app, _pack)
+    except Exception as e:
+        print(f"[themes] could not apply theme: {e}", file=sys.stderr)
+
     # Set app-wide window icon. Qt propaga este icono a todas las
     # QWidget de la app (titlebar, taskbar, alt-tab) salvo que se
     # sobrescriba en la ventana concreta. Cargamos múltiples tamaños

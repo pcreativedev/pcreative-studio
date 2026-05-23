@@ -1,0 +1,29 @@
+{
+  "name": "ThemeForge Dark",
+  "author": "pcreativedev",
+  "is_dark": true,
+  "description": "Default ThemeForge theme — dark VSCode-inspired with blue accent.",
+  "color": {
+    "bg_primary":      "#1e1e1e",
+    "bg_secondary":    "#252526",
+    "bg_tertiary":     "#2d2d30",
+    "bg_elevated":     "#333333",
+    "fg_primary":      "#e6e6e6",
+    "fg_secondary":    "#9e9e9e",
+    "fg_disabled":     "#5a5a5a",
+    "accent":          "#62b4ff",
+    "accent_hover":    "#80c4ff",
+    "accent_active":   "#4a9fee",
+    "accent_fg":       "#000000",
+    "success":         "#86efac",
+    "warning":         "#fbbf24",
+    "danger":          "#f87171",
+    "info":            "#7dd3fc",
+    "border":          "#3c3c3c",
+    "border_strong":   "#555555",
+    "selection_bg":    "#264f78",
+    "selection_fg":    "#ffffff",
+    "scrollbar_bg":    "#252526",
+    "scrollbar_thumb": "#555555"
+  }
+}
