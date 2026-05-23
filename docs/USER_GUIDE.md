@@ -101,7 +101,7 @@ ThemeForge is currently distributed as a Python project that you clone
 and run with `launch.sh`. No PyPI package yet.
 
 ```bash
-git clone https://github.com/<owner>/themeforge.git
+git clone https://github.com/pcreativedev/themeforge.git
 cd themeforge
 
 # Python dependencies — only PyQt6 needs to be installed.

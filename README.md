@@ -52,7 +52,7 @@ AppImage runs on most distros from 2022 onwards.
 ### Linux (from source)
 
 ```bash
-git clone https://github.com/<owner>/themeforge.git
+git clone https://github.com/pcreativedev/themeforge.git
 cd themeforge
 
 # System deps (Arch / CachyOS)
@@ -83,7 +83,7 @@ configuration, see the [user guide](docs/USER_GUIDE.md#3-installation).
 ### macOS (from source)
 
 ```bash
-git clone https://github.com/<owner>/themeforge.git
+git clone https://github.com/pcreativedev/themeforge.git
 cd themeforge
 brew install python@3.12 node gh
 pip3 install pyqt6 pyqt6-webengine pyqt6-charts

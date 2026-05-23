@@ -37,7 +37,7 @@ double-check before sharing.
 ### Setup
 
 ```bash
-git clone https://github.com/<owner>/themeforge.git
+git clone https://github.com/pcreativedev/themeforge.git
 cd themeforge
 # Optional: virtual env. PyQt6 from distro packages tends to be
 # easier than via pip due to the bundled Qt libraries.
