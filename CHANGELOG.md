@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **🎨 App theme system Sprint 3 — Lucide iconography.** Tabs of the
+  main window (`Nuevo proyecto`, `Galería`, `Coste IA`, `Comparar`,
+  `licencias`, `Settings`) now render with Lucide SVG icons tinted
+  in the active theme's accent color, replacing the previous emoji
+  prefix in tab labels. New helper `themes.tf_icon(name, color, size)`
+  reads SVGs from `assets/icons/lucide/`, swaps the `currentColor`
+  attribute for the requested hex, and returns a QIcon cached by
+  `(name, color, size)`. 38 icons bundled (search/settings/folder/
+  code/terminal/play/stop/rocket/package/check/warning/info/refresh/
+  trash/copy/download/save/file/image/box/gallery/dollar/users/key/
+  monitor/archive/sparkles/palette/globe/+more). Lucide is ISC-licensed
+  — compatible with GPL v3 redistribution.
+- **🔁 Theme-change signal.** `themes.theme_signals.theme_changed`
+  is a `pyqtSignal(str)` emitted whenever the user picks a different
+  theme via Settings. Widgets that cache theme-dependent visuals
+  subscribe to refresh without an app restart. Tab icons are the
+  first consumer; future consumers will include the cost-tracker
+  chart palette and the multi-agent compare pane colors.
 - **🎨 App theme system Sprint 2 — component variants.** Adds
   per-widget variant tokens to the theme schema. Each ThemePack now
   carries a `components` section that selects between visual rule

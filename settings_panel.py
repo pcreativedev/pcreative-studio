@@ -372,8 +372,11 @@ class SettingsPanel(QWidget):
         self._pixel_refresh()
 
     def _on_theme_changed(self, idx: int):
-        """Aplica el tema seleccionado al QApplication en caliente y
-        persiste la elección en `~/.config/themeforge/settings.json`."""
+        """Aplica el tema seleccionado al QApplication en caliente,
+        persiste la elección en `~/.config/themeforge/settings.json`
+        y emite la señal `theme_signals.theme_changed` para que el
+        resto de widgets que dependen del color (iconos en tabs, etc.)
+        se refresquen sin reinicio."""
         if idx < 0 or idx >= len(self._theme_keys):
             return
         name = self._theme_keys[idx]
@@ -382,6 +385,8 @@ class SettingsPanel(QWidget):
             from PyQt6.QtWidgets import QApplication
             self._themes_module.apply_theme(QApplication.instance(), pack)
             self._themes_module.save_current_theme(name)
+            self._themes_module.clear_icon_cache()
+            self._themes_module.theme_signals.theme_changed.emit(name)
         except Exception as e:
             print(f"[settings_panel] failed to apply theme {name}: {e}")
 

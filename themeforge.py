@@ -4180,12 +4180,29 @@ class ThemeForgeApp(QWidget):
         self.multi_agent = _MultiAgentPanel()
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(self.builder, "Nuevo proyecto")
-        self.tabs.addTab(self.gallery, "Galería")
-        self.tabs.addTab(self.cost, "💰 Coste IA")
-        self.tabs.addTab(self.multi_agent, "🤝 Comparar")
-        self.tabs.addTab(self.licensing, "licencias")
-        self.tabs.addTab(self.settings, "⚙ Settings")
+        # Tabs use Lucide SVG icons (theme-aware: re-colored on theme change).
+        # `_tab_specs` is the source of truth; `_apply_tab_icons` paints icons
+        # in the current theme's accent color and is re-called when the user
+        # switches theme via Settings.
+        self._tab_specs: list[tuple[QWidget, str, str]] = [
+            (self.builder,     "box",      "Nuevo proyecto"),
+            (self.gallery,     "gallery",  "Galería"),
+            (self.cost,        "dollar",   "Coste IA"),
+            (self.multi_agent, "users",    "Comparar"),
+            (self.licensing,   "key",      "licencias"),
+            (self.settings,    "settings", "Settings"),
+        ]
+        for widget, icon_name, label in self._tab_specs:
+            self.tabs.addTab(widget, label)
+        self._apply_tab_icons()
+
+        # Refresh icons when the user picks a different theme so the
+        # accent color in the SVG strokes follows.
+        try:
+            import themes as _t
+            _t.theme_signals.theme_changed.connect(lambda _name: self._apply_tab_icons())
+        except Exception:
+            pass
 
         def _on_tab_change(i):
             w = self.tabs.widget(i)
@@ -4193,6 +4210,11 @@ class ThemeForgeApp(QWidget):
             elif w is self.settings: self.settings.refresh_status()
             elif w is self.cost: self.cost.refresh()
         self.tabs.currentChanged.connect(_on_tab_change)
+
+        # Method bound below via class scope (defined after __init__ exits
+        # in cleaner OOP, but inlined here for proximity to the tab specs).
+        # We attach `_apply_tab_icons` as an instance method via setattr
+        # right after __init__ to keep the diff minimal.
 
         root = QVBoxLayout()
         root.addWidget(self.tabs)
@@ -4271,6 +4293,23 @@ class ThemeForgeApp(QWidget):
     def _open_command_palette(self):
         dlg = _CommandPalette(self, self._build_palette_actions())
         dlg.exec()
+
+    def _apply_tab_icons(self):
+        """Renders tab icons in the current theme's accent color and
+        applies them to the QTabWidget. Called once at startup and
+        every time the user switches theme via Settings."""
+        try:
+            import themes as _t
+            pack = _t.load_theme(_t.current_theme_name())
+            color = pack.color.accent
+        except Exception:
+            color = "#62b4ff"  # fallback
+        try:
+            for i, (_w, icon_name, _label) in enumerate(self._tab_specs):
+                icon = _t.tf_icon(icon_name, color=color, size=18)
+                self.tabs.setTabIcon(i, icon)
+        except Exception as e:
+            print(f"[tabs] could not apply icons: {e}")
 
 
 def main():
