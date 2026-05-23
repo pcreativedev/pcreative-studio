@@ -7,11 +7,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/pcreativedev/themeforge/actions/workflows/build-linux.yml"><img src="https://img.shields.io/github/actions/workflow/status/pcreativedev/themeforge/build-linux.yml?branch=main&label=Linux&logo=linux&logoColor=white&style=for-the-badge" alt="Linux build"></a>
-  <a href="https://github.com/pcreativedev/themeforge/actions/workflows/build-macos.yml"><img src="https://img.shields.io/github/actions/workflow/status/pcreativedev/themeforge/build-macos.yml?branch=main&label=macOS&logo=apple&logoColor=white&style=for-the-badge" alt="macOS build"></a>
-  <a href="https://github.com/pcreativedev/themeforge/releases"><img src="https://img.shields.io/github/v/release/pcreativedev/themeforge?include_prereleases&style=for-the-badge" alt="Latest release"></a>
+  <a href="https://github.com/pcreativedev/themeforge/actions/workflows/build-linux.yml"><img src="https://img.shields.io/github/actions/workflow/status/pcreativedev/themeforge/build-linux.yml?event=push&label=Linux%20build&logo=linux&logoColor=white&style=for-the-badge" alt="Linux build"></a>
+  <a href="https://github.com/pcreativedev/themeforge/actions/workflows/build-macos.yml"><img src="https://img.shields.io/github/actions/workflow/status/pcreativedev/themeforge/build-macos.yml?event=push&label=macOS%20build&logo=apple&logoColor=white&style=for-the-badge" alt="macOS build"></a>
+  <a href="https://github.com/pcreativedev/themeforge/releases/latest"><img src="https://img.shields.io/github/v/release/pcreativedev/themeforge?include_prereleases&label=Release&style=for-the-badge&color=blue" alt="Latest release"></a>
+  <a href="https://github.com/pcreativedev/themeforge/releases"><img src="https://img.shields.io/github/downloads/pcreativedev/themeforge/total?label=Downloads&style=for-the-badge&color=brightgreen" alt="Downloads"></a>
+  <a href="https://github.com/pcreativedev/themeforge/stargazers"><img src="https://img.shields.io/github/stars/pcreativedev/themeforge?label=Stars&style=for-the-badge&color=yellow" alt="GitHub stars"></a>
+</p>
+
+<p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL_v3-blue.svg?style=for-the-badge" alt="GPL v3"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-yellow.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+"></a>
+  <img src="https://img.shields.io/badge/Linux-Stable-success?style=for-the-badge&logo=linux&logoColor=white" alt="Linux stable">
+  <img src="https://img.shields.io/badge/macOS-Alpha-orange?style=for-the-badge&logo=apple&logoColor=white" alt="macOS alpha">
+  <img src="https://img.shields.io/badge/Windows-Backlog-lightgrey?style=for-the-badge&logo=windows&logoColor=white" alt="Windows backlog">
 </p>
 
 <p align="center">
