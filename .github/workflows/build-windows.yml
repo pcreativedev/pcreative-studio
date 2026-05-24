@@ -60,18 +60,23 @@ jobs:
           $node = "v22.11.0"
           Invoke-WebRequest "https://nodejs.org/dist/$node/node-$node-win-x64.zip" -OutFile node.zip -UseBasicParsing
           Expand-Archive node.zip -DestinationPath vendor -Force
-          Rename-Item "vendor/node-$node-win-x64" "vendor/node"
+          # Move-Item (no Rename-Item: éste no acepta una ruta como destino).
+          Move-Item "vendor\node-$node-win-x64" "vendor\node"
 
           # PortableGit (NO MinGit): incluye bash + entorno unix (ls, cat,
           # grep…). ThemeForge genera scripts bash y Claude Code usa git-bash
           # internamente en Windows, así que bash es obligatorio.
           $git = "2.47.1"
           Invoke-WebRequest "https://github.com/git-for-windows/git/releases/download/v$git.windows.1/PortableGit-$git-64-bit.7z.exe" -OutFile portablegit.exe -UseBasicParsing
-          New-Item -ItemType Directory -Force -Path vendor/git | Out-Null
-          Start-Process -Wait -FilePath ".\portablegit.exe" -ArgumentList "-y", "-o`"$PWD\vendor\git`""
+          $gitDest = Join-Path (Get-Location) "vendor\git"
+          # El SFX 7-Zip extrae con -o<dir> (sin espacio). El runner no tiene
+          # espacios en la ruta, así que pasamos -o$gitDest directo.
+          Start-Process -Wait -FilePath ".\portablegit.exe" -ArgumentList "-y", "-gm2", "-o$gitDest"
 
           Write-Host "vendor/ contents:"
           Get-ChildItem vendor
+          Write-Host "bash present:"
+          Test-Path "vendor\git\bin\bash.exe"
 
       - name: Install embedded terminal deps (node-pty prebuilt)
         shell: pwsh
@@ -86,26 +91,8 @@ jobs:
       - name: Generate .ico from PNG sources
         shell: pwsh
         run: |
-          # Multi-resolution .ico is what Windows wants for installer + .exe icon.
-          # Pillow bundles all sizes into a single .ico container.
-          python - <<'PY'
-          from PIL import Image
-          srcs = [
-              "assets/themeforge-16.png",
-              "assets/themeforge-32.png",
-              "assets/themeforge-64.png",
-              "assets/themeforge-128.png",
-              "assets/themeforge-256.png",
-          ]
-          imgs = [Image.open(p) for p in srcs]
-          # Use the largest as base, pass `sizes=` so all are stored.
-          imgs[-1].save(
-              "assets/themeforge.ico",
-              format="ICO",
-              sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
-          )
-          print("✓ generated assets/themeforge.ico")
-          PY
+          # PowerShell no soporta heredocs (<<'PY'); el script va en un .py real.
+          python packaging/windows/make_ico.py
           Get-Item assets/themeforge.ico
 
       - name: Build .exe with PyInstaller
