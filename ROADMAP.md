@@ -10,14 +10,27 @@ For pre-publication blockers (private to the maintainer), see
 
 ## Where we are right now
 
-**v1.0.0 shipped on 2026-05-23** with full Linux support (AppImage /
-.deb / .rpm / AUR) and a macOS alpha `.app` produced by CI. See the
-[Releases](../../releases) page for downloads and `CHANGELOG.md` for
-the full list of features included in 1.0.
+**v1.2.0 shipped on 2026-05-24.** Three releases out the door:
 
-The roadmap below covers post-1.0 work. Items are grouped per feature
-area; the "Current state" line at the top of each section reflects
-what shipped in v1.0.
+- **v1.0.0** (2026-05-23) — initial public release. 60+ stacks,
+  embedded preview + terminal, pre-flight, ZIP builder, demo
+  deploy, cost tracker, multi-agent compare, plugin system.
+- **v1.1.0** (2026-05-24) — UI UX Pro Max integration,
+  autoskills coverage for all 7 providers, live stats for the
+  reference analysis dialog on every provider (stream_parsers.py).
+- **v1.2.0** (2026-05-24, current Latest) — app theme system (5
+  sprints: tokens / variants / Lucide icons / visual editor /
+  Figma DTCG import), Vibe scaffolder, "Nuevo proyecto" form
+  redesigned with sub-tabs, MCP server + curated catalog of 12
+  community MCPs.
+
+Linux ships as AppImage / .deb / .rpm / AUR; macOS alpha `.app` built
+by CI. See [Releases](../../releases) for downloads and
+`CHANGELOG.md` for the full feature list.
+
+The roadmap below covers post-v1.2 work. Items are grouped per
+feature area; the "Current state" line at the top of each section
+reflects what's already on `main`.
 
 ---
 
