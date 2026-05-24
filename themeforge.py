@@ -2111,15 +2111,9 @@ class ThemeForge(QWidget):
         # Persisted dev_prompt from vibe (used as ai_analysis in scratch mode)
         self._vibe_dev_prompt: str = ""
 
-        form = QFormLayout()
-        form.addRow("✨ Vibe:", self.vibe_input)
-        form.addRow("", self.btn_vibe)
-        form.addRow("Nombre:", self.name_edit)
-        form.addRow("Stack:", self.stack_button)
-        form.addRow("Tipo:", self.type_combo)
-        form.addRow("Provider:", self.provider_picker)
-        form.addRow("", self.autoskills_check)
-        form.addRow("", self.uipro_check)
+        # NOTE: form layout was replaced by sub-tabs (assembled below).
+        # Widgets above remain as instance attributes so all the signal
+        # wiring and validation logic stays untouched.
 
         # ── Modo ─────────────────────────────────────────────────────
         mode_box = QGroupBox("Modo")
@@ -2237,6 +2231,11 @@ class ThemeForge(QWidget):
         mode_layout.addWidget(self.existing_widget)
         mode_box.setLayout(mode_layout)
         self.mode_group.idToggled.connect(self._mode_changed)
+        # Hide inactive sub-forms at startup. Default is scratch, so all
+        # three sub-form widgets should be hidden by default.
+        self.ref_widget.setVisible(False)
+        self.adopt_widget.setVisible(False)
+        self.existing_widget.setVisible(False)
 
         # ── GitHub repo crear (deshabilitado en wizard) ──────────────
         # El repo se crea bajo demanda desde el botón "📦 GitHub" del
@@ -2322,16 +2321,86 @@ class ThemeForge(QWidget):
         btns = QHBoxLayout()
         btns.addWidget(self.cancel_btn); btns.addStretch(); btns.addWidget(self.create_btn)
 
+        # ── Sub-tabs (rediseño: dividir el form pesado en 5 sub-pestañas) ──
+        # Cada widget construido arriba se agrupa por afinidad. Footer
+        # con Salir/Crear queda fijo siempre visible.
+        self.new_project_subtabs = QTabWidget()
+
+        # Sub-tab 1: ✨ Vibe (hero, opcional)
+        vibe_tab = QWidget()
+        vibe_lay = QVBoxLayout(vibe_tab)
+        vibe_intro = QLabel(
+            "<h3>✨ Vibe scaffolder</h3>"
+            "<small>Describe en lenguaje natural lo que quieres construir y "
+            "la IA pre-rellenará el resto de pestañas (Stack, Tipo, Theme, "
+            "skills) + un dev prompt completo. <b>Opcional</b> — si prefieres "
+            "config manual, salta a la pestaña <b>🏗️ Setup</b>.</small>"
+        )
+        vibe_intro.setTextFormat(Qt.TextFormat.RichText)
+        vibe_intro.setWordWrap(True)
+        self.vibe_input.setMaximumHeight(140)  # más alto en la sub-tab dedicada
+        vibe_lay.addWidget(vibe_intro)
+        vibe_lay.addWidget(self.vibe_input, 1)
+        vibe_btn_row = QHBoxLayout()
+        vibe_btn_row.addStretch()
+        vibe_btn_row.addWidget(self.btn_vibe)
+        vibe_lay.addLayout(vibe_btn_row)
+        vibe_lay.addStretch()
+        self.new_project_subtabs.addTab(vibe_tab, "✨ Vibe")
+
+        # Sub-tab 2: 🏗️ Setup (lo básico)
+        setup_tab = QWidget()
+        setup_form = QFormLayout(setup_tab)
+        setup_form.addRow("Nombre:", self.name_edit)
+        setup_form.addRow("Stack:", self.stack_button)
+        setup_form.addRow("Tipo:", self.type_combo)
+        setup_form.addRow("Provider:", self.provider_picker)
+        setup_form.addRow("", self.autoskills_check)
+        setup_form.addRow("", self.uipro_check)
+        self.new_project_subtabs.addTab(setup_tab, "🏗️ Setup")
+
+        # Sub-tab 3: 📦 Modo (el viejo mode_box, ahora dedicado)
+        mode_tab = QWidget()
+        mode_tab_lay = QVBoxLayout(mode_tab)
+        mode_tab_lay.addWidget(mode_box)
+        mode_tab_lay.addStretch()
+        self.new_project_subtabs.addTab(mode_tab, "📦 Modo")
+
+        # Sub-tab 4: 🔌 Extras (postgres + licensing)
+        extras_tab = QWidget()
+        extras_lay = QVBoxLayout(extras_tab)
+        extras_hint = QLabel(
+            "<small>Toggles avanzados que solo aplican si los necesitas. "
+            "Para la mayoría de templates puedes dejarlos en off.</small>"
+        )
+        extras_hint.setTextFormat(Qt.TextFormat.RichText)
+        extras_hint.setWordWrap(True)
+        extras_lay.addWidget(extras_hint)
+        extras_lay.addSpacing(6)
+        extras_lay.addWidget(self.postgres_check)
+        extras_lay.addSpacing(10)
+        extras_lay.addWidget(self.licensing_check)
+        extras_lay.addWidget(self.licensing_gh_check)
+        extras_lay.addWidget(self.licensing_force_check)
+        extras_lay.addStretch()
+        self.new_project_subtabs.addTab(extras_tab, "🔌 Extras")
+
+        # Sub-tab 5: 👁 Preview (vista previa antes de crear)
+        preview_tab = QWidget()
+        preview_lay = QVBoxLayout(preview_tab)
+        preview_lay.addWidget(QLabel(
+            "<small>Vista previa del comando de scaffold que se ejecutará. "
+            "Confirma desde el botón <b>Crear proyecto</b> abajo.</small>"
+        ))
+        preview_lay.addWidget(self.preview, 1)
+        self.new_project_subtabs.addTab(preview_tab, "👁 Preview")
+
         # ── Root ─────────────────────────────────────────────────────
         root = QVBoxLayout()
-        root.addWidget(title); root.addWidget(subtitle); root.addSpacing(6)
-        root.addLayout(form)
-        root.addWidget(mode_box)
-        root.addWidget(self.postgres_check)
-        root.addWidget(self.licensing_check)
-        root.addWidget(self.licensing_gh_check)
-        root.addWidget(self.licensing_force_check)
-        root.addWidget(QLabel("Vista previa:")); root.addWidget(self.preview)
+        root.addWidget(title)
+        root.addWidget(subtitle)
+        root.addSpacing(6)
+        root.addWidget(self.new_project_subtabs, 1)
         root.addLayout(btns)
         self.setLayout(root)
 
@@ -2465,8 +2534,14 @@ class ThemeForge(QWidget):
         is_recreate = self.mode_recreate.isChecked()
         is_adopt = self.mode_adopt.isChecked()
         is_existing = self.mode_existing.isChecked()
+        # Visibility: solo se ve el sub-form del modo seleccionado.
+        # (Antes se hacía setEnabled — los demás quedaban grises y
+        # ocupaban espacio. Ahora se ocultan completamente.)
+        self.ref_widget.setVisible(is_recreate)
         self.ref_widget.setEnabled(is_recreate)
+        self.adopt_widget.setVisible(is_adopt)
         self.adopt_widget.setEnabled(is_adopt)
+        self.existing_widget.setVisible(is_existing)
         self.existing_widget.setEnabled(is_existing)
         # En modo existing o adopt el scaffolding no aplica (ya hay código).
         self.stack_button.setEnabled(not (is_existing or is_adopt))

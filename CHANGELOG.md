@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **🏗️ "Nuevo proyecto" tab redesigned with sub-tabs.** The form was
+  getting crowded — vibe input, 6 basic fields, 4 modes (each with
+  their own sub-form), 3 advanced toggles, preview pane, all in one
+  vertical scroll. Now organized in 5 sub-tabs:
+  - **✨ Vibe** — natural language → form auto-fill (hero feature).
+  - **🏗️ Setup** — name, stack, type, provider, autoskills + uipro.
+  - **📦 Modo** — scratch / recreate / adopt / existing. Sub-forms
+    of non-selected modes are now **hidden** instead of just disabled
+    (eliminates the "se solapan los modos" visual clutter).
+  - **🔌 Extras** — postgres + licensing toggles (advanced).
+  - **👁 Preview** — final command preview before create.
+  Footer (Salir / Crear proyecto) stays always visible across sub-tabs.
+
 ### Added
 
 - **✨ Vibe scaffolder mode.** New input at the top of the "Nuevo
