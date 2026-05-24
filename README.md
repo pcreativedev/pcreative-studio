@@ -64,6 +64,19 @@ adopt-local / existing-repo), pick an AI provider, and ThemeForge:
   free-plan Tokens Studio plugin + Enterprise REST API), Lucide
   iconography that re-tints with the active accent color. See
   [`docs/USER_GUIDE.md` §17](docs/USER_GUIDE.md#17-app-themes).
+- ✨ **Vibe scaffolder** — describe what you want in natural language
+  (*"Landing premium para clínica dental en Madrid, paleta cálida"*)
+  and ThemeForge calls the active AI provider to pre-fill stack +
+  type + theme + a polished 200-word dev prompt for the agent. See
+  [`docs/USER_GUIDE.md` §18](docs/USER_GUIDE.md#18-vibe-scaffolder).
+- 📡 **MCP server + curated catalog** — ThemeForge ships its own
+  stdio MCP server (8 tools: list_stacks / estimate_cost /
+  run_preflight / build_zip / suggest_stack / …) so Claude Code,
+  Cursor, Windsurf, OpenCode can drive ThemeForge from their own
+  conversation window. Plus a curated catalog of 12 community MCPs
+  (Playwright, Chrome DevTools, GitHub, Figma, Postgres, Shopify
+  Dev, browsermcp…) auto-configured in each scaffolded project
+  via `.mcp.json`. See [`docs/USER_GUIDE.md` §19](docs/USER_GUIDE.md#19-mcp-servers).
 
 📖 **[Read the full user guide → `docs/USER_GUIDE.md`](docs/USER_GUIDE.md)**
 

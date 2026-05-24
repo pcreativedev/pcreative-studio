@@ -330,17 +330,41 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#177-limitations">17.7 Limitations</a></li>
 </ul>
 </li>
-<li><a href="#18-optional-licensing-system">18. Optional licensing system</a><ul>
+<li><a href="#18-vibe-scaffolder">18. Vibe scaffolder</a><ul>
+<li><a href="#decision-rules">Decision rules</a></li>
+<li><a href="#robust-parsing">Robust parsing</a></li>
+<li><a href="#when-to-skip">When to skip</a></li>
+</ul>
+</li>
+<li><a href="#19-mcp-servers">19. MCP servers</a><ul>
+<li><a href="#191-themeforge-as-an-mcp-server">19.1 ThemeForge as an MCP server</a><ul>
+<li><a href="#tools-exposed">Tools exposed</a></li>
+<li><a href="#registering-in-claude-code">Registering in Claude Code</a></li>
+<li><a href="#registering-in-cursor">Registering in Cursor</a></li>
+<li><a href="#registering-in-windsurf">Registering in Windsurf</a></li>
+<li><a href="#transport">Transport</a></li>
+</ul>
+</li>
+<li><a href="#192-themeforge-configures-community-mcps-in-each-scaffolded-project">19.2 ThemeForge configures community MCPs in each scaffolded project</a><ul>
+<li><a href="#how-the-ai-client-uses-mcpjson">How the AI client uses .mcp.json</a></li>
+<li><a href="#authentication">Authentication</a></li>
+<li><a href="#license-compatibility">License compatibility</a></li>
+</ul>
+</li>
+<li><a href="#193-disabling-mcp-integration">19.3 Disabling MCP integration</a></li>
+</ul>
+</li>
+<li><a href="#20-optional-licensing-system">20. Optional licensing system</a><ul>
 <li><a href="#what-gets-dropped-per-stack-family">What gets dropped per stack family</a></li>
 <li><a href="#url-templating">URL templating</a></li>
 <li><a href="#bring-your-own-backend">Bring your own backend</a></li>
 </ul>
 </li>
-<li><a href="#19-configuration-files">19. Configuration files</a><ul>
+<li><a href="#21-configuration-files">21. Configuration files</a><ul>
 <li><a href="#context-override-pattern">Context override pattern</a></li>
 </ul>
 </li>
-<li><a href="#20-troubleshooting">20. Troubleshooting</a><ul>
+<li><a href="#22-troubleshooting">22. Troubleshooting</a><ul>
 <li><a href="#themeforge-does-not-start-importerror-on-pyqt6">ThemeForge does not start (ImportError on PyQt6)</a></li>
 <li><a href="#embedded-terminal-does-not-load">Embedded terminal does not load</a></li>
 <li><a href="#embedded-preview-shows-blank-in-wayland">Embedded preview shows blank in Wayland</a></li>
@@ -354,7 +378,7 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#reference-analysis-dialog-says-need-login-for-gemini">Reference-analysis dialog says "Need login" for Gemini</a></li>
 </ul>
 </li>
-<li><a href="#21-credits-and-third-party-licenses">21. Credits and third-party licenses</a><ul>
+<li><a href="#23-credits-and-third-party-licenses">23. Credits and third-party licenses</a><ul>
 <li><a href="#direct-integrations">Direct integrations</a></li>
 <li><a href="#invoked-as-subprocess">Invoked-as-subprocess</a></li>
 <li><a href="#referenced-skill-packages-not-redistributed-invoked-by-name">Referenced skill packages (not redistributed — invoked by name)</a></li>
@@ -397,10 +421,12 @@ system, and troubleshooting.</p>
 <li><a href="#15-pixel-office-visualizer">Pixel Office visualizer</a></li>
 <li><a href="#16-settings-panel">Settings panel</a></li>
 <li><a href="#17-app-themes">App themes</a></li>
-<li><a href="#18-optional-licensing-system">Optional licensing system</a></li>
-<li><a href="#19-configuration-files">Configuration files</a></li>
-<li><a href="#20-troubleshooting">Troubleshooting</a></li>
-<li><a href="#21-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
+<li><a href="#18-vibe-scaffolder">Vibe scaffolder</a></li>
+<li><a href="#19-mcp-servers">MCP servers</a></li>
+<li><a href="#20-optional-licensing-system">Optional licensing system</a></li>
+<li><a href="#21-configuration-files">Configuration files</a></li>
+<li><a href="#22-troubleshooting">Troubleshooting</a></li>
+<li><a href="#23-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
 </ol>
 <hr />
 <h2 id="1-what-is-themeforge">1. What is ThemeForge<a class="anchor" href="#1-what-is-themeforge" title="Link to this section">#</a></h2>
@@ -1720,7 +1746,255 @@ team.</p>
 <p>See <a href="../ROADMAP.md#-app-themes"><code>ROADMAP.md</code></a> for the planned
 sprints.</p>
 <hr />
-<h2 id="18-optional-licensing-system">18. Optional licensing system<a class="anchor" href="#18-optional-licensing-system" title="Link to this section">#</a></h2>
+<h2 id="18-vibe-scaffolder">18. Vibe scaffolder<a class="anchor" href="#18-vibe-scaffolder" title="Link to this section">#</a></h2>
+<p>The <strong>"Nuevo proyecto"</strong> tab opens on the <strong>✨ Vibe</strong> sub-tab. Type
+what you want to build in plain Spanish or English — no need to
+know stack names, just describe the goal:</p>
+<pre><code>Landing premium para clínica dental en Madrid, paleta cálida
+confianza, conversion-optimized
+</code></pre>
+<p>Click <strong>✨ Pre-rellenar form con IA</strong> and ThemeForge:</p>
+<ol>
+<li>Sends the description to the active AI provider (the one selected
+   in the Provider field — defaults to Claude).</li>
+<li>Receives a structured JSON proposal with:
+   - <code>stack_key</code> — one of the 60+ stacks (e.g. <code>astro-tailwind</code>).
+   - <code>template_type</code> — Landing / SaaS / Portfolio / …
+   - <code>theme_hint</code> — one of the 8 builtin themes that fits the vibe.
+   - <code>dev_prompt</code> — a polished 150-300 word brief in the user's
+     language, structured (niche / aesthetic / required sections /
+     constraints / tech requirements).
+   - <code>reasoning</code> — 2-3 sentences explaining the picks.</li>
+<li>The form auto-fills: stack, type, theme of the app (switches live),
+   autoskills + uipro toggles, suggested name (slug-derived).</li>
+<li>The <code>dev_prompt</code> is stashed and injected into the generated
+   <code>CLAUDE.md</code> / <code>AGENTS.md</code> when you hit <strong>Crear proyecto</strong> — so the
+   dev agent starts with the full brief, not the original 1-line
+   description.</li>
+</ol>
+<h3 id="decision-rules">Decision rules<a class="anchor" href="#decision-rules" title="Link to this section">#</a></h3>
+<p>The vibe prompt embeds explicit rules so the AI's pick is predictable:</p>
+<ul>
+<li>WordPress / WP keyword → <code>wordpress-block</code> or <code>wordpress-plugin</code>.</li>
+<li>Shopify keyword → <code>shopify-liquid</code>.</li>
+<li>"Landing" / "marketing" → Astro or Next.js.</li>
+<li>"Admin" / "dashboard" / "SaaS app" → Next.js.</li>
+<li>"Mobile app" → Flutter or Expo.</li>
+<li>Premium / wellness / spa → Soft UI theme.</li>
+<li>Tech / SaaS / productivity → Linear theme.</li>
+<li>Creative / portfolio → Dracula or Brutalism theme.</li>
+<li>Gaming / cyber → Tokyo Night theme.</li>
+</ul>
+<h3 id="robust-parsing">Robust parsing<a class="anchor" href="#robust-parsing" title="Link to this section">#</a></h3>
+<p>The response parser handles:</p>
+<ul>
+<li>Clean JSON output.</li>
+<li>JSON wrapped in markdown code fences.</li>
+<li>JSON with leading/trailing prose ("Here's the proposal: ...").</li>
+<li>Balanced-brace fallback for malformed trailing content.</li>
+</ul>
+<p>If parsing fails, the dialog surfaces a clear error and lets you
+retry. The dev_prompt is the most important field — if it's empty,
+the proposal is rejected.</p>
+<h3 id="when-to-skip">When to skip<a class="anchor" href="#when-to-skip" title="Link to this section">#</a></h3>
+<p>If you already know exactly what you want (stack + theme + type),
+skip the Vibe tab and go straight to <strong>🏗️ Setup</strong>. Vibe is a
+productivity accelerator, not a requirement.</p>
+<hr />
+<h2 id="19-mcp-servers">19. MCP servers<a class="anchor" href="#19-mcp-servers" title="Link to this section">#</a></h2>
+<p>ThemeForge participates in the <strong>Model Context Protocol (MCP)</strong>
+ecosystem in two ways:</p>
+<h3 id="191-themeforge-as-an-mcp-server">19.1 ThemeForge as an MCP server<a class="anchor" href="#191-themeforge-as-an-mcp-server" title="Link to this section">#</a></h3>
+<p><code>mcp_server.py</code> exposes 8 tools to any MCP client (Claude Code,
+Cursor, Windsurf, OpenCode, etc.). Once registered, the client can
+invoke ThemeForge actions from its own conversation window — no need
+to switch to the GUI.</p>
+<h4 id="tools-exposed">Tools exposed<a class="anchor" href="#tools-exposed" title="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_stacks</code></td>
+<td>The 60+ scaffold targets with key + name + category + language</td>
+</tr>
+<tr>
+<td><code>list_themes</code></td>
+<td>The 8 builtin themes + any user-installed custom themes</td>
+</tr>
+<tr>
+<td><code>list_recent_projects</code></td>
+<td>Recent ThemeForge projects sorted by last-modified (with git status, AI session age, etc.)</td>
+</tr>
+<tr>
+<td><code>list_supported_providers</code></td>
+<td>The 7 AI providers + per-provider auth status</td>
+</tr>
+<tr>
+<td><code>estimate_cost</code></td>
+<td>USD cost for <code>(model, in_tokens, out_tokens)</code> via the pricing table</td>
+</tr>
+<tr>
+<td><code>suggest_stack</code></td>
+<td>Natural-language → recommended <code>{stack_key, template_type, theme_hint, dev_prompt, reasoning}</code> (same engine as the Vibe scaffolder)</td>
+</tr>
+<tr>
+<td><code>run_preflight</code></td>
+<td>The 13 marketplace-readiness checks against a project path</td>
+</tr>
+<tr>
+<td><code>build_zip</code></td>
+<td>Marketplace ZIP packaging (excludes node_modules, .env, .claude/, etc.)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="registering-in-claude-code">Registering in Claude Code<a class="anchor" href="#registering-in-claude-code" title="Link to this section">#</a></h4>
+<p>Edit <code>~/.claude.json</code> (or whatever config file Claude Code uses on
+your platform) and add:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;themeforge&quot;: {
+      &quot;command&quot;: &quot;python3&quot;,
+      &quot;args&quot;: [&quot;/home/&lt;you&gt;/Proyectos/themeforge/mcp_server.py&quot;]
+    }
+  }
+}
+</code></pre>
+<p>Restart <code>claude</code>. The 8 tools appear under <code>mcp__themeforge__*</code>.</p>
+<h4 id="registering-in-cursor">Registering in Cursor<a class="anchor" href="#registering-in-cursor" title="Link to this section">#</a></h4>
+<p><code>~/.cursor/mcp.json</code> uses the same JSON shape — drop the <code>themeforge</code>
+entry there and reload Cursor.</p>
+<h4 id="registering-in-windsurf">Registering in Windsurf<a class="anchor" href="#registering-in-windsurf" title="Link to this section">#</a></h4>
+<p>Settings → MCP → add a new entry with command + args matching the
+example above.</p>
+<h4 id="transport">Transport<a class="anchor" href="#transport" title="Link to this section">#</a></h4>
+<p>Stdio (JSON-RPC over stdin/stdout). The client launches <code>mcp_server.py</code>
+as a subprocess on demand. <strong>No network, no VPS, no remote endpoint.</strong>
+Built on Anthropic's official <code>mcp</code> Python SDK (FastMCP).</p>
+<h3 id="192-themeforge-configures-community-mcps-in-each-scaffolded-project">19.2 ThemeForge configures community MCPs in each scaffolded project<a class="anchor" href="#192-themeforge-configures-community-mcps-in-each-scaffolded-project" title="Link to this section">#</a></h3>
+<p>When the <strong>📡 Pre-configurar MCP servers</strong> checkbox in the Setup
+sub-tab is on (default), ThemeForge writes a <code>.mcp.json</code> at the root
+of every new project pointing at a curated subset of 12 community
+MCP servers, selected based on the stack:</p>
+<table>
+<thead>
+<tr>
+<th>MCP</th>
+<th>License</th>
+<th>When it's included</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>filesystem</strong> (modelcontextprotocol)</td>
+<td>MIT</td>
+<td>Always — sandboxed FS access</td>
+</tr>
+<tr>
+<td><strong>fetch</strong> (modelcontextprotocol)</td>
+<td>MIT</td>
+<td>Always — web content with HTML→md</td>
+</tr>
+<tr>
+<td><strong>memory</strong> (modelcontextprotocol)</td>
+<td>MIT</td>
+<td>Always — knowledge-graph persistence</td>
+</tr>
+<tr>
+<td><strong>github</strong> (official)</td>
+<td>MIT</td>
+<td>Always — issues / PRs / Actions</td>
+</tr>
+<tr>
+<td><strong>themeforge</strong></td>
+<td>GPL-3.0</td>
+<td>Always — ThemeForge's own MCP</td>
+</tr>
+<tr>
+<td><strong>playwright</strong> (Microsoft official)</td>
+<td>Apache-2.0</td>
+<td>Web frontend / WordPress / Shopify</td>
+</tr>
+<tr>
+<td><strong>chrome-devtools</strong> (Google official)</td>
+<td>Apache-2.0</td>
+<td>Web frontend / WordPress / Shopify</td>
+</tr>
+<tr>
+<td><strong>figma-context</strong> (GLips)</td>
+<td>MIT</td>
+<td>Web frontend (design-driven)</td>
+</tr>
+<tr>
+<td><strong>browsermcp</strong></td>
+<td>Apache-2.0</td>
+<td>Web frontend</td>
+</tr>
+<tr>
+<td><strong>shopify-dev</strong> (Shopify official)</td>
+<td>(Shopify standard)</td>
+<td>Shopify only</td>
+</tr>
+<tr>
+<td><strong>postgres</strong> (crystaldba)</td>
+<td>MIT</td>
+<td>Backend with DB</td>
+</tr>
+</tbody>
+</table>
+<p>The catalog lives in <code>mcp_catalog.py</code>. Each entry has metadata:
+<code>key</code>, <code>license</code>, <code>repo</code>, <code>description</code>, <code>relevance</code> tags, and the
+install command (<code>npx</code> / <code>uvx</code> / <code>docker run</code>). Adding new MCPs to
+the catalog is a pure-Python edit — see the module docstring.</p>
+<h4 id="how-the-ai-client-uses-mcpjson">How the AI client uses <code>.mcp.json</code><a class="anchor" href="#how-the-ai-client-uses-mcpjson" title="Link to this section">#</a></h4>
+<ol>
+<li>User opens the project directory (e.g. <code>cd
+   ~/Proyectos/themes/my-new-theme</code>).</li>
+<li>User runs <code>claude</code> (or opens Cursor with the folder).</li>
+<li>The client reads <code>.mcp.json</code>, lists the registered servers.</li>
+<li>On the first invocation of a tool, the client downloads the MCP
+   via <code>npx</code> or <code>uvx</code> (cached afterwards) and launches it.</li>
+<li>The agent sees ~9 new tools available (playwright, chrome
+   devtools, github, themeforge, …) and uses them seamlessly.</li>
+</ol>
+<h4 id="authentication">Authentication<a class="anchor" href="#authentication" title="Link to this section">#</a></h4>
+<p>Some MCPs require user-provided tokens (env vars):</p>
+<ul>
+<li><strong>github</strong>: <code>GH_TOKEN</code> env var with a fine-grained PAT.
+  ThemeForge inherits the token from <code>gh auth token</code> if you ran
+  <code>gh auth login</code> previously.</li>
+<li><strong>figma-context</strong>: <code>FIGMA_API_KEY</code> env var with a Figma personal
+  access token.</li>
+<li><strong>postgres</strong>: <code>DATABASE_URL</code> env var. ThemeForge's Postgres
+  toggle (Extras sub-tab) injects this automatically when a
+  per-project container is provisioned.</li>
+</ul>
+<p>The agent will tell you which env vars are missing on first use.</p>
+<h4 id="license-compatibility">License compatibility<a class="anchor" href="#license-compatibility" title="Link to this section">#</a></h4>
+<p>All 12 catalog entries are MIT or Apache-2.0 (verified at curation
+time, see <code>NOTICE.md</code> for the full table). ThemeForge <strong>never bundles</strong>
+their source — <code>.mcp.json</code> is a configuration pointer; the client
+downloads each MCP at runtime via <code>npx</code> / <code>uvx</code> / <code>docker</code>. GPL v3 of
+ThemeForge is therefore unaffected (subprocess invocation, not
+linking).</p>
+<p>Discovery reference for catalog curation:
+<a href="https://github.com/punkpeye/awesome-mcp-servers"><code>punkpeye/awesome-mcp-servers</code></a>
+— a community-maintained directory of 1500+ MCP servers.</p>
+<h3 id="193-disabling-mcp-integration">19.3 Disabling MCP integration<a class="anchor" href="#193-disabling-mcp-integration" title="Link to this section">#</a></h3>
+<p>If you don't want <code>.mcp.json</code> written:</p>
+<ul>
+<li>Uncheck <strong>📡 Pre-configurar MCP servers</strong> in the Setup sub-tab
+  before clicking Create.</li>
+</ul>
+<p>If you want to remove ThemeForge's MCP from your Claude Code config
+later, just delete the <code>themeforge</code> entry from
+<code>~/.claude.json</code> → <code>mcpServers</code>.</p>
+<hr />
+<h2 id="20-optional-licensing-system">20. Optional licensing system<a class="anchor" href="#20-optional-licensing-system" title="Link to this section">#</a></h2>
 <blockquote>
 <p><strong>TL;DR — what's bundled and what isn't.</strong></p>
 <p>ThemeForge ships the <strong>client side</strong> of a license verification flow:
@@ -1819,7 +2093,7 @@ Content-Type: application/json
 work. Drop-in compatible backends: Lemon Squeezy License API, Polar,
 Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.</p>
 <hr />
-<h2 id="19-configuration-files">19. Configuration files<a class="anchor" href="#19-configuration-files" title="Link to this section">#</a></h2>
+<h2 id="21-configuration-files">21. Configuration files<a class="anchor" href="#21-configuration-files" title="Link to this section">#</a></h2>
 <p>Under <code>~/.config/themeforge/</code>:</p>
 <table>
 <thead>
@@ -1914,7 +2188,7 @@ project you build locally.</p>
 <p>The public stubs in <code>context/</code> are intentionally neutral — no product
 names, no domains, no strategies leak from the repo.</p>
 <hr />
-<h2 id="20-troubleshooting">20. Troubleshooting<a class="anchor" href="#20-troubleshooting" title="Link to this section">#</a></h2>
+<h2 id="22-troubleshooting">22. Troubleshooting<a class="anchor" href="#22-troubleshooting" title="Link to this section">#</a></h2>
 <h3 id="themeforge-does-not-start-importerror-on-pyqt6">ThemeForge does not start (ImportError on PyQt6)<a class="anchor" href="#themeforge-does-not-start-importerror-on-pyqt6" title="Link to this section">#</a></h3>
 <p>Install <code>python-pyqt6</code> and <code>python-pyqt6-webengine</code> from your distro.
 On Arch: <code>sudo pacman -S python-pyqt6 python-pyqt6-webengine</code>. On
@@ -1971,7 +2245,7 @@ default; <code>ntfs-3g</code> provides FUSE-based access.</p>
 <code>GEMINI_API_KEY</code> env var. Run <code>gemini</code> once in a terminal to complete
 OAuth, or set the key via the Settings panel.</p>
 <hr />
-<h2 id="21-credits-and-third-party-licenses">21. Credits and third-party licenses<a class="anchor" href="#21-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
+<h2 id="23-credits-and-third-party-licenses">23. Credits and third-party licenses<a class="anchor" href="#23-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
 <p>ThemeForge is licensed under <strong>GPL v3</strong> (forced by the PyQt6
 dependency which is GPL v3 or commercial). See <code>LICENSE</code>.</p>
 <h3 id="direct-integrations">Direct integrations<a class="anchor" href="#direct-integrations" title="Link to this section">#</a></h3>

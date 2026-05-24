@@ -287,6 +287,60 @@ USER_GUIDE.
 
 ---
 
+## 📡 MCP integration
+
+Current state (on main, post-v1.1.0): two complementary capabilities
+in the Model Context Protocol ecosystem (the standard adopted by
+Anthropic / OpenAI / Google / cursor / windsurf in 2025-2026).
+
+**Shipped:**
+
+- ✅ **`mcp_server.py`** — ThemeForge's own stdio MCP server.
+  Exposes 8 tools to any MCP client:
+  `list_stacks`, `list_themes`, `list_recent_projects`,
+  `list_supported_providers`, `estimate_cost`, `suggest_stack`,
+  `run_preflight`, `build_zip`. Built on Anthropic's official `mcp`
+  Python SDK (FastMCP). Runs as a subprocess — no VPS, no network.
+- ✅ **`mcp_catalog.py`** — curated registry of 12 community MCPs
+  (license-verified at curation time: 11 MIT/Apache-2.0 + 1
+  ThemeForge). Auto-generates `.mcp.json` in scaffolded projects
+  with the relevant subset per stack (web → playwright + chrome
+  devtools + figma + browsermcp; shopify → +shopify-dev; backend
+  with DB → +postgres; etc.).
+
+### Future updates
+
+- **Tool: `scaffold_project`** — let MCP clients invoke the full
+  scaffolder via a tool call (Claude says "create a Next.js
+  landing for X" and ThemeForge runs the scaffold + uipro +
+  autoskills in the background, no GUI click). High value, needs
+  careful UX around async progress reporting.
+- **Tool: `deploy_demo`** — same as above for the 🚀 Demo deploy
+  flow.
+- **MCP marketplace UI** — a Settings panel that lists the 12
+  curated MCPs with toggles to enable/disable per project. Each
+  entry shows: license, repo link, env vars required.
+- **Auth manager** — for MCPs that need tokens (GitHub, Figma,
+  Postgres), surface a one-click "configure token" flow in
+  Settings that writes to `~/.config/themeforge/mcp-secrets.json`
+  (chmod 0600) and injects into env at MCP launch time.
+- **Per-project MCP overrides** — let users edit a project's
+  `.mcp.json` from the ProjectWindow without dropping to the
+  filesystem.
+- **HTTP/SSE transport for `mcp_server`** — Phase 2 of the MCP
+  server: expose it over HTTP for remote / cloud clients. Tied to
+  [[project-themeforge-cloud]] (the future SaaS direction).
+- **More MCPs in the catalog**: WordPress MCP (when one stabilises),
+  Lemon Squeezy / Polar / Paddle (for licensing flow), Vercel /
+  Netlify (deploy automation), Linear / Notion (ticket import).
+- **MCP usage analytics** — track which MCPs are actually invoked
+  per project so the recommendation engine learns over time.
+- **Tool schemas via JSON Schema** — currently FastMCP infers from
+  Python type hints; richer schemas (with examples + validation)
+  improve client UX.
+
+---
+
 ## 📦 Distribution
 
 Current state (v1.0): GitHub Actions builds **AppImage** (universal),

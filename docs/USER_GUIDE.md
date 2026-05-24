@@ -32,10 +32,12 @@ system, and troubleshooting.
 15. [Pixel Office visualizer](#15-pixel-office-visualizer)
 16. [Settings panel](#16-settings-panel)
 17. [App themes](#17-app-themes)
-18. [Optional licensing system](#18-optional-licensing-system)
-19. [Configuration files](#19-configuration-files)
-20. [Troubleshooting](#20-troubleshooting)
-21. [Credits and third-party licenses](#21-credits-and-third-party-licenses)
+18. [Vibe scaffolder](#18-vibe-scaffolder)
+19. [MCP servers](#19-mcp-servers)
+20. [Optional licensing system](#20-optional-licensing-system)
+21. [Configuration files](#21-configuration-files)
+22. [Troubleshooting](#22-troubleshooting)
+23. [Credits and third-party licenses](#23-credits-and-third-party-licenses)
 
 ---
 
@@ -1190,7 +1192,209 @@ sprints.
 
 ---
 
-## 18. Optional licensing system
+## 18. Vibe scaffolder
+
+The **"Nuevo proyecto"** tab opens on the **✨ Vibe** sub-tab. Type
+what you want to build in plain Spanish or English — no need to
+know stack names, just describe the goal:
+
+```
+Landing premium para clínica dental en Madrid, paleta cálida
+confianza, conversion-optimized
+```
+
+Click **✨ Pre-rellenar form con IA** and ThemeForge:
+
+1. Sends the description to the active AI provider (the one selected
+   in the Provider field — defaults to Claude).
+2. Receives a structured JSON proposal with:
+   - `stack_key` — one of the 60+ stacks (e.g. `astro-tailwind`).
+   - `template_type` — Landing / SaaS / Portfolio / …
+   - `theme_hint` — one of the 8 builtin themes that fits the vibe.
+   - `dev_prompt` — a polished 150-300 word brief in the user's
+     language, structured (niche / aesthetic / required sections /
+     constraints / tech requirements).
+   - `reasoning` — 2-3 sentences explaining the picks.
+3. The form auto-fills: stack, type, theme of the app (switches live),
+   autoskills + uipro toggles, suggested name (slug-derived).
+4. The `dev_prompt` is stashed and injected into the generated
+   `CLAUDE.md` / `AGENTS.md` when you hit **Crear proyecto** — so the
+   dev agent starts with the full brief, not the original 1-line
+   description.
+
+### Decision rules
+
+The vibe prompt embeds explicit rules so the AI's pick is predictable:
+
+- WordPress / WP keyword → `wordpress-block` or `wordpress-plugin`.
+- Shopify keyword → `shopify-liquid`.
+- "Landing" / "marketing" → Astro or Next.js.
+- "Admin" / "dashboard" / "SaaS app" → Next.js.
+- "Mobile app" → Flutter or Expo.
+- Premium / wellness / spa → Soft UI theme.
+- Tech / SaaS / productivity → Linear theme.
+- Creative / portfolio → Dracula or Brutalism theme.
+- Gaming / cyber → Tokyo Night theme.
+
+### Robust parsing
+
+The response parser handles:
+
+- Clean JSON output.
+- JSON wrapped in markdown code fences.
+- JSON with leading/trailing prose ("Here's the proposal: ...").
+- Balanced-brace fallback for malformed trailing content.
+
+If parsing fails, the dialog surfaces a clear error and lets you
+retry. The dev_prompt is the most important field — if it's empty,
+the proposal is rejected.
+
+### When to skip
+
+If you already know exactly what you want (stack + theme + type),
+skip the Vibe tab and go straight to **🏗️ Setup**. Vibe is a
+productivity accelerator, not a requirement.
+
+---
+
+## 19. MCP servers
+
+ThemeForge participates in the **Model Context Protocol (MCP)**
+ecosystem in two ways:
+
+### 19.1 ThemeForge as an MCP server
+
+`mcp_server.py` exposes 8 tools to any MCP client (Claude Code,
+Cursor, Windsurf, OpenCode, etc.). Once registered, the client can
+invoke ThemeForge actions from its own conversation window — no need
+to switch to the GUI.
+
+#### Tools exposed
+
+| Tool | What it returns |
+|---|---|
+| `list_stacks` | The 60+ scaffold targets with key + name + category + language |
+| `list_themes` | The 8 builtin themes + any user-installed custom themes |
+| `list_recent_projects` | Recent ThemeForge projects sorted by last-modified (with git status, AI session age, etc.) |
+| `list_supported_providers` | The 7 AI providers + per-provider auth status |
+| `estimate_cost` | USD cost for `(model, in_tokens, out_tokens)` via the pricing table |
+| `suggest_stack` | Natural-language → recommended `{stack_key, template_type, theme_hint, dev_prompt, reasoning}` (same engine as the Vibe scaffolder) |
+| `run_preflight` | The 13 marketplace-readiness checks against a project path |
+| `build_zip` | Marketplace ZIP packaging (excludes node_modules, .env, .claude/, etc.) |
+
+#### Registering in Claude Code
+
+Edit `~/.claude.json` (or whatever config file Claude Code uses on
+your platform) and add:
+
+```json
+{
+  "mcpServers": {
+    "themeforge": {
+      "command": "python3",
+      "args": ["/home/<you>/Proyectos/themeforge/mcp_server.py"]
+    }
+  }
+}
+```
+
+Restart `claude`. The 8 tools appear under `mcp__themeforge__*`.
+
+#### Registering in Cursor
+
+`~/.cursor/mcp.json` uses the same JSON shape — drop the `themeforge`
+entry there and reload Cursor.
+
+#### Registering in Windsurf
+
+Settings → MCP → add a new entry with command + args matching the
+example above.
+
+#### Transport
+
+Stdio (JSON-RPC over stdin/stdout). The client launches `mcp_server.py`
+as a subprocess on demand. **No network, no VPS, no remote endpoint.**
+Built on Anthropic's official `mcp` Python SDK (FastMCP).
+
+### 19.2 ThemeForge configures community MCPs in each scaffolded project
+
+When the **📡 Pre-configurar MCP servers** checkbox in the Setup
+sub-tab is on (default), ThemeForge writes a `.mcp.json` at the root
+of every new project pointing at a curated subset of 12 community
+MCP servers, selected based on the stack:
+
+| MCP | License | When it's included |
+|---|---|---|
+| **filesystem** (modelcontextprotocol) | MIT | Always — sandboxed FS access |
+| **fetch** (modelcontextprotocol) | MIT | Always — web content with HTML→md |
+| **memory** (modelcontextprotocol) | MIT | Always — knowledge-graph persistence |
+| **github** (official) | MIT | Always — issues / PRs / Actions |
+| **themeforge** | GPL-3.0 | Always — ThemeForge's own MCP |
+| **playwright** (Microsoft official) | Apache-2.0 | Web frontend / WordPress / Shopify |
+| **chrome-devtools** (Google official) | Apache-2.0 | Web frontend / WordPress / Shopify |
+| **figma-context** (GLips) | MIT | Web frontend (design-driven) |
+| **browsermcp** | Apache-2.0 | Web frontend |
+| **shopify-dev** (Shopify official) | (Shopify standard) | Shopify only |
+| **postgres** (crystaldba) | MIT | Backend with DB |
+
+The catalog lives in `mcp_catalog.py`. Each entry has metadata:
+`key`, `license`, `repo`, `description`, `relevance` tags, and the
+install command (`npx` / `uvx` / `docker run`). Adding new MCPs to
+the catalog is a pure-Python edit — see the module docstring.
+
+#### How the AI client uses `.mcp.json`
+
+1. User opens the project directory (e.g. `cd
+   ~/Proyectos/themes/my-new-theme`).
+2. User runs `claude` (or opens Cursor with the folder).
+3. The client reads `.mcp.json`, lists the registered servers.
+4. On the first invocation of a tool, the client downloads the MCP
+   via `npx` or `uvx` (cached afterwards) and launches it.
+5. The agent sees ~9 new tools available (playwright, chrome
+   devtools, github, themeforge, …) and uses them seamlessly.
+
+#### Authentication
+
+Some MCPs require user-provided tokens (env vars):
+
+- **github**: `GH_TOKEN` env var with a fine-grained PAT.
+  ThemeForge inherits the token from `gh auth token` if you ran
+  `gh auth login` previously.
+- **figma-context**: `FIGMA_API_KEY` env var with a Figma personal
+  access token.
+- **postgres**: `DATABASE_URL` env var. ThemeForge's Postgres
+  toggle (Extras sub-tab) injects this automatically when a
+  per-project container is provisioned.
+
+The agent will tell you which env vars are missing on first use.
+
+#### License compatibility
+
+All 12 catalog entries are MIT or Apache-2.0 (verified at curation
+time, see `NOTICE.md` for the full table). ThemeForge **never bundles**
+their source — `.mcp.json` is a configuration pointer; the client
+downloads each MCP at runtime via `npx` / `uvx` / `docker`. GPL v3 of
+ThemeForge is therefore unaffected (subprocess invocation, not
+linking).
+
+Discovery reference for catalog curation:
+[`punkpeye/awesome-mcp-servers`](https://github.com/punkpeye/awesome-mcp-servers)
+— a community-maintained directory of 1500+ MCP servers.
+
+### 19.3 Disabling MCP integration
+
+If you don't want `.mcp.json` written:
+
+- Uncheck **📡 Pre-configurar MCP servers** in the Setup sub-tab
+  before clicking Create.
+
+If you want to remove ThemeForge's MCP from your Claude Code config
+later, just delete the `themeforge` entry from
+`~/.claude.json` → `mcpServers`.
+
+---
+
+## 20. Optional licensing system
 
 > **TL;DR — what's bundled and what isn't.**
 >
@@ -1282,7 +1486,7 @@ Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.
 
 ---
 
-## 19. Configuration files
+## 21. Configuration files
 
 Under `~/.config/themeforge/`:
 
@@ -1326,7 +1530,7 @@ names, no domains, no strategies leak from the repo.
 
 ---
 
-## 20. Troubleshooting
+## 22. Troubleshooting
 
 ### ThemeForge does not start (ImportError on PyQt6)
 
@@ -1413,7 +1617,7 @@ OAuth, or set the key via the Settings panel.
 
 ---
 
-## 21. Credits and third-party licenses
+## 23. Credits and third-party licenses
 
 ThemeForge is licensed under **GPL v3** (forced by the PyQt6
 dependency which is GPL v3 or commercial). See `LICENSE`.
