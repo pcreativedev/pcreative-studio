@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **🔽 QComboBox dropdown arrow now visible across all themes.**
+  The QSS for inputs styled `QComboBox::drop-down` (the click-target
+  area) but never `::down-arrow` (the chevron icon inside it). With
+  Fusion style + our QSS overrides, the default arrow rendering got
+  suppressed and dropdowns looked like flat editable fields — users
+  had no visual affordance to expand the list. Now drawn as a CSS
+  border-triangle (no image asset needed) in `fg_secondary` when
+  closed and `accent` when open, applied to all 4 input variants
+  (outlined / filled / underlined / brutalist).
+- **↻ Repo loader now auto-opens the dropdown.** After
+  `_load_repos()` populates the combo from `gh repo list`, the
+  dropdown auto-pops 150ms later so the user immediately sees
+  their repos. Button text confirms `✓ N repos cargados`. No more
+  "I clicked the button and nothing happened" — the list is right
+  there.
+
 ### Changed
 
 - **🏗️ "Nuevo proyecto" tab redesigned with sub-tabs.** The form was

@@ -256,8 +256,11 @@ QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
 }}
 QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus,
 QSpinBox:focus, QDoubleSpinBox:focus {{ border-bottom-color: {c.accent}; }}
-QComboBox::drop-down {{ border: none; width: 18px; }}
-QComboBox QAbstractItemView {{ background-color: {c.bg_elevated}; color: {c.fg_primary}; border: {sh.border_width}px solid {c.border_strong}; selection-background-color: {c.selection_bg}; }}
+QComboBox::drop-down {{ border: none; width: 22px; subcontrol-position: right center; }}
+QComboBox::down-arrow {{ image: none; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid {c.fg_secondary}; width: 0; height: 0; margin-right: 6px; }}
+QComboBox::down-arrow:on {{ border-top: none; border-bottom: 5px solid {c.accent}; }}
+QComboBox QAbstractItemView {{ background-color: {c.bg_elevated}; color: {c.fg_primary}; border: {sh.border_width}px solid {c.border_strong}; selection-background-color: {c.selection_bg}; outline: 0; padding: {s.xs}px; }}
+QComboBox QAbstractItemView::item {{ min-height: 22px; padding: {s.xs}px {s.sm}px; }}
 """
 
     if v.input_variant == "underlined":
@@ -274,8 +277,11 @@ QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
 }}
 QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus,
 QSpinBox:focus, QDoubleSpinBox:focus {{ border-bottom-color: {c.accent}; border-bottom-width: 2px; }}
-QComboBox::drop-down {{ border: none; width: 18px; }}
-QComboBox QAbstractItemView {{ background-color: {c.bg_elevated}; color: {c.fg_primary}; border: {sh.border_width}px solid {c.border_strong}; selection-background-color: {c.selection_bg}; }}
+QComboBox::drop-down {{ border: none; width: 22px; subcontrol-position: right center; }}
+QComboBox::down-arrow {{ image: none; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid {c.fg_secondary}; width: 0; height: 0; margin-right: 6px; }}
+QComboBox::down-arrow:on {{ border-top: none; border-bottom: 5px solid {c.accent}; }}
+QComboBox QAbstractItemView {{ background-color: {c.bg_elevated}; color: {c.fg_primary}; border: {sh.border_width}px solid {c.border_strong}; selection-background-color: {c.selection_bg}; outline: 0; padding: {s.xs}px; }}
+QComboBox QAbstractItemView::item {{ min-height: 22px; padding: {s.xs}px {s.sm}px; }}
 """
 
     if v.input_variant == "brutalist":
@@ -292,8 +298,11 @@ QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
 }}
 QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus,
 QSpinBox:focus, QDoubleSpinBox:focus {{ border-color: {c.accent}; }}
-QComboBox::drop-down {{ border: none; width: 18px; }}
-QComboBox QAbstractItemView {{ background-color: {c.bg_primary}; color: {c.fg_primary}; border: {bw}px solid {c.fg_primary}; selection-background-color: {c.accent}; selection-color: {c.accent_fg}; }}
+QComboBox::drop-down {{ border-left: {bw}px solid {c.fg_primary}; width: 24px; subcontrol-position: right center; }}
+QComboBox::down-arrow {{ image: none; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid {c.fg_primary}; width: 0; height: 0; margin-right: 6px; }}
+QComboBox::down-arrow:on {{ border-top: none; border-bottom: 7px solid {c.accent}; }}
+QComboBox QAbstractItemView {{ background-color: {c.bg_primary}; color: {c.fg_primary}; border: {bw}px solid {c.fg_primary}; selection-background-color: {c.accent}; selection-color: {c.accent_fg}; outline: 0; padding: 0; }}
+QComboBox QAbstractItemView::item {{ min-height: 24px; padding: {s.xs}px {s.sm}px; }}
 """
 
     # default: outlined
@@ -309,8 +318,11 @@ QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
 }}
 QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus,
 QSpinBox:focus, QDoubleSpinBox:focus {{ border-color: {c.accent}; }}
-QComboBox::drop-down {{ border: none; width: 18px; }}
-QComboBox QAbstractItemView {{ background-color: {c.bg_elevated}; color: {c.fg_primary}; border: {sh.border_width}px solid {c.border_strong}; selection-background-color: {c.selection_bg}; }}
+QComboBox::drop-down {{ border: none; width: 22px; subcontrol-position: right center; }}
+QComboBox::down-arrow {{ image: none; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid {c.fg_secondary}; width: 0; height: 0; margin-right: 6px; }}
+QComboBox::down-arrow:on {{ border-top: none; border-bottom: 5px solid {c.accent}; }}
+QComboBox QAbstractItemView {{ background-color: {c.bg_elevated}; color: {c.fg_primary}; border: {sh.border_width}px solid {c.border_strong}; selection-background-color: {c.selection_bg}; outline: 0; padding: {s.xs}px; }}
+QComboBox QAbstractItemView::item {{ min-height: 22px; padding: {s.xs}px {s.sm}px; }}
 """
 
 

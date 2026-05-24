@@ -2750,10 +2750,27 @@ class ThemeForge(QWidget):
                 vis = (r.get("visibility") or "").lower()
                 label = f"{r['nameWithOwner']}  ({vis})"
                 self.repo_combo.addItem(label, userData=r["nameWithOwner"])
-            if not repos:
-                QMessageBox.information(self, "GitHub", "No se encontraron repos (¿quizás gh no está autenticado?).")
-        finally:
+            if repos:
+                # Auto-open the dropdown so the user immediately sees
+                # the list (otherwise the editable combo looks empty
+                # and there's no clear affordance to expand it).
+                self.repo_combo.setCurrentIndex(0)
+                self.repo_load_btn.setText(f"✓ {len(repos)} repos cargados")
+                # Defer showPopup so the button-text update renders first
+                from PyQt6.QtCore import QTimer
+                QTimer.singleShot(150, self.repo_combo.showPopup)
+            else:
+                QMessageBox.information(
+                    self, "GitHub",
+                    "No se encontraron repos. Verifica que `gh` esté "
+                    "autenticado (`gh auth status`) y que la cuenta "
+                    "tenga repositorios."
+                )
+                self.repo_load_btn.setText("↻ Cargar mis repos")
+        except Exception as e:
+            QMessageBox.critical(self, "GitHub", f"Error cargando repos: {e}")
             self.repo_load_btn.setText("↻ Cargar mis repos")
+        finally:
             self.repo_load_btn.setEnabled(True)
 
     def _current_repo_id(self) -> str:
