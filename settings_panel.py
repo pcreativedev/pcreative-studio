@@ -67,10 +67,21 @@ class SettingsPanel(QWidget):
         self.btn_refresh = QPushButton("↻ Refresh status")
         self.btn_refresh.clicked.connect(self.refresh_status)
 
+        self.btn_deps = QPushButton("🔧 Setup dependencies…")
+        self.btn_deps.setToolTip(
+            "Detecta e instala las herramientas que ThemeForge necesita "
+            "(Node, git, GitHub CLI, los CLIs de IA, netlify) vía "
+            "winget / brew / paru según tu sistema operativo."
+        )
+        self.btn_deps.clicked.connect(self._open_dependency_wizard)
+
         status_box = QGroupBox("System status")
         sb = QVBoxLayout()
         sb.addWidget(self.status_text)
-        sb.addWidget(self.btn_refresh)
+        sb_btns = QHBoxLayout()
+        sb_btns.addWidget(self.btn_refresh)
+        sb_btns.addWidget(self.btn_deps)
+        sb.addLayout(sb_btns)
         status_box.setLayout(sb)
 
         # ── Theme picker ────────────────────────────────────────────
@@ -389,13 +400,21 @@ class SettingsPanel(QWidget):
             QMessageBox.information(self, "Office", "No está instalado.")
             return
         try:
-            subprocess.run(
-                ["pkill", "-f", str(install_dir)],
-                check=False, timeout=5,
-            )
+            pc.kill_processes_under_path(str(install_dir))
         except Exception as e:
             QMessageBox.warning(self, "Office", f"No se pudo parar: {e}")
         self._pixel_refresh()
+
+    def _open_dependency_wizard(self):
+        """Abre el wizard de detección + instalación de dependencias."""
+        try:
+            from dependency_wizard import DependencyWizard
+            dlg = DependencyWizard(self)
+            dlg.exec()
+            # Tras instalar, refresca el panel de estado del sistema.
+            self.refresh_status()
+        except Exception as e:
+            QMessageBox.critical(self, "Setup dependencies", f"Error: {e}")
 
     def _open_theme_editor(self):
         """Open the visual theme editor dialog. Changes apply live;

@@ -37,7 +37,9 @@ import sys
 import traceback
 from pathlib import Path
 
-PLUGINS_DIR = Path.home() / ".config" / "themeforge" / "plugins"
+from platform_compat import app_config_dir
+
+PLUGINS_DIR = app_config_dir() / "plugins"
 
 _REQUIRED_STACK_FIELDS = {
     "name", "category", "language", "min_version", "scaffold",

@@ -10,7 +10,7 @@ For pre-publication blockers (private to the maintainer), see
 
 ## Where we are right now
 
-**v1.2.0 shipped on 2026-05-24.** Three releases out the door:
+**v1.2.1 shipped on 2026-05-25.** Releases out the door:
 
 - **v1.0.0** (2026-05-23) — initial public release. 60+ stacks,
   embedded preview + terminal, pre-flight, ZIP builder, demo
@@ -18,14 +18,18 @@ For pre-publication blockers (private to the maintainer), see
 - **v1.1.0** (2026-05-24) — UI UX Pro Max integration,
   autoskills coverage for all 7 providers, live stats for the
   reference analysis dialog on every provider (stream_parsers.py).
-- **v1.2.0** (2026-05-24, current Latest) — app theme system (5
-  sprints: tokens / variants / Lucide icons / visual editor /
-  Figma DTCG import), Vibe scaffolder, "Nuevo proyecto" form
-  redesigned with sub-tabs, MCP server + curated catalog of 12
-  community MCPs.
+- **v1.2.0** (2026-05-24) — app theme system (5 sprints: tokens /
+  variants / Lucide icons / visual editor / Figma DTCG import),
+  Vibe scaffolder, "Nuevo proyecto" form redesigned with sub-tabs,
+  MCP server + curated catalog of 12 community MCPs.
+- **v1.2.1** (2026-05-25, current Latest) — **Windows support
+  (alpha)**: Inno Setup installer, bundled Node+git, software-GL
+  fallback, prebuilt node-pty, cross-platform paths. Video splash,
+  predefined niche field (90 niches), dependency setup wizard,
+  assets/demo-data policy in generated CLAUDE.md.
 
-Linux ships as AppImage / .deb / .rpm / AUR; macOS alpha `.app` built
-by CI. See [Releases](../../releases) for downloads and
+Linux ships as AppImage / .deb / .rpm / AUR; macOS + Windows alpha
+builds from CI. See [Releases](../../releases) for downloads and
 `CHANGELOG.md` for the full feature list.
 
 The roadmap below covers post-v1.2 work. Items are grouped per
@@ -418,7 +422,12 @@ Current state (v1.0):
   manager, terminal launcher, shell exec, VS Code launcher, config
   dirs). Pre-built `.app` from CI on every release. **Not yet
   validated on real Mac hardware** — looking for beta testers.
-- 🪟 **Windows:** backlog. No code paths tested.
+- 🪟 **Windows:** alpha. PyInstaller `--onedir` + Inno Setup
+  installer built on every release tag. All filesystem paths
+  migrated to `pc.app_config_dir()` / `pc.app_cache_dir()` so
+  config lands in `%APPDATA%/themeforge`. Shell calls and process
+  control go through helpers. **Not yet validated on real Windows
+  hardware** — looking for beta testers.
 
 ### macOS — next steps
 
@@ -442,34 +451,41 @@ What's left to graduate from alpha to beta:
   `--collect-data PyQt6.QtWebEngineCore` correctly bundles the
   Qt framework — this is the most fragile piece on Mac.
 
-### Windows — port plan
+### Windows — next steps
 
-Larger porting effort:
+What's left to graduate from alpha to beta:
 
-- **PowerShell shell helper.** Currently
-  `platform_compat.shell_argv()` returns `["cmd", "/c", ...]` on
-  Windows. PowerShell would be cleaner for long-running pipes
-  (better unicode + JSON support).
-- **Path conventions.** Most code still hardcodes
-  `~/.config/themeforge/` — migrate to
-  `platform_compat.app_config_dir()` everywhere.
-- **`.exe` bundling.** `pyinstaller --onefile --windowed` on
-  `windows-latest` GitHub runner. Or `briefcase` (BeeWare) for a
-  proper MSIX.
-- **CI workflow.** `.github/workflows/build-windows.yml` mirroring
-  the macOS workflow.
-- **AI CLI invocation paths.** Claude/Codex/Gemini/OpenCode all
-  ship cross-platform Node binaries via npm — should JustWork™ once
-  shell abstraction is verified on Windows.
-- **Test in PowerShell 7+.** Older PowerShell versions have unicode
-  bugs that affect emoji output in the UI panels.
+- **Real-machine smoke test.** Windows 10/11 user downloads
+  `ThemeForge-Setup-X.Y.Z.exe` from a release, runs the installer
+  (no-admin per-user install), confirms the .exe launches and the
+  main tabs render. Report issues. Biggest unknown — like macOS.
+- **SmartScreen "unknown publisher" warning** on first run. User
+  must click "More info → Run anyway". Documented in README.
+- **Code-signing.** Options:
+  - Microsoft Azure Trusted Signing (~$9.99/mo) — managed, modern.
+  - DigiCert/Sectigo Standard ($200/year) — needs reputation
+    building.
+  - EV cert with hardware token (~$400/year) — skips SmartScreen
+    instantly.
+  - Defer until install volume warrants.
+- **winget submission.** PR to `microsoft/winget-pkgs` so users
+  can `winget install pcreativedev.ThemeForge`. Stable channel.
+- **`--onefile` mode evaluation.** Current build uses `--onedir`
+  to reduce antivirus false positives. Re-evaluate once code-signed.
+- **Embedded node-pty smoke test.** ConPTY backend (Windows 10
+  1809+) should work but unverified.
+- **wp-env / Docker validation.** Requires Docker Desktop + WSL2
+  backend on the user's machine. Document the requirement.
 
 ### Cross-platform infrastructure (apply to all)
 
 - ✅ ~~Cross-platform `platform_compat.py` module~~ — done in v1.0.
-- ⏳ Replace direct `~/.config/themeforge/` references with
-  `pc.app_config_dir()`. The helper exists; ~30 call sites still
-  hardcode the Linux path.
-- ⏳ Replace direct `~/.cache/themeforge/` with `pc.app_cache_dir()`.
+- ✅ ~~Replace direct `~/.config/themeforge/` with `pc.app_config_dir()`~~
+  — done in v1.3 (all functional sites migrated).
+- ✅ ~~Replace direct `~/.cache/themeforge/` with `pc.app_cache_dir()`~~
+  — done in v1.3.
+- ✅ ~~Wrap `pkill` / `chmod 0600` in cross-platform helpers~~ —
+  done in v1.3 (`kill_processes_under_path`, `secure_file_chmod`,
+  `secure_dir_chmod`).
 - ⏳ CI test matrix once we have 1.x stable: Ubuntu 24, Fedora 40,
   Arch (rolling), macOS 13+, Windows 11.

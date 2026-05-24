@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-05-25
+
+### Added
+
+- **🪟 Windows support (alpha).** ThemeForge now runs on Windows 10/11
+  with a real installer:
+
+  - **Inno Setup installer** (`ThemeForge-Setup-X.Y.Z.exe`) built on
+    `windows-latest` via GitHub Actions. Installs to `Program Files`
+    (per-machine, UAC) like any normal app, with an entry in *Add/remove
+    programs*, Start Menu + optional desktop shortcuts, App Paths registry
+    (launch `themeforge` from Win+R), and a clean uninstaller that keeps
+    your config.
+  - **Bundled Node.js + git (PortableGit)** inside the installer — no
+    separate downloads or admin needed for the two heavy runtimes.
+  - **Software-OpenGL fallback** auto-detected for GPU-less environments
+    (VMs, RDP): prevents the QtWebEngine black-window issue.
+  - **`@homebridge/node-pty-prebuilt-multiarch`** for the embedded
+    terminal — prebuilt binaries for Windows/macOS/Linux, no compilation.
+  - Setup scripts now use POSIX paths and a `python3→python` shim so the
+    scaffold runs correctly under Git Bash.
+
+  **Not yet validated as stable** — expect rough edges; the installer is
+  not code-signed yet (SmartScreen warning on first run).
+
+- **🎬 Video splash screen** on startup (`assets/videosplash.mp4`),
+  skippable with a click/keypress. Auto-skips on GPU-less environments.
+
+- **🎯 Predefined niche field** in *New project* — 90 industries/niches
+  (SaaS, restaurant, medical, real-estate, wedding, fitness, crypto…) or
+  type your own. Injected into the generated `CLAUDE.md` so the AI nails
+  the palette, copy tone, themed stock images and demo data for the sector.
+
+- **🔧 Dependency setup wizard.** Detects and installs the external tools
+  ThemeForge needs (Node, git, GitHub CLI, the AI CLIs, netlify, plus
+  per-stack runtimes: Python, Java, Rust, Go, Bun, Deno, Ruby, Hugo, PHP)
+  via winget / brew / paru — or direct official installers when no package
+  manager is present. Opens automatically on first run if Node/git are
+  missing, and when a chosen stack needs a runtime that isn't installed.
+
+- **Assets & demo-data policy in generated `CLAUDE.md`** (§C/§D/§E):
+  concrete Unsplash/Pexels/DiceBear URLs, per-template-type demo data,
+  niche-specific guidance, and an interaction policy that makes the agent
+  ask before design decisions instead of assuming.
+
+### Changed
+
+- **Cross-platform path handling.** All config/cache writes go through
+  `platform_compat.app_config_dir()` / `app_cache_dir()` (→
+  `%APPDATA%/themeforge` on Windows, `~/Library/Application Support` on
+  macOS, `~/.config/themeforge` on Linux). Shell calls, process control
+  and `chmod` now route through cross-platform helpers.
+- All file I/O uses explicit `encoding="utf-8"` (Windows defaulted to
+  cp1252 and choked on emoji-rich files like `CLAUDE.md`).
+
 ## [1.2.0] - 2026-05-24
 
 ### Added

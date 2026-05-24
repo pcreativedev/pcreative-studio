@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from platform_compat import app_config_dir
+
 # ─── Stack key → familia de scaffolding ──────────────────────────────
 STACK_FAMILIES: dict[str, str] = {
     # Next.js (App Router)
@@ -48,7 +50,7 @@ def _load_known_slugs() -> set[str]:
     si quieres que el checkbox del sistema de licencias se auto-marque
     al detectar uno de ellos en el nombre del proyecto nuevo.
     """
-    p = Path.home() / ".config" / "themeforge" / "known-product-slugs.txt"
+    p = app_config_dir() / "known-product-slugs.txt"
     if not p.is_file():
         return set()
     try:

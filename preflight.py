@@ -76,7 +76,7 @@ def _grep_any(project_path: Path, patterns: tuple[str, ...],
         if not fp.suffix.lower() in extensions:
             continue
         try:
-            text = fp.read_text(errors="ignore")
+            text = fp.read_text(errors="ignore", encoding="utf-8")
         except Exception:
             continue
         for line in text.splitlines():

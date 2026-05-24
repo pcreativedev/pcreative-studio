@@ -22,7 +22,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-CONFIG_PATH = Path.home() / ".config" / "themeforge" / "licensing.json"
+from platform_compat import app_config_dir
+
+CONFIG_PATH = app_config_dir() / "licensing.json"
 
 # Placeholders públicos. Se inyectan a templates/tooltips si el archivo
 # privado no existe. URLs públicas HTTPS por defecto — el usuario

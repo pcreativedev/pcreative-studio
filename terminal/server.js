@@ -10,7 +10,16 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
-const pty = require('node-pty');
+// node-pty es un módulo nativo. Preferimos el fork con prebuilds
+// (@homebridge/node-pty-prebuilt-multiarch) que trae binarios para
+// Windows/macOS/Linux y NO necesita compilar (sin Visual Studio Build
+// Tools en Windows). Fallback al node-pty estándar si solo está ese.
+let pty;
+try {
+  pty = require('@homebridge/node-pty-prebuilt-multiarch');
+} catch (e) {
+  pty = require('node-pty');
+}
 
 const ROOT = __dirname;
 const NM = path.join(ROOT, 'node_modules');
@@ -43,16 +52,39 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server });
 
+// node-pty en Windows NO resuelve el comando desde el PATH: necesita la
+// ruta ABSOLUTA del ejecutable (si no, "File not found:"). Resolvemos el
+// comando buscando en PATH con las extensiones de PATHEXT. En Unix node-pty
+// sí resuelve por PATH, así que devolvemos el comando tal cual.
+function resolveExe(cmd) {
+  if (process.platform !== 'win32') return cmd;
+  if (cmd.includes('\\') || cmd.includes('/') || /\.[a-z]{2,4}$/i.test(cmd)) {
+    // Ya es ruta o tiene extensión → confiamos en ella tal cual.
+    if (cmd.includes('\\') || cmd.includes('/')) return cmd;
+  }
+  const exts = (process.env.PATHEXT || '.COM;.EXE;.BAT;.CMD').split(';');
+  const dirs = (process.env.PATH || '').split(path.delimiter);
+  for (const dir of dirs) {
+    if (!dir) continue;
+    for (const ext of ['', ...exts]) {
+      const full = path.join(dir, cmd + ext);
+      try { if (fs.existsSync(full)) return full; } catch (_) {}
+    }
+  }
+  return cmd; // fallback: que node-pty lo intente y reporte el error
+}
+
 wss.on('connection', (ws, req) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const cwd  = url.searchParams.get('cwd')  || process.env.HOME;
+  const cwd  = url.searchParams.get('cwd')
+             || process.env.HOME || process.env.USERPROFILE || process.cwd();
   const cmd  = url.searchParams.get('cmd')  || process.env.SHELL || 'bash';
   const argsRaw = url.searchParams.get('args') || '';
   const args = argsRaw ? argsRaw.split('\x1f').filter(Boolean) : [];
 
   let p;
   try {
-    p = pty.spawn(cmd, args, {
+    p = pty.spawn(resolveExe(cmd), args, {
       name: 'xterm-256color',
       cwd,
       cols: 100,

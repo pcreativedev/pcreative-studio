@@ -72,6 +72,8 @@ jobs:
           # --osx-bundle-identifier: required for proper Mac integration
           # --add-data: bundle non-Python resources
           # We use shellscript bundling so the spec is simple to read
+          # --collect-data PyQt6: bundles Qt plugins including the
+          # QtMultimedia backend (AVFoundation) needed for the video splash.
           pyinstaller --noconfirm --clean \
             --windowed \
             --name ThemeForge \
@@ -79,7 +81,9 @@ jobs:
             --osx-bundle-identifier dev.pcreative.themeforge \
             --add-data "assets:assets" \
             --add-data "context:context" \
+            --add-data "themes/presets:themes/presets" \
             --collect-submodules PyQt6 \
+            --collect-data PyQt6 \
             themeforge.py
           ls -la dist/
 

@@ -1,0 +1,177 @@
+name: Build Windows installer
+
+# Builds a Windows .exe installer of ThemeForge using PyInstaller +
+# Inno Setup on a GitHub-hosted windows-latest runner. The installer
+# is uploaded as a workflow artifact; when triggered by a `v*` tag,
+# it is also attached to a GitHub Release.
+#
+# The installer is NOT code-signed. Windows SmartScreen will warn on
+# first run ("Unknown publisher"). Users can click "More info" →
+# "Run anyway". Adding code-signing requires either a $200+/year cert
+# from DigiCert/Sectigo, an EV cert with hardware token (~$400/year),
+# or Microsoft Azure Trusted Signing ($9.99/mo) — tracked in ROADMAP.
+#
+# Triggers:
+#   - manual via "Run workflow" button (workflow_dispatch)
+#   - on push of a tag matching v*  (creates a draft release)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write  # for the Release upload on tag push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt', '.github/workflows/build-windows.yml') }}
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyqt6 pyqt6-webengine pyqt6-charts pyinstaller pillow
+
+      - name: Bundle Node.js + git (portable, so the app needs no downloads)
+        shell: pwsh
+        run: |
+          # Node.js y git portables van DENTRO del instalador. Al arrancar,
+          # themeforge.py añade vendor/node y vendor/git al PATH. Así el
+          # usuario final no descarga las 2 dependencias pesadas; solo los
+          # CLIs de IA (que cambian cada semana) se instalan al vuelo.
+          New-Item -ItemType Directory -Force -Path vendor | Out-Null
+
+          $node = "v22.11.0"
+          Invoke-WebRequest "https://nodejs.org/dist/$node/node-$node-win-x64.zip" -OutFile node.zip -UseBasicParsing
+          Expand-Archive node.zip -DestinationPath vendor -Force
+          Rename-Item "vendor/node-$node-win-x64" "vendor/node"
+
+          # PortableGit (NO MinGit): incluye bash + entorno unix (ls, cat,
+          # grep…). ThemeForge genera scripts bash y Claude Code usa git-bash
+          # internamente en Windows, así que bash es obligatorio.
+          $git = "2.47.1"
+          Invoke-WebRequest "https://github.com/git-for-windows/git/releases/download/v$git.windows.1/PortableGit-$git-64-bit.7z.exe" -OutFile portablegit.exe -UseBasicParsing
+          New-Item -ItemType Directory -Force -Path vendor/git | Out-Null
+          Start-Process -Wait -FilePath ".\portablegit.exe" -ArgumentList "-y", "-o`"$PWD\vendor\git`""
+
+          Write-Host "vendor/ contents:"
+          Get-ChildItem vendor
+
+      - name: Install embedded terminal deps (node-pty prebuilt)
+        shell: pwsh
+        run: |
+          # El terminal embebido usa @homebridge/node-pty-prebuilt-multiarch,
+          # que trae binarios precompilados (sin Visual Studio Build Tools).
+          # npm install baja el prebuild win32-x64. Se bundlea con --add-data.
+          Push-Location terminal
+          & "$PWD\..\vendor\node\npm.cmd" install --no-audit --no-fund
+          Pop-Location
+
+      - name: Generate .ico from PNG sources
+        shell: pwsh
+        run: |
+          # Multi-resolution .ico is what Windows wants for installer + .exe icon.
+          # Pillow bundles all sizes into a single .ico container.
+          python - <<'PY'
+          from PIL import Image
+          srcs = [
+              "assets/themeforge-16.png",
+              "assets/themeforge-32.png",
+              "assets/themeforge-64.png",
+              "assets/themeforge-128.png",
+              "assets/themeforge-256.png",
+          ]
+          imgs = [Image.open(p) for p in srcs]
+          # Use the largest as base, pass `sizes=` so all are stored.
+          imgs[-1].save(
+              "assets/themeforge.ico",
+              format="ICO",
+              sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+          )
+          print("✓ generated assets/themeforge.ico")
+          PY
+          Get-Item assets/themeforge.ico
+
+      - name: Build .exe with PyInstaller
+        shell: pwsh
+        run: |
+          # --noconsole: hide the cmd window on launch (GUI app)
+          # --add-data uses `;` separator on Windows (vs `:` on Unix)
+          # --onedir (default): produces dist/ThemeForge/ with .exe + DLLs.
+          #   --onefile would bundle everything into one .exe but triggers
+          #   more antivirus false positives and runs slower on first launch.
+          # --collect-submodules PyQt6: pull all Qt plugins (WebEngine etc.)
+          # NOTE: QtMultimedia is NOT excluded — the video splash
+          # (assets/videosplash.mp4) needs QtMultimedia + QtMultimediaWidgets
+          # and the Windows Media Foundation backend plugins. assets/ already
+          # bundles the .mp4 via --add-data.
+          # --python-option "X utf8": activa el modo UTF-8 de Python en el
+          # .exe (open() usa UTF-8 por defecto). Sin esto, Windows usa cp1252
+          # y los archivos con emojis (CLAUDE.md, setup scripts) fallan con
+          # 'charmap codec can't encode'.
+          pyinstaller --noconfirm --clean `
+            --noconsole `
+            --python-option "X utf8" `
+            --name ThemeForge `
+            --icon assets/themeforge.ico `
+            --add-data "assets;assets" `
+            --add-data "context;context" `
+            --add-data "themes/presets;themes/presets" `
+            --add-data "vendor;vendor" `
+            --add-data "terminal;terminal" `
+            --collect-submodules PyQt6 `
+            --collect-data PyQt6 `
+            --exclude-module PyQt6.Qt3DCore `
+            --exclude-module PyQt6.Qt3DRender `
+            --exclude-module PyQt6.Qt3DInput `
+            --exclude-module PyQt6.QtBluetooth `
+            themeforge.py
+          Get-ChildItem dist/
+
+      - name: Build Inno Setup installer
+        shell: pwsh
+        run: |
+          # Inno Setup is pre-installed on windows-latest runners as
+          # `C:\Program Files (x86)\Inno Setup 6\ISCC.exe`.
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+              # Fall back: install via choco if not present
+              choco install innosetup -y
+              $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          # Extract the version from the git tag (v1.3.0 → 1.3.0), or use 0.0.0 for manual runs
+          $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { '0.0.0' }
+          Write-Host "Building installer for version $version"
+          & $iscc /Q "/DAppVersion=$version" packaging/windows/themeforge.iss
+          Get-ChildItem dist/installer/
+
+      - name: Upload installer as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ThemeForge-Windows-Installer
+          path: dist/installer/*.exe
+          retention-days: 30
+
+      - name: Attach to GitHub Release (only on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/installer/*.exe
+          draft: true
+          generate_release_notes: true

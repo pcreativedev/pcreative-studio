@@ -94,3 +94,6 @@ Thumbs.db
 *.tmp
 *.bak
 tmp/
+
+# Node + git portables bundleados en el build de Windows (CI)
+vendor/

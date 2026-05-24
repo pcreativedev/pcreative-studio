@@ -239,8 +239,9 @@ def suggest_stack(description: str, provider_for_inference: str = "claude") -> d
     env = dict(aip.get_env(provider_for_inference))
 
     try:
+        import platform_compat as _pc
         proc = subprocess.run(
-            ["bash", "-lc", cmd_str],
+            _pc.shell_argv(cmd_str),
             input=prompt,
             capture_output=True,
             text=True,

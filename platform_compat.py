@@ -219,3 +219,59 @@ def platform_label() -> str:
     if IS_WINDOWS:
         return "Windows"
     return "Linux"
+
+
+def kill_processes_under_path(path_substr: str) -> int:
+    """Best-effort kill of all processes whose command line contains
+    `path_substr`. Used to stop a running binary before uninstalling it.
+
+    - Linux/macOS: `pkill -f <substr>` (kills any matching process).
+    - Windows: enumerates processes via WMIC/PowerShell and kills any
+      whose ExecutablePath or CommandLine contains the substring.
+
+    Returns the exit code (0 if at least one killed, non-zero if none
+    matched or the command failed). Never raises.
+    """
+    try:
+        if IS_WINDOWS:
+            # PowerShell one-liner: enumerate, filter, stop.
+            ps = (
+                f"Get-Process | Where-Object {{ $_.Path -and "
+                f"$_.Path -like '*{path_substr}*' }} | Stop-Process -Force"
+            )
+            return subprocess.call(
+                ["powershell", "-NoProfile", "-Command", ps],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        return subprocess.call(
+            ["pkill", "-f", path_substr],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return 1
+
+
+def secure_file_chmod(path: Path | str) -> None:
+    """Best-effort `chmod 0600` (user-only read/write) for a sensitive
+    file like an API keys store. On Windows this is a no-op — the file
+    inherits ACLs from its parent directory (typically %APPDATA% which
+    is already user-only). Linux and macOS get the real chmod.
+    """
+    if IS_WINDOWS:
+        return
+    try:
+        import stat
+        os.chmod(str(path), stat.S_IRUSR | stat.S_IWUSR)
+    except Exception:
+        pass
+
+
+def secure_dir_chmod(path: Path | str) -> None:
+    """Best-effort `chmod 0700` (user-only access) for a sensitive
+    directory. No-op on Windows (parent ACLs apply)."""
+    if IS_WINDOWS:
+        return
+    try:
+        os.chmod(str(path), 0o700)
+    except Exception:
+        pass

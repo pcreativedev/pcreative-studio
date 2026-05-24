@@ -22,10 +22,16 @@ from pathlib import Path
 
 from .tokens import ThemePack
 
+# platform_compat lives at the repo root; the main script (themeforge.py)
+# adds that dir to sys.path, so it imports as a plain top-level module.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from platform_compat import app_config_dir  # noqa: E402
+
 
 PRESETS_DIR = Path(__file__).parent / "presets"
-USER_THEMES_DIR = Path.home() / ".config" / "themeforge" / "themes"
-SETTINGS_PATH = Path.home() / ".config" / "themeforge" / "settings.json"
+USER_THEMES_DIR = app_config_dir() / "themes"
+SETTINGS_PATH = app_config_dir() / "settings.json"
 DEFAULT_THEME_NAME = "themeforge-dark"
 
 

@@ -26,14 +26,14 @@ from preview import detect_subprojects, detect_preview_profile
 
 def _read_json(p: Path) -> dict | None:
     try:
-        return json.loads(p.read_text(errors="ignore"))
+        return json.loads(p.read_text(errors="ignore", encoding="utf-8"))
     except Exception:
         return None
 
 
 def _read_lines(p: Path, limit: int = 80) -> list[str]:
     try:
-        return p.read_text(errors="ignore").splitlines()[:limit]
+        return p.read_text(errors="ignore", encoding="utf-8").splitlines()[:limit]
     except Exception:
         return []
 
@@ -122,7 +122,7 @@ def _facts_for_wordpress(path: Path) -> dict[str, Any] | None:
     try:
         for php in path.glob("*.php"):
             try:
-                head = php.read_text(errors="ignore")[:3000]
+                head = php.read_text(errors="ignore", encoding="utf-8")[:3000]
                 if "Plugin Name:" in head:
                     plugin_php = php.name
                     # Extraer cabeceras estándar de plugin
@@ -144,7 +144,7 @@ def _facts_for_wordpress(path: Path) -> dict[str, Any] | None:
     style_css = path / "style.css"
     if style_css.is_file():
         try:
-            head = style_css.read_text(errors="ignore")[:3000]
+            head = style_css.read_text(errors="ignore", encoding="utf-8")[:3000]
             if "Theme Name:" in head:
                 for key in ("Theme Name", "Description", "Version", "Author",
                             "Requires at least", "Requires PHP", "License",
@@ -177,7 +177,7 @@ def _facts_for_wordpress(path: Path) -> dict[str, Any] | None:
     try:
         for php in list(path.rglob("*.php"))[:200]:
             try:
-                txt = php.read_text(errors="ignore")
+                txt = php.read_text(errors="ignore", encoding="utf-8")
                 if "dbDelta" in txt or "$wpdb->prefix" in txt:
                     uses_custom_tables = True
                 if "register_post_type" in txt:
@@ -333,7 +333,7 @@ def _is_design_export(path: Path) -> bool:
             }:
                 continue
             try:
-                txt = entry.read_text(errors="ignore")[:3000].lower()
+                txt = entry.read_text(errors="ignore", encoding="utf-8")[:3000].lower()
                 if any(k in txt for k in readme_kw):
                     return False
             except Exception:
@@ -370,7 +370,7 @@ def _scan_design_export(path: Path) -> dict[str, Any]:
                 # Guardar una muestra de los primeros 800 chars de archivos clave
                 if ext in (".html", ".jsx", ".tsx", ".vue") and ext not in samples and f.stat().st_size < 200_000:
                     try:
-                        samples[ext] = f.read_text(errors="ignore")[:800]
+                        samples[ext] = f.read_text(errors="ignore", encoding="utf-8")[:800]
                     except Exception:
                         pass
     except Exception:

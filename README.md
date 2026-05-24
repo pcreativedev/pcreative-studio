@@ -19,7 +19,7 @@
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-yellow.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+"></a>
   <img src="https://img.shields.io/badge/Linux-Stable-success?style=for-the-badge&logo=linux&logoColor=white" alt="Linux stable">
   <img src="https://img.shields.io/badge/macOS-Alpha-orange?style=for-the-badge&logo=apple&logoColor=white" alt="macOS alpha">
-  <img src="https://img.shields.io/badge/Windows-Backlog-lightgrey?style=for-the-badge&logo=windows&logoColor=white" alt="Windows backlog">
+  <img src="https://img.shields.io/badge/Windows-Alpha-orange?style=for-the-badge&logo=windows&logoColor=white" alt="Windows alpha">
 </p>
 
 <p align="center">
@@ -103,7 +103,7 @@ AppImage runs on most distros from 2022 onwards.
 |---|---|---|
 | 🐧 **Linux** | ✅ **Stable** | Primary development platform. Tested on CachyOS / Arch / Ubuntu / Fedora. Pre-built AppImage / .deb / .rpm on the [Releases](../../releases) page (latest tag shown by the badge above), or run from source with `python3 themeforge.py`. |
 | 🍎 **macOS** | ⚠️ **Alpha** | Cross-platform refactor complete (subprocess, file manager, terminal, paths all dispatched per OS). Pre-built `.app` available from the [Releases](../../releases) page (built via GitHub Actions on `macos-latest`). **Not yet tested on real Macs** — expect rough edges; report issues. App is **not code-signed** — first launch will require `Cmd+click → Open` to bypass Gatekeeper. |
-| 🪟 **Windows** | 🔴 **Backlog** | Tracked in [`ROADMAP.md`](ROADMAP.md#cross-platform-support). Estimated 3-5 days of additional refactor (PowerShell wrapper, path conventions, no-bash). PRs welcome. |
+| 🪟 **Windows** | ⚠️ **Alpha** | All filesystem paths use `%APPDATA%/themeforge`, shell calls go through `cmd /c`, process control through PowerShell helpers, and an Inno Setup installer is built via GitHub Actions on `windows-latest`. **Not yet tested on real Windows** — expect rough edges; report issues. Installer is **not code-signed** — first launch will trigger a SmartScreen warning ("More info → Run anyway"). |
 
 ## Quick install
 
@@ -147,6 +147,36 @@ brew install python@3.12 node gh
 pip3 install pyqt6 pyqt6-webengine pyqt6-charts
 cd terminal && npm install && cd ..
 python3 themeforge.py
+```
+
+### Windows (pre-built installer — alpha)
+
+1. Download `ThemeForge-Setup-X.Y.Z.exe` from the [Releases](../../releases) page.
+2. Run the installer. It installs per-user to
+   `%LOCALAPPDATA%\Programs\ThemeForge\` — no admin required.
+3. First launch will trigger a SmartScreen warning ("Unknown
+   publisher"). Click **More info** → **Run anyway**. The
+   installer is not yet code-signed.
+4. Install Node + AI CLIs separately (the installer doesn't
+   bundle them). The official way for each:
+   ```powershell
+   # Install Node.js from https://nodejs.org/ or via winget:
+   winget install OpenJS.NodeJS.LTS
+   winget install GitHub.cli
+   winget install Anthropic.ClaudeCode
+   # Other AI CLIs via npm:
+   npm i -g @openai/codex @google/gemini-cli opencode-ai
+   ```
+
+### Windows (from source)
+
+```powershell
+git clone https://github.com/pcreativedev/themeforge.git
+cd themeforge
+winget install Python.Python.3.12 OpenJS.NodeJS.LTS GitHub.cli
+pip install pyqt6 pyqt6-webengine pyqt6-charts
+cd terminal; npm install; cd ..
+python themeforge.py
 ```
 
 ## Highlights
@@ -234,6 +264,10 @@ Mac user willing to try it and report issues, you'd be doing the
 project a huge favour. See [`ROADMAP.md`](ROADMAP.md#cross-platform-support)
 for the open items.
 
-**Windows:** Backlog. PRs welcome.
+**Windows:** Alpha — Inno Setup installer ships from CI on every
+release tag. Hasn't been tested on real Windows hardware yet. If
+you're a Windows user willing to try it and report issues, you'd
+be doing the project a huge favour. See
+[`ROADMAP.md`](ROADMAP.md#windows--next-steps) for the open items.
 
 Issues and pull requests welcome.

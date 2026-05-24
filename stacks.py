@@ -1244,6 +1244,118 @@ TEMPLATE_TYPES = [
     "3D Web · Product showcase interactivo",
 ]
 
+# Nichos / industrias predefinidos. El user puede elegir uno O escribir
+# el suyo en el combo editable. El nicho se inyecta en CLAUDE.md/AGENTS.md
+# para que la IA pille tono, paleta, copy y demo data coherentes con la
+# audiencia objetivo del template. Lista basada en categorías ThemeForest +
+# CodeCanyon + Creative Market + Gumroad (Envato + populares 2025).
+TEMPLATE_NICHES = [
+    "(Sin nicho — propósito general)",
+    # Business / Corporate
+    "Startup / SaaS",
+    "Corporativo / Empresa",
+    "Consultoría / Coaching",
+    "Servicios profesionales",
+    "Legal / Abogados",
+    "Financiero / Banking / Fintech",
+    "Seguros",
+    # Health & Wellness
+    "Médico / Clínica",
+    "Dental",
+    "Veterinaria",
+    "Fitness / Gym",
+    "Yoga / Mindfulness",
+    "Nutricionista / Dietista",
+    "Spa / Belleza",
+    "Psicología / Terapia",
+    # Tech & Digital
+    "Agencia digital / Marketing",
+    "Software / Tech",
+    "AI / Machine Learning",
+    "Crypto / Web3 / NFT",
+    "Cybersecurity",
+    "DevTools / Developer products",
+    "Hosting / Cloud",
+    # Creative
+    "Fotografía",
+    "Diseño gráfico / Studio",
+    "Arquitectura / Interiorismo",
+    "Música / Banda / Artist",
+    "Cine / Producción audiovisual",
+    "Tatuajes / Body art",
+    "Arte / Galería",
+    # E-commerce niches
+    "Moda / Fashion",
+    "Joyería / Watches",
+    "Cosmética / Skincare",
+    "Tecnología / Gadgets",
+    "Hogar / Decoración",
+    "Muebles",
+    "Comida gourmet / Delicatessen",
+    "Vinos / Bebidas",
+    "Mascotas / Pet shop",
+    "Bebés / Infantil",
+    "Deportes / Outdoor",
+    # Food & Hospitality
+    "Restaurante",
+    "Cafetería / Coffee shop",
+    "Pizzería",
+    "Bar / Pub",
+    "Catering / Eventos",
+    "Food truck",
+    "Bakery / Pastelería",
+    # Travel & Real Estate
+    "Hotel / Hospedaje",
+    "Agencia de viajes / Tour operator",
+    "Aerolínea",
+    "Inmobiliaria / Real estate",
+    "Property management",
+    "Vacation rental / Airbnb",
+    # Education
+    "E-learning / Cursos online",
+    "Universidad / Academia",
+    "Colegio / School",
+    "Guardería / Kindergarten",
+    "Tutorías / Clases particulares",
+    "Idiomas / Escuela de idiomas",
+    # Events & Lifestyle
+    "Boda / Wedding",
+    "Eventos / Conferences",
+    "DJ / Disco / Nightlife",
+    "Quinceañera / Sweet 16",
+    "Fiestas infantiles",
+    # Industry & Trade
+    "Construcción",
+    "Industria / Manufactura",
+    "Logística / Transporte",
+    "Automoción / Concesionario",
+    "Energía / Renewables",
+    "Agricultura / Farm",
+    # Non-profit & Public
+    "ONG / Charity",
+    "Iglesia / Religioso",
+    "Política / Campaña",
+    "Sindicato / Asociación",
+    "Government / Public sector",
+    # Media & News
+    "Periódico / News",
+    "Magazine / Editorial",
+    "Podcast",
+    "Streaming / OTT",
+    "Radio",
+    # Gaming & Entertainment
+    "Gaming / Streamer",
+    "Esports team",
+    "Game studio",
+    "Casino / Apuestas",
+    # Misc
+    "Personal portfolio",
+    "Currículum / CV online",
+    "Influencer / Creador de contenido",
+    "Membership / Comunidad",
+    "Crowdfunding",
+]
+
 # AGENTS se sincroniza desde ai_providers.PROVIDERS para que la GUI y
 # write_setup_script vean los 7 providers (Claude/Codex/Gemini/OpenCode/
 # Claude-API/Codex-API/OpenRouter). Mantenemos las mismas keys legibles

@@ -52,7 +52,7 @@ def detect_build_config(project_path: Path) -> BuildConfig:
                            "No package.json found — assuming the project root is "
                            "the deploy directory.")
     try:
-        pkg = json.loads(pkg_path.read_text())
+        pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
     except Exception as e:
         return BuildConfig(True, "npm run build", "dist", "unknown",
                            f"Failed to parse package.json: {e}")
@@ -71,7 +71,7 @@ def detect_build_config(project_path: Path) -> BuildConfig:
         has_export = False
         if next_cfg:
             try:
-                cfg_text = next_cfg.read_text()
+                cfg_text = next_cfg.read_text(encoding="utf-8")
                 if re.search(r"output\s*:\s*['\"]export['\"]", cfg_text):
                     has_export = True
             except Exception:

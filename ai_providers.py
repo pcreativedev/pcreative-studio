@@ -23,8 +23,10 @@ import stat
 import subprocess
 from pathlib import Path
 
+import platform_compat as pc
+
 HOME = Path.home()
-CONFIG_DIR = HOME / ".config" / "themeforge"
+CONFIG_DIR = pc.app_config_dir()
 KEYS_PATH = CONFIG_DIR / "keys.json"
 
 # ─── Registro de providers ─────────────────────────────────────────────
@@ -128,17 +130,14 @@ PROVIDERS: dict[str, dict] = {
 # ─── Storage de keys ───────────────────────────────────────────────────
 def _ensure_config_dir() -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    try:
-        os.chmod(CONFIG_DIR, 0o700)
-    except OSError:
-        pass
+    pc.secure_dir_chmod(CONFIG_DIR)
 
 
 def load_keys() -> dict[str, str]:
     if not KEYS_PATH.is_file():
         return {}
     try:
-        return json.loads(KEYS_PATH.read_text())
+        return json.loads(KEYS_PATH.read_text(encoding="utf-8"))
     except Exception:
         return {}
 
@@ -147,18 +146,15 @@ def save_key(key_id: str, value: str) -> None:
     _ensure_config_dir()
     data = load_keys()
     data[key_id] = value.strip()
-    KEYS_PATH.write_text(json.dumps(data, indent=2))
-    try:
-        os.chmod(KEYS_PATH, stat.S_IRUSR | stat.S_IWUSR)  # 0600
-    except OSError:
-        pass
+    KEYS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    pc.secure_file_chmod(KEYS_PATH)
 
 
 def delete_key(key_id: str) -> None:
     data = load_keys()
     if key_id in data:
         del data[key_id]
-        KEYS_PATH.write_text(json.dumps(data, indent=2))
+        KEYS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def has_key(key_id: str) -> bool:
@@ -305,13 +301,33 @@ def oneshot_argv(provider_key: str, allow_web: bool = True) -> list[str]:
 
 
 def interactive_cmd_args(provider_key: str) -> tuple[str, list[str]]:
-    """Cmd y args para una sesión interactiva (terminal embebida)."""
+    """Cmd y args para una sesión interactiva (terminal embebida).
+
+    Claude siempre arranca con `--dangerously-skip-permissions` para
+    que el agente pueda editar/ejecutar todo dentro del proyecto sin
+    pedir confirmación a cada paso. ThemeForge ya sandboxea el agente
+    dentro de la carpeta del proyecto (cwd del terminal embebido), así
+    que el riesgo es controlado — el user explícitamente pidió que sea
+    el comportamiento por defecto en cualquier modo / proyecto."""
     p = PROVIDERS[provider_key]
     cmd = p["command"]
     args: list[str] = []
+    if cmd == "claude":
+        args = ["--dangerously-skip-permissions"]
     if cmd == "opencode" and p.get("default_model"):
         args = ["-m", p["default_model"]]
     return cmd, args
+
+
+def interactive_argv_for_binary(binary: str) -> list[str]:
+    """Builds the full argv for invoking an agent CLI in interactive
+    mode by binary name (`claude` / `codex` / `gemini` / `opencode`).
+    Used by call sites that only know the command (not a provider key
+    in PROVIDERS).
+    """
+    if binary == "claude":
+        return ["claude", "--dangerously-skip-permissions"]
+    return [binary]
 
 
 # ─── Helpers de login ──────────────────────────────────────────────────

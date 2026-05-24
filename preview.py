@@ -23,6 +23,8 @@ import socket
 from pathlib import Path
 from typing import TypedDict
 
+import platform_compat as pc
+
 
 class PreviewProfile(TypedDict, total=False):
     name: str
@@ -39,12 +41,12 @@ class PreviewProfile(TypedDict, total=False):
 
 
 HOME = Path.home()
-PORTS_FILE = HOME / ".config" / "themeforge" / "ports.json"
+PORTS_FILE = pc.app_config_dir() / "ports.json"
 
 
 def _load_ports() -> dict:
     try:
-        return json.loads(PORTS_FILE.read_text())
+        return json.loads(PORTS_FILE.read_text(encoding="utf-8"))
     except Exception:
         return {}
 
@@ -52,7 +54,7 @@ def _load_ports() -> dict:
 def _save_ports(d: dict) -> None:
     try:
         PORTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        PORTS_FILE.write_text(json.dumps(d, indent=2, sort_keys=True))
+        PORTS_FILE.write_text(json.dumps(d, indent=2, sort_keys=True), encoding="utf-8")
     except Exception:
         pass
 
@@ -145,7 +147,7 @@ def _env_contains(project_path: Path, *keywords: str) -> bool:
         f = project_path / name
         if f.is_file():
             try:
-                txt = f.read_text(errors="ignore").lower()
+                txt = f.read_text(errors="ignore", encoding="utf-8").lower()
                 if any(k in txt for k in kws):
                     return True
             except Exception:
@@ -159,7 +161,7 @@ def _composer_has(project_path: Path, *packages: str) -> bool:
     if not c.is_file():
         return False
     try:
-        data = json.loads(c.read_text(errors="ignore"))
+        data = json.loads(c.read_text(errors="ignore", encoding="utf-8"))
         req = {**(data.get("require") or {}), **(data.get("require-dev") or {})}
         return any(p in req for p in packages)
     except Exception:
@@ -178,7 +180,7 @@ def _detect_webhook_url(project_path: Path, default_port: int) -> str:
     pkg = project_path / "package.json"
     if pkg.is_file():
         try:
-            data = json.loads(pkg.read_text(errors="ignore"))
+            data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
             deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
             if "next" in deps:
                 return f"localhost:{default_port}/api/webhooks/stripe"
@@ -216,7 +218,7 @@ def _collect_extra_processes(project_path: Path, deps: dict | None = None, defau
     # ── Django + django-tailwind ───────────────────────────────────
     if (project_path / "manage.py").is_file():
         req = project_path / "requirements.txt"
-        if req.is_file() and "django-tailwind" in req.read_text(errors="ignore"):
+        if req.is_file() and "django-tailwind" in req.read_text(errors="ignore", encoding="utf-8"):
             secs.append({
                 "name": "tailwind watcher",
                 "command": ["python", "manage.py", "tailwind", "start"],
@@ -322,7 +324,7 @@ def compose_is_infra_only(compose_path: Path) -> bool:
     Útil para que el detector de preview no se quede en el compose
     cuando la app de verdad está en apps/web."""
     try:
-        text = compose_path.read_text(errors="ignore").lower()
+        text = compose_path.read_text(errors="ignore", encoding="utf-8").lower()
     except Exception:
         return False
     # Buscar líneas "image: <something>"
@@ -349,7 +351,7 @@ def has_wp_env(path: Path) -> bool:
     try:
         for php in path.glob("*.php"):
             try:
-                head = php.read_text(errors="ignore")[:2000]
+                head = php.read_text(errors="ignore", encoding="utf-8")[:2000]
                 if "Plugin Name:" in head:
                     return True
             except Exception:
@@ -364,7 +366,7 @@ def parse_package_scripts(path: Path) -> dict:
     if not pkg.is_file():
         return {}
     try:
-        data = json.loads(pkg.read_text(errors="ignore"))
+        data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
         return data.get("scripts") or {}
     except Exception:
         return {}
@@ -398,7 +400,7 @@ def detect_preview_profile(project_path: Path) -> PreviewProfile | None:
     pkg = project_path / "package.json"
     if pkg.is_file():
         try:
-            data = json.loads(pkg.read_text(errors="ignore"))
+            data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
             deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
         except Exception:
             pass
@@ -429,7 +431,7 @@ def _is_workspace_root(p: Path) -> bool:
     pkg = p / "package.json"
     if pkg.is_file():
         try:
-            data = json.loads(pkg.read_text(errors="ignore"))
+            data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
             if data.get("workspaces"):
                 return True
         except Exception:
@@ -579,7 +581,7 @@ def _detect_base_profile(project_path: Path) -> PreviewProfile | None:
     # 0. Laravel (artisan + composer.json) — prioridad absoluta.
     if (project_path / "artisan").is_file() and (project_path / "composer.json").is_file():
         try:
-            cdata = json.loads((project_path / "composer.json").read_text(errors="ignore"))
+            cdata = json.loads((project_path / "composer.json").read_text(errors="ignore", encoding="utf-8"))
             req = {**(cdata.get("require") or {}), **(cdata.get("require-dev") or {})}
             if "laravel/framework" in req or "laravel/laravel" in req:
                 pkg_scripts = parse_package_scripts(project_path)
@@ -649,7 +651,7 @@ def _detect_base_profile(project_path: Path) -> PreviewProfile | None:
     pkg = project_path / "package.json"
     if pkg.is_file():
         try:
-            data = json.loads(pkg.read_text(errors="ignore"))
+            data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
             deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
         except Exception:
             pass

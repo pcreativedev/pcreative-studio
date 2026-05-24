@@ -21,8 +21,10 @@ import time
 from pathlib import Path
 from typing import Literal, TypedDict
 
+import platform_compat as pc
+
 HOME = Path.home()
-CONFIG_DIR = HOME / ".config" / "themeforge"
+CONFIG_DIR = pc.app_config_dir()
 PROVISIONS_FILE = CONFIG_DIR / "db_provisions.json"
 
 DbKind = Literal["postgres", "mysql", None]
@@ -49,7 +51,7 @@ def detect_db_kind(project_path: Path) -> DbKind:
         f = project_path / name
         if f.is_file():
             try:
-                txt = f.read_text(errors="ignore").lower()
+                txt = f.read_text(errors="ignore", encoding="utf-8").lower()
                 if "postgresql" in txt or '"postgres"' in txt or "'postgres'" in txt:
                     return "postgres"
                 if "mysql" in txt:
@@ -61,7 +63,7 @@ def detect_db_kind(project_path: Path) -> DbKind:
     prisma = project_path / "prisma" / "schema.prisma"
     if prisma.is_file():
         try:
-            txt = prisma.read_text(errors="ignore").lower()
+            txt = prisma.read_text(errors="ignore", encoding="utf-8").lower()
             if 'provider = "postgresql"' in txt or "provider = 'postgresql'" in txt:
                 return "postgres"
             if 'provider = "mysql"' in txt or "provider = 'mysql'" in txt:
@@ -73,7 +75,7 @@ def detect_db_kind(project_path: Path) -> DbKind:
     pkg = project_path / "package.json"
     if pkg.is_file():
         try:
-            data = json.loads(pkg.read_text(errors="ignore"))
+            data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
             deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
             if "postgres" in deps or "pg" in deps or "@neondatabase/serverless" in deps:
                 return "postgres"
@@ -115,14 +117,14 @@ def _docker(*args: str) -> subprocess.CompletedProcess:
 
 def _load_provisions() -> dict[str, Provision]:
     try:
-        return json.loads(PROVISIONS_FILE.read_text())
+        return json.loads(PROVISIONS_FILE.read_text(encoding="utf-8"))
     except Exception:
         return {}
 
 
 def _save_provisions(d: dict[str, Provision]) -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    PROVISIONS_FILE.write_text(json.dumps(d, indent=2, sort_keys=True))
+    PROVISIONS_FILE.write_text(json.dumps(d, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def _is_port_free(port: int) -> bool:

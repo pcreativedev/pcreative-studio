@@ -16,6 +16,7 @@ Layout:
 from __future__ import annotations
 
 import json
+import os
 import shlex
 import shutil
 import subprocess
@@ -68,7 +69,12 @@ def _licensing_github_org() -> str:
         return ""
 
 BUILDER_DIR = Path(__file__).resolve().parent
-TERMINAL_DIR = BUILDER_DIR / "terminal"
+# El servidor de terminal (xterm.js + node-pty) vive en `terminal/`. node-pty
+# es un módulo NATIVO (binario por OS), así que `terminal/node_modules` debe
+# estar compilado para el OS actual. Override con THEMEFORGE_TERMINAL_DIR para
+# apuntar a una copia con los binarios correctos (p.ej. al correr desde un
+# shared folder cuyo node_modules es de otro OS).
+TERMINAL_DIR = Path(os.environ.get("THEMEFORGE_TERMINAL_DIR") or (BUILDER_DIR / "terminal"))
 
 
 class ProjectWindow(QWidget):
@@ -435,9 +441,14 @@ class ProjectWindow(QWidget):
             except Exception as e:
                 print(f"[project_window] error añadiendo tab del provider: {e}")
         else:
+            import ai_providers as _aip2
             for label, binary in _AI_TABS:
                 if _sh.which(binary):
-                    self._add_term_tab(label, binary)
+                    # claude → ["--dangerously-skip-permissions"]
+                    # (and any future per-binary args we add to
+                    # interactive_argv_for_binary)
+                    extra_argv = _aip2.interactive_argv_for_binary(binary)[1:]
+                    self._add_term_tab(label, binary, extra_argv or None)
         # Indicador en la barra de status si el server falla
         self._terminal_ready = False
 
@@ -686,7 +697,7 @@ class ProjectWindow(QWidget):
                 subprocess.Popen([
                     binary,
                     f"--app={url}",
-                    f"--user-data-dir={Path.home()}/.cache/themeforge/{binary}-app",
+                    f"--user-data-dir={pc.app_cache_dir() / f'{binary}-app'}",
                 ])
                 return
         # Firefox: --kiosk es full-screen; -new-window es lo más cercano

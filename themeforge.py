@@ -29,6 +29,109 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# ── Render por software ANTES de importar Qt ─────────────────────────────
+# QtWebEngine deja la ventana COMPLETAMENTE en negro en entornos sin GPU
+# (VMs, RDP, servidores). La env var QT_OPENGL tiene que estar puesta ANTES
+# del primer import de Qt — por eso esto va aquí arriba y NO en main().
+# Se activa con THEMEFORGE_SOFTWARE_GL=1 (override) o auto-detectando un
+# adaptador de vídeo virtual en el registro de Windows.
+def _detect_software_gl() -> bool:
+    val = os.environ.get("THEMEFORGE_SOFTWARE_GL")
+    if val is not None:
+        return val.strip() == "1"
+    if sys.platform.startswith("win"):
+        try:
+            import winreg
+            base = (r"SYSTEM\CurrentControlSet\Control\Class"
+                    r"\{4d36e968-e325-11ce-bfc1-08002be10318}")
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, base) as k:
+                idx = 0
+                while True:
+                    try:
+                        sub = winreg.EnumKey(k, idx)
+                    except OSError:
+                        break
+                    idx += 1
+                    if not sub.isdigit():
+                        continue
+                    try:
+                        with winreg.OpenKey(k, sub) as sk:
+                            desc = str(winreg.QueryValueEx(sk, "DriverDesc")[0]).lower()
+                    except OSError:
+                        continue
+                    markers = ("virtualbox", "vmware", "qemu", "virtio",
+                               "parallels", "basic display", "standard vga",
+                               "red hat", "hyper-v")
+                    if any(m in desc for m in markers):
+                        return True
+        except Exception:
+            pass
+    return False
+
+
+USE_SOFTWARE_GL = _detect_software_gl()
+if USE_SOFTWARE_GL:
+    os.environ["QT_OPENGL"] = "software"
+    os.environ.setdefault(
+        "QTWEBENGINE_CHROMIUM_FLAGS",
+        "--disable-gpu --disable-gpu-compositing --in-process-gpu",
+    )
+
+
+def _add_bundled_tools_to_path() -> None:
+    """Si el instalador trae Node y git portables (carpeta `vendor/`), los
+    añade al PATH del proceso para que estén disponibles sin descargar.
+
+    El build de Windows (build-windows.yml) descarga Node portable + MinGit
+    en `vendor/node` y `vendor/git` y los empaqueta con `--add-data`. En
+    PyInstaller onedir/onefile esos datos cuelgan de `sys._MEIPASS`.
+    Corriendo desde source no hay `vendor/` → no-op (se descargan al vuelo).
+    """
+    if getattr(sys, "frozen", False):
+        base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    else:
+        base = Path(__file__).parent
+    vendor = base / "vendor"
+    if not vendor.is_dir():
+        return
+    candidates = [
+        vendor / "node",                  # node.exe + npm.cmd
+        vendor / "git" / "bin",           # bash.exe + sh.exe + git.exe (PortableGit)
+        vendor / "git" / "cmd",           # git.exe
+        vendor / "git" / "usr" / "bin",   # utils unix: ls, cat, grep, etc.
+        vendor / "git" / "mingw64" / "bin",
+    ]
+    extra = [str(d) for d in candidates if d.is_dir()]
+    if extra:
+        os.environ["PATH"] = os.pathsep.join(extra) + os.pathsep + os.environ.get("PATH", "")
+
+
+def _add_user_bin_dirs_to_path() -> None:
+    """Añade al PATH las rutas donde los instaladores de CLIs colocan los
+    binarios pero que NO suelen estar en el PATH del sistema. Así ThemeForge
+    detecta los CLIs recién instalados sin que el usuario reinicie el shell:
+
+      - ~/.local/bin      → Claude Code (instalador nativo), Codex, pipx
+      - %APPDATA%/npm      → paquetes npm globales en Windows (gemini, opencode)
+      - ~/.npm-global/bin  → npm global con prefix custom (Linux/Mac)
+      - ~/.bun/bin         → instalaciones vía bun
+    """
+    home = Path.home()
+    dirs = [home / ".local" / "bin"]
+    if sys.platform.startswith("win"):
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            dirs.append(Path(appdata) / "npm")
+    else:
+        dirs += [home / ".npm-global" / "bin", home / ".bun" / "bin"]
+    extra = [str(d) for d in dirs if d.is_dir()]
+    if extra:
+        os.environ["PATH"] = os.pathsep.join(extra) + os.pathsep + os.environ.get("PATH", "")
+
+
+_add_bundled_tools_to_path()
+_add_user_bin_dirs_to_path()
+
 # IMPORTANTE: QtWebEngineWidgets debe importarse ANTES de crear QApplication,
 # si no, falla con "QtWebEngineWidgets must be imported... before a
 # QCoreApplication instance is created". Lo hacemos aquí aunque solo lo use
@@ -66,7 +169,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from stacks import AGENTS, STACKS, TEMPLATE_TYPES
+from stacks import AGENTS, STACKS, TEMPLATE_TYPES, TEMPLATE_NICHES
 from stack_picker import StackPickerDialog
 import ai_providers as aip
 import platform_compat as pc
@@ -99,8 +202,8 @@ HOME = Path.home()
 BUILDER_DIR = HOME / "Proyectos" / "themeforge"
 PROJECTS_DIR = HOME / "Proyectos" / "themes"
 CONTEXT_DIR = BUILDER_DIR / "context"
-CONFIG_DIR = HOME / ".config" / "themeforge"
-THUMBNAILS_DIR = HOME / ".cache" / "themeforge" / "thumbnails"
+CONFIG_DIR = pc.app_config_dir()
+THUMBNAILS_DIR = pc.app_cache_dir() / "thumbnails"
 # Carpeta opcional con versiones privadas de los MDs de context/.
 # Si un MD existe aquí, ThemeForge lo prefiere sobre el del repo. Útil
 # para que el usuario tenga su versión REAL (con secrets, estrategia,
@@ -172,7 +275,7 @@ def collect_context_mds() -> list[Path]:
 
 def load_favorites() -> set[str]:
     try:
-        return set(json.loads(FAVORITES_FILE.read_text()))
+        return set(json.loads(FAVORITES_FILE.read_text(encoding="utf-8")))
     except Exception:
         return set()
 
@@ -193,7 +296,7 @@ PROJECTS_META_FILE = CONFIG_DIR / "projects-meta.json"
 
 def load_projects_meta() -> dict[str, dict]:
     try:
-        data = json.loads(PROJECTS_META_FILE.read_text())
+        data = json.loads(PROJECTS_META_FILE.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
@@ -202,7 +305,7 @@ def load_projects_meta() -> dict[str, dict]:
 def save_projects_meta(meta: dict[str, dict]) -> None:
     try:
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        PROJECTS_META_FILE.write_text(json.dumps(meta, indent=2, sort_keys=True))
+        PROJECTS_META_FILE.write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
     except Exception:
         pass
 
@@ -514,7 +617,7 @@ def detect_stack(path: Path) -> str:
     # check de package.json, porque muchos Laravel modernos traen Vite.
     if (path / "artisan").is_file() and (path / "composer.json").is_file():
         try:
-            data = json.loads((path / "composer.json").read_text(errors="ignore"))
+            data = json.loads((path / "composer.json").read_text(errors="ignore", encoding="utf-8"))
             req = {**(data.get("require") or {}), **(data.get("require-dev") or {})}
             if "laravel/framework" in req or "laravel/laravel" in req:
                 return "Laravel"
@@ -524,7 +627,7 @@ def detect_stack(path: Path) -> str:
     pkg = path / "package.json"
     if pkg.exists():
         try:
-            data = json.loads(pkg.read_text(errors="ignore"))
+            data = json.loads(pkg.read_text(errors="ignore", encoding="utf-8"))
             deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
             # Móviles primero (más específicos)
             if "expo" in deps: return "Expo (React Native)"
@@ -552,7 +655,7 @@ def detect_stack(path: Path) -> str:
         return "iOS (Swift)"
     if (path / "composer.json").exists():
         try:
-            data = json.loads((path / "composer.json").read_text(errors="ignore"))
+            data = json.loads((path / "composer.json").read_text(errors="ignore", encoding="utf-8"))
             req = {**(data.get("require") or {}), **(data.get("require-dev") or {})}
             if "laravel/framework" in req or "laravel/laravel" in req:
                 return "Laravel"
@@ -818,10 +921,13 @@ def render_context(
     reference_value: str | None,
     existing_repo: str | None,
     ai_analysis: str | None = None,
+    niche: str | None = None,
 ) -> str:
     stack = STACKS[stack_key]
     type_unspecified = template_type.startswith("(Sin tipo")
     stack_unspecified = stack_key == "none"
+    niche_clean = (niche or "").strip()
+    niche_unspecified = (not niche_clean) or niche_clean.startswith("(Sin nicho")
     sistema_licencias = _read_context("LICENSING-SYSTEM.md")
     requisitos_envato = _read_context("REQUISITOS-THEMEFOREST.md")
 
@@ -994,6 +1100,9 @@ Los commits que hagas se añaden encima del historial existente.
     '- **Tipo**: no fijado a priori. Detéctalo de la referencia/repo y '
     'propónlo en `ANALYSIS.md`.'
 )}
+{('- **Nicho / industria objetivo**: ' + niche_clean + ' (ver §D abajo para tono, paleta y demo data específica)') if not niche_unspecified else (
+    '- **Nicho / industria**: genérico — adapta el demo data al tipo elegido arriba'
+)}
 
 {mode_block}
 
@@ -1090,7 +1199,302 @@ Archivos típicamente presentes en `context/`:
 - Responsive 360/768/1024/1280/1440/1920.
 - WCAG AA: contraste, ARIA, navegación teclado.
 - `prefers-reduced-motion` respetado.
-- Assets libres de derechos (Unsplash/Pexels).
+- Assets libres de derechos (ver sección §C abajo).
+
+## §C — Assets visuales y demo data (OBLIGATORIO desde el primer commit)
+
+**No entregues nunca un template con placeholders grises, "lorem ipsum"
+genérico o "John Doe / Test User".** Cada sección debe verse 100% terminada
+al primer `npm run dev` — con imágenes reales y copy realista del nicho.
+
+Esto es **no negociable**: ningún comprador de ThemeForest/CodeCanyon paga
+por un template que parece a medio hacer. La primera impresión la dan los
+assets y la coherencia del contenido.
+
+### C.1 — Imágenes: usa SIEMPRE estos providers libres de derechos
+
+| Provider | Hot-link directo en `src=""` | Cuándo |
+|---|---|---|
+| **Unsplash** | `https://images.unsplash.com/photo-<ID>?w=1600&q=80&auto=format&fit=crop` | Fotos premium (hero, gallery, blog) |
+| **Pexels** | `https://images.pexels.com/photos/<ID>/pexels-photo-<ID>.jpeg?auto=compress&w=1600` | Alternativa a Unsplash |
+| **Pixabay** | `https://cdn.pixabay.com/photo/<path>.jpg` | Stock genérico |
+| **Picsum** | `https://picsum.photos/seed/<slug>/1200/800` | Placeholders deterministas para dev |
+| **DiceBear** | `https://api.dicebear.com/7.x/avataaars/svg?seed=<name>` | Avatares de usuarios |
+| **UI Avatars** | `https://ui-avatars.com/api/?name=Sarah+Chen&background=random` | Avatares con iniciales |
+| **Logoipsum** | `https://img.logoipsum.com/<n>.svg` | Logos placeholder para "trusted by" |
+
+**Ejemplo concreto** (hero de una landing):
+
+```html
+<img
+  src="https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1600&q=80&auto=format&fit=crop"
+  alt="Modern team collaborating on a laptop"
+  loading="eager"
+  width="1600" height="900"
+  class="rounded-2xl shadow-2xl"
+/>
+```
+
+**Reglas de imágenes (todas obligatorias):**
+
+- ✅ URLs reales de Unsplash/Pexels con parámetros de optimización (`?w=`, `?q=80`, `?auto=format`).
+- ✅ `alt` descriptivo en CADA imagen (a11y + SEO + Lighthouse).
+- ✅ `loading="lazy"` below the fold; `loading="eager"` arriba del fold.
+- ✅ `width` y `height` explícitos para evitar CLS.
+- ✅ Mínimo **8-12 imágenes únicas** distribuidas en el template (no la misma 4 veces).
+- ✅ Atribución en `licensing.txt` (Unsplash/Pexels no la exigen, pero ThemeForest valora documentarlo).
+- ❌ NO uses `placeholder.com`, `via.placeholder.com`, `dummyimage.com` — quedan amateur.
+- ❌ NO incluyas imágenes binarias >200 KB en el repo (hot-link a CDN).
+- ❌ NO copies imágenes de `reference/` (assets propietarios del template original).
+
+### C.2 — Iconos
+
+- **Lucide** (`lucide-react`, `lucide-vue-next`, `@lucide/svelte`, `lucide`) — primera opción para JS/TS.
+- **Heroicons** (`@heroicons/react`) — alternativa oficial de Tailwind.
+- **Phosphor** (`@phosphor-icons/react`) — si necesitas más variedad de estilos.
+- ❌ NO uses Font Awesome (licencia mixta, complicada en Envato).
+- ❌ NO uses emojis Unicode como iconos en producción (render inconsistente entre OS).
+
+### C.3 — Demo data realista por tipo de template
+
+Elige el bloque que se aplique a tu template. Si no encaja exactamente,
+adapta el patrón al nicho.
+
+#### Landing SaaS / startup
+
+- **Hero**: headline real ("Ship production-ready SaaS in days, not months"), subhead 1 frase, CTA primario "Start free trial" + secundario "Watch demo (2 min)".
+- **Logos "Trusted by"**: 5-6 logos placeholder con nombres ficticios coherentes — "Acme", "Pixel.io", "Lumen", "Nexus", "Vortex", "Aurora", "Stripe-like styling".
+- **Features Bento (5-6 cards)**: cada una con icono Lucide, título corto, descripción 1 línea, ejemplos:
+  - "AI-powered search · Find anything in 0.2s with vector embeddings"
+  - "Realtime collaboration · Multi-cursor editing with sub-100ms sync"
+- **Pricing**: 3 tarjetas (Hobby $0, Pro $19/mo, Business $79/mo), middle destacada con badge "Most popular".
+- **Testimonials (4-6)**: nombre + avatar DiceBear + rol + empresa coherente:
+  - "ThemeForge cut our launch time by 80%." — Sarah Chen, Head of Product · Lumen Labs
+  - "Best DX I've had in 5 years of building SaaS." — Marcus Reyes, CTO · Nexus AI
+- **FAQ**: 6-8 preguntas realistas del nicho.
+- **CTA final** + footer con 4 columnas (Product, Company, Resources, Legal).
+
+#### Portfolio / agencia creativa
+
+- **Hero**: nombre del estudio ficticio coherente ("Aurora Studio", "Nordic Forge", "Pixel & Pine"), tagline 1 frase, foto bg Unsplash editorial.
+- **Trabajos seleccionados (6 cases)** con título + cliente + categoría + año + imagen Unsplash temática:
+  - "Nordic Bank — Brand Identity Refresh · Branding · 2025"
+  - "Vortex Aerospace — Marketing Website · Web Design · 2024"
+  - "Helix Coffee — Packaging System · Packaging · 2025"
+- **Servicios (4)**: Branding, Editorial, Web, Packaging — con iconografía linear (Lucide).
+- **Sobre el equipo (3-4 perfiles)**: nombre + headshot Unsplash (`?w=400&face=true` no funciona, pero filtra `people` en la búsqueda) + bio 2 líneas.
+- **Contacto**: form (Name, Email, Project Type, Message) + redes sociales.
+
+#### Blog / magazine / publicación
+
+- **6-12 artículos demo** con: título realista del nicho, autor (nombre + avatar DiceBear), fecha, categoría, excerpt 2 líneas, imagen featured Unsplash, tiempo de lectura ("8 min read").
+- **Categorías reales**: si es blog tech → "Engineering", "Product", "Design", "AI". NO "Category 1, Category 2".
+- **Autor pages**: bio + foto + 3-4 últimos posts.
+- **Trending posts** sidebar + newsletter signup en footer.
+
+#### E-commerce / tienda
+
+- **Catálogo: 12-24 productos** con: nombre real, precio, 2-4 imágenes Unsplash/Pexels, descripción 3-4 líneas, stock, categoría, rating (3.5-5★ con count), badges ("New", "Sale", "Best seller").
+- **Categorías reales**: si es ropa → "Women", "Men", "Accessories", "Sale". NO "Category A".
+- **Cart drawer** con 2-3 items demo precargados.
+- **Checkout** con campos realistas + opciones de envío plausibles.
+- **Reviews** en producto: 3-5 reviews con avatar + rating + texto.
+
+#### Dashboard / admin / SaaS app
+
+- **KPI cards** (4-6) con métricas plausibles + trend ("Revenue $24,580 ↑12.4%").
+- **Charts** (Chart.js, Recharts, ApexCharts) con datos demo realistas en 7/30/90 días.
+- **Tablas** (50-200 filas) generadas con `@faker-js/faker` o similar: usuarios (nombre, email, rol, status, last login), transacciones (id, customer, amount, status, date), productos (sku, name, stock, price).
+- **Sidebar** con navegación completa de la app real (Dashboard, Users, Orders, Products, Analytics, Settings, etc.).
+- Script `npm run seed:demo` que pobla la BD/JSON con todo en 1 comando.
+
+#### App móvil (Expo/Flutter/Capacitor)
+
+- **Onboarding** 3-4 slides con headlines + ilustraciones (puedes usar `https://undraw.co/` SVGs).
+- **Tabs principales** ya con contenido demo cada una.
+- **Listas** con 10-20 items por pantalla (perfiles, productos, posts, etc.).
+- **Profile mock** con avatar + datos plausibles + settings interactivos.
+- **Notificaciones** demo (3-5 en el centro de notificaciones).
+
+### C.4 — Reglas universales de demo data
+
+- ✅ **Variedad demográfica**: nombres internacionales, géneros, etnias diversas en avatares (DiceBear `?seed=` o filtros Unsplash). Refleja la audiencia global del comprador.
+- ✅ **Coherencia de nicho**: si el template es para clínicas dentales, NO uses fotos de yoga ni copy de tech. Todo debe encajar.
+- ✅ **Multi-idioma**: si el template soporta i18n (i18next, vue-i18n, etc.), demo data **en cada idioma soportado** (mínimo EN + ES + FR).
+- ✅ **Modo oscuro**: si hay dark mode, todas las imágenes y demo data deben verse bien en ambos modos (cuidado con backgrounds blancos en hero).
+- ✅ **Seed script**: para apps con BD, `npm run seed:demo` ejecuta todo en 1 comando.
+- ✅ **Fechas plausibles**: usa fechas recientes (últimos 30-90 días), no `2020-01-01` ni futuras lejanas.
+- ❌ NO uses "John Doe", "Test User", "Example Item", "Sample Product". Son red flags de template no terminado.
+- ❌ NO dejes "lorem ipsum dolor sit amet" visible. Si te falta inspiración para copy, **inventa algo coherente con el nicho** — la IA puede generar copy en 2 segundos.
+- ❌ NO uses números redondos en todo ("$100", "10 users") — alterna ($24, $79, $149, 1.2k users, 14,580 events).
+
+### C.5 — Atribución y licencias
+
+Aunque Unsplash y Pexels NO exigen atribución, en el `licensing.txt` o
+`CREDITS.md` del paquete final documenta:
+
+```
+## Image credits (demo content)
+
+All demo images are sourced from royalty-free providers and can be replaced
+by the buyer with their own assets:
+
+- Unsplash (https://unsplash.com/license) — hero, gallery, blog featured
+- Pexels (https://www.pexels.com/license/) — backgrounds, secondary
+- DiceBear (https://www.dicebear.com/licenses/) — user avatars (CC0)
+- Lucide Icons (https://lucide.dev/license) — UI icons (ISC)
+
+Replace with your own assets before going to production. Unsplash and
+Pexels both allow commercial use without attribution.
+```
+
+ThemeForest sí pide listar fuentes de assets externos en la doc del
+template. Este bloque cubre el requisito.
+
+## §D — Nicho / industria objetivo
+
+{('**Nicho elegido**: ' + niche_clean + '''
+
+**Implicaciones del nicho** (aplícalas a TODO el template — paleta, tono,
+imágenes, copy, demo data, iconografía, micro-interacciones):
+
+1. **Paleta**: investiga 2-3 referencias visuales reales del sector y
+   propón una paleta coherente. Ejemplos rápidos:
+   - Médico/Clínica → blanco + azul confianza + acento verde salud
+   - Restaurante → tonos cálidos crema/terracota + foto comida saturada
+   - Fitness → negro + acentos neón energéticos
+   - Legal → navy + gold + serif clásico
+   - Startup SaaS → blanco + acento vibrante + gradient sutil
+   - Boda → off-white + dusty rose + tipografía serif elegante
+   - Crypto/Web3 → negro/dark + neon/holographic + grids futuristas
+
+2. **Tono de voz del copy**:
+   - Profesionales (legal/médico/financiero) → formal, "Usted", autoridad.
+   - Lifestyle (boda/yoga/spa) → emocional, narrativo, evocador.
+   - SaaS/tech → directo, beneficios, social proof, ROI.
+   - Creativo (agencia/artista) → desenfadado, irreverente, "tú".
+   - Restaurante/food → sensorial, descripción de ingredientes, fotos hablan.
+
+3. **Imágenes Unsplash/Pexels**: busca con queries del nicho:
+   - "dental clinic", "modern office", "yoga studio", "tattoo parlor",
+     "coffee shop interior", "real estate luxury", "fitness gym dark", etc.
+   - **No uses fotos genéricas** ("business meeting" para todo).
+
+4. **Demo data específica del nicho**:
+   - Si es clínica → nombres de doctores realistas + especialidades + horarios.
+   - Si es restaurante → menú con platos plausibles + precios + maridajes.
+   - Si es agencia → cases studies con clientes ficticios del sector típico.
+   - Si es e-commerce → catálogo con productos reales del nicho.
+
+5. **Secciones obligatorias del nicho**:
+   - Médico → "Especialidades", "Equipo médico", "Reservar cita", "Seguros aceptados"
+   - Restaurante → "Menú", "Reservar mesa", "Carta de vinos", "Galería"
+   - Inmobiliaria → "Propiedades destacadas", "Filtros avanzados", "Agentes", "Hipoteca calculadora"
+   - Boda → "Nuestra historia", "Lugar y fecha", "RSVP", "Lista de regalos"
+   - Fitness → "Clases", "Entrenadores", "Membresías", "Tour virtual"
+   - Educación → "Cursos", "Profesores", "Calendario académico", "Matriculación"
+   - Adapta según el nicho real elegido.
+
+6. **CTAs del nicho** (NO uses "Sign up" genérico):
+   - Restaurante → "Reservar mesa"
+   - Médico → "Pedir cita"
+   - Inmobiliaria → "Agendar visita"
+   - Agencia → "Solicitar propuesta"
+   - SaaS → "Empezar gratis 14 días"
+   - E-commerce → "Añadir al carrito"
+
+7. **Iconografía**: usa iconos coherentes con el nicho — médico (stetoscopio,
+   heart pulse, calendar), restaurante (cutlery, wine glass, chef hat),
+   crypto (wallet, chain, coin), etc. Lucide tiene casi todo.
+
+**Si encuentras conflicto entre el "tipo" y el "nicho"** (ej: tipo=SaaS pero
+nicho=Restaurante), pregunta al usuario qué prima — generalmente el nicho
+debería ganar y el tipo se interpreta dentro del nicho (sería entonces "SaaS
+para restaurantes" → reservas online).
+''') if not niche_unspecified else '''**Nicho**: no especificado por el usuario.
+
+Si el usuario te describe en mensajes posteriores el nicho concreto al que
+va el template, recuerda aplicar todas las implicaciones que estarían listadas
+si lo hubiera elegido al crear el proyecto (paleta del sector, tono del copy,
+imágenes temáticas, demo data específica, secciones obligatorias y CTAs).
+
+Mientras no haya nicho concreto, trabaja en modo "showcase genérico" del
+tipo de template elegido: contenido neutro pero realista, paleta versátil
+fácil de re-tintar, secciones modulares que el comprador pueda activar/
+desactivar según su nicho real.'''}
+
+## §E — Política de interacción con el usuario (OBLIGATORIA)
+
+**Pregunta SIEMPRE antes de tomar decisiones de diseño o producto.**
+
+Este es un template comercial que se va a vender — el usuario quiere
+control sobre las decisiones que afectan al valor final del producto.
+Nunca asumas "lo más simple" ni "lo que tú harías". Pregunta.
+
+### Cuándo PREGUNTAR (no asumir):
+
+- Elección entre 2+ alternativas plausibles de UX, layout o componente.
+- Cuál sub-sección incluir/omitir cuando hay margen.
+- Qué copy concreto poner (headlines, CTAs, tagline) — propón 3 opciones.
+- Paleta exacta (propón 2-3 paletas coherentes con el nicho).
+- Tipografías (propón 2-3 combos típicos del sector).
+- Animaciones / micro-interacciones — pregunta "discreta vs. expresiva".
+- Demo data: nombres ficticios, marcas placeholder, sectores secundarios.
+- Cualquier feature opcional (modo oscuro, multi-idioma, blog, etc.).
+- Integraciones externas (Stripe, Mailchimp, analytics).
+
+### Cómo formular las preguntas:
+
+Numéralas (1, 2, 3) y describe cada opción en 1 línea con su trade-off.
+Ejemplo:
+
+> Para el hero de esta landing, ¿cuál prefieres?
+>
+> 1) **Imagen full-bleed con texto overlay** — más impacto visual,
+>    requiere foto Unsplash buena, riesgo de contraste pobre en mobile.
+> 2) **Split layout (texto izquierda, imagen derecha)** — más legible,
+>    diseño "honesto" tipo Linear/Vercel, encaja bien con SaaS.
+> 3) **Solo texto centrado con gradient mesh background** — minimalista,
+>    estilo Stripe/Anthropic, foco total en el value prop.
+>
+> Por defecto iría con (2). ¿Qué prefieres?
+
+Da siempre **una recomendación por defecto** (la opción que tú elegirías)
+para que el usuario pueda decir "vale, tira" sin tener que decidir él.
+
+### Cuándo NO preguntar (avanza solo):
+
+- Tareas mecánicas: `npm install`, `git add/commit`, formatear código.
+- Generar variantes de un componente ya aprobado (otra card igual).
+- Correcciones obvias de bugs / errores de tipos / lint.
+- Implementar lo que el usuario ya pidió explícitamente.
+- Ajustes pequeños de spacing, colores muy cercanos, copy sinónimo.
+
+### Antes de empezar a crear archivos:
+
+Lanza una primera ronda de preguntas para alinear visión. Mínimo 3-5
+preguntas críticas para evitar rehacer:
+
+1. Paleta exacta (oferta 2-3 opciones).
+2. Tipografía (oferta 2-3 combos).
+3. Tono del copy (formal/casual/técnico).
+4. Secciones a incluir / omitir del template-base del nicho.
+5. ¿Algún competidor o referencia visual específica que admire?
+
+Espera la respuesta. **Luego sí trabajas autónomo dentro de los límites
+acordados.** Si te encuentras una decisión grande NO acordada, vuelves a
+preguntar.
+
+### Excepción: si el usuario dice "decide tú" o "tú mismo"
+
+Entonces SÍ decides por defecto, pero **documenta brevemente la decisión**
+en `ANALYSIS.md` o en el commit message para que el usuario pueda
+revertirla luego sin tener que averiguar por qué elegiste eso.
+
+Este flujo es lo que diferencia un template **vendible** ($30-50 en
+ThemeForest) de uno **hecho a voleo** que se queda en draft sin
+aprobación de Envato. La opinión del usuario es contexto crítico — no
+es una molestia, es lo que evita el trabajo perdido.
 
 ---
 
@@ -1128,6 +1532,7 @@ def write_setup_script(
     licensing_create_gh_repo: bool = False,
     licensing_force_all_modes: bool = False,
     run_uipro: bool = False,
+    niche: str | None = None,
 ) -> Path:
     """Si embedded=True, el script se ejecuta dentro de la terminal
     embebida del ProjectWindow (no necesita `read` final ni dejar la
@@ -1138,11 +1543,17 @@ def write_setup_script(
         stack_key, template_type, project_name, mode,
         reference_kind, reference_value, existing_repo,
         ai_analysis=ai_analysis,
+        niche=niche,
     )
 
     parts = []
     parts.append("#!/usr/bin/env bash")
     parts.append("set -e")
+    # Windows (git-bash): el binario de Python se llama `python`, no `python3`.
+    # Sin esto, los bloques `python3 - <<EOF` y `python3 -m …` del setup
+    # fallan y, con `set -e`, abortan el script ANTES de lanzar el agente
+    # (por eso Claude no se autoejecutaba con el contexto en Windows).
+    parts.append('if ! command -v python3 >/dev/null 2>&1 && command -v python >/dev/null 2>&1; then python3() { python "$@"; }; fi')
     if embedded:
         parts.append('trap \'EC=$?; echo ""; echo "❌ ERROR en línea $LINENO (exit $EC). La shell sigue activa para que puedas inspeccionar."\' ERR')
     else:
@@ -1152,18 +1563,18 @@ def write_setup_script(
     if mode == "existing":
         # Clonamos en una carpeta nueva. project_dir aún no debe existir
         # porque gh repo clone lo crea.
-        parts.append(f"mkdir -p {shell_quote(str(project_dir.parent))}")
-        parts.append(f"cd {shell_quote(str(project_dir.parent))}")
+        parts.append(f"mkdir -p {shell_quote(project_dir.parent.as_posix())}")
+        parts.append(f"cd {shell_quote(project_dir.parent.as_posix())}")
         parts.append(f'echo "→ Clonando {existing_repo} en {project_dir.name}/…"')
         # Si la carpeta existe vacía la borramos para que gh clone trabaje limpio
         parts.append(f"[ -d {shell_quote(project_dir.name)} ] && rmdir {shell_quote(project_dir.name)} 2>/dev/null || true")
         parts.append(f"gh repo clone {shell_quote(existing_repo)} {shell_quote(project_dir.name)}")
-        parts.append(f"cd {shell_quote(str(project_dir))}")
+        parts.append(f"cd {shell_quote(project_dir.as_posix())}")
     elif mode == "adopt":
         # Adoptamos un template local: copia tal cual a project_dir.
         # No hay scaffold porque el código ya existe.
-        parts.append(f"mkdir -p {shell_quote(str(project_dir))}")
-        parts.append(f"cd {shell_quote(str(project_dir))}")
+        parts.append(f"mkdir -p {shell_quote(project_dir.as_posix())}")
+        parts.append(f"cd {shell_quote(project_dir.as_posix())}")
         parts.append('echo ""')
         parts.append(f'echo "→ Adoptando template desde: {adopt_src}"')
         # cp -a preserva permisos/timestamps. El /. al final fuerza copiar
@@ -1171,8 +1582,8 @@ def write_setup_script(
         parts.append(f"cp -a {shell_quote(adopt_src + '/.')} .")
         parts.append('echo "  Template copiado."')
     else:
-        parts.append(f"mkdir -p {shell_quote(str(project_dir))}")
-        parts.append(f"cd {shell_quote(str(project_dir))}")
+        parts.append(f"mkdir -p {shell_quote(project_dir.as_posix())}")
+        parts.append(f"cd {shell_quote(project_dir.as_posix())}")
         if stack["scaffold"]:
             parts.append('echo ""')
             parts.append(f'echo "→ Scaffolding {stack["name"]}…"')
@@ -1357,7 +1768,7 @@ def write_setup_script(
     # solo per-app para evitar contaminación.
     parts.append('echo ""')
     parts.append('echo "→ Agregando skills cross-cutting a la raíz (solo aplica a mono-repos)…"')
-    parts.append("python3 - <<'PY_WIREUP_EOF'")
+    parts.append("python3 - <<'PY_WIREUP_EOF' || true")
     parts.append("import json, os")
     parts.append("from pathlib import Path")
     parts.append("")
@@ -1385,7 +1796,7 @@ def write_setup_script(
     parts.append("    # Crear settings.json vacío en raíz si no existe (señaliza a Claude Code)")
     parts.append("    settings_path = root / '.claude' / 'settings.json'")
     parts.append("    if not settings_path.exists():")
-    parts.append("        settings_path.write_text('{}\\n')")
+    parts.append("        settings_path.write_text('{}\\n', encoding='utf-8')")
     parts.append("    for name, canonical in cross_found.items():")
     parts.append("        link = root_skills / name")
     parts.append("        target = os.path.relpath(canonical, root_skills)")
@@ -1523,11 +1934,14 @@ def write_setup_script(
         parts.append('echo "════ Sesión del agente cerrada. Pulsa Enter para cerrar. ════"')
         parts.append("read")
 
-    cache_dir = HOME / ".cache" / "themeforge"
+    cache_dir = pc.app_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
     setup = cache_dir / f"setup-{project_dir.name}.sh"
-    setup.write_text("\n".join(parts))
-    setup.chmod(0o755)
+    setup.write_text("\n".join(parts), encoding="utf-8")
+    try:
+        setup.chmod(0o755)
+    except OSError:
+        pass  # Windows: NTFS no aplica bits POSIX
     return setup
 
 
@@ -2077,6 +2491,26 @@ class ThemeForge(QWidget):
         for t in TEMPLATE_TYPES:
             self.type_combo.addItem(t)
 
+        # Nicho — editable: el user puede elegir uno de la lista O escribir
+        # el suyo a mano. El valor se inyecta en CLAUDE.md/AGENTS.md como
+        # contexto de industria para que la IA acierte tono, paleta, copy
+        # y demo data coherentes.
+        self.niche_combo = QComboBox()
+        self.niche_combo.setEditable(True)
+        self.niche_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        for n in TEMPLATE_NICHES:
+            self.niche_combo.addItem(n)
+        self.niche_combo.setToolTip(
+            "Industria / nicho objetivo del template. Elige uno de la lista "
+            "o escribe el tuyo (ej: 'Tienda de surf en Tarifa').\n\n"
+            "Se inyecta en CLAUDE.md como contexto para que la IA use:\n"
+            "  · Paleta coherente con el sector (cálida vs corporativa vs juvenil)\n"
+            "  · Copy y CTAs del mismo dominio\n"
+            "  · Imágenes Unsplash/Pexels temáticas\n"
+            "  · Demo data realista (productos, testimonios, precios)\n\n"
+            "Si dejas '(Sin nicho)' la IA trabaja en modo genérico."
+        )
+
         self.provider_picker = ProviderPicker(self, label="Provider IA:")
 
         self.autoskills_check = QCheckBox("npx autoskills (auto-install skills for the stack)")
@@ -2372,6 +2806,7 @@ class ThemeForge(QWidget):
         setup_form.addRow("Name:", self.name_edit)
         setup_form.addRow("Stack:", self.stack_button)
         setup_form.addRow("Type:", self.type_combo)
+        setup_form.addRow("Niche:", self.niche_combo)
         setup_form.addRow("Provider:", self.provider_picker)
         setup_form.addRow("", self.autoskills_check)
         setup_form.addRow("", self.uipro_check)
@@ -2886,6 +3321,7 @@ class ThemeForge(QWidget):
 
         stack_key = self._stack_key if mode not in ("existing", "adopt") else "none"
         ttype = self.type_combo.currentText()
+        tniche = self.niche_combo.currentText().strip()
         agent_key = self.provider_picker.current_key()
         run_autoskills = self.autoskills_check.isChecked()
         run_uipro = self.uipro_check.isChecked()
@@ -2955,6 +3391,34 @@ class ThemeForge(QWidget):
                 # Vibe scaffolder dev_prompt
                 ai_analysis_text = cached_text
 
+        # ── Runtimes del stack (PHP/Java/Rust/Go/Bun/Deno/Python/Ruby…) ──
+        # Si el stack elegido necesita un runtime que NO está instalado,
+        # ofrecemos abrir el wizard para instalarlo antes de scaffoldear
+        # (si no, create-next-app/composer/etc. fallaría en el setup).
+        try:
+            import dependency_setup as _ds
+            _missing = _ds.missing_tools_for_stack(stack_key)
+            if _missing:
+                _names = ", ".join(t.name for t in _missing)
+                _r = QMessageBox.question(
+                    self, "Faltan runtimes para este stack",
+                    f"El stack «{stack_key}» necesita: {_names}.\n\n"
+                    f"No están instalados. ¿Abrir el wizard de dependencias "
+                    f"para instalarlos ahora?\n\n"
+                    f"(Si continúas sin ellos, el scaffold avisará y se "
+                    f"detendrá.)",
+                    QMessageBox.StandardButton.Yes
+                    | QMessageBox.StandardButton.No
+                    | QMessageBox.StandardButton.Cancel,
+                )
+                if _r == QMessageBox.StandardButton.Cancel:
+                    return
+                if _r == QMessageBox.StandardButton.Yes:
+                    from dependency_wizard import DependencyWizard
+                    DependencyWizard(self).exec()
+        except Exception as _e:
+            print(f"[deps] check stack runtimes: {_e}", file=sys.stderr)
+
         try:
             setup = write_setup_script(
                 project_dir, stack_key, ttype, name, agent_key, run_autoskills,
@@ -2967,6 +3431,7 @@ class ThemeForge(QWidget):
                 licensing_create_gh_repo=licensing_gh,
                 licensing_force_all_modes=licensing_force_all,
                 run_uipro=run_uipro,
+                niche=tniche,
             )
         except Exception as e:
             QMessageBox.critical(self, "Error generando setup", str(e))
@@ -2992,10 +3457,21 @@ class ThemeForge(QWidget):
             except Exception as e:
                 print(f"[mcp] could not write .mcp.json: {e}", file=sys.stderr)
 
+        # Crear la carpeta del proyecto ANTES de abrir el terminal: éste
+        # arranca con cwd=project_dir, y node-pty (Windows) falla si el cwd
+        # no existe. El setup script hace `mkdir -p` igualmente (idempotente);
+        # en modo existing el setup borra la carpeta vacía antes de `gh clone`.
+        try:
+            project_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
         # Abrir el ProjectWindow embebiendo el setup en su primera pestaña
         # de terminal en lugar de lanzar una Konsole externa.
         try:
-            open_project_window(project_dir, initial_cmd=str(setup), provider_key=agent_key)
+            # as_posix() → forward slashes; el wrapper hace `bash <ruta>` y
+            # en git-bash (Windows) los backslashes romperían la ruta.
+            open_project_window(project_dir, initial_cmd=setup.as_posix(), provider_key=agent_key)
         except Exception as e:
             QMessageBox.critical(self, "Error lanzando ProjectWindow", str(e))
             return
@@ -3237,14 +3713,18 @@ class GalleryPanel(QWidget):
     def _open_with(self, command: str):
         p = self._selected_path()
         if not p:
-            QMessageBox.warning(self, "Galería", "Selecciona primero un template.")
+            QMessageBox.warning(self, "Gallery", "Pick a template first.")
             return
         if not shutil.which(command):
-            QMessageBox.warning(self, "Falta comando", f"No encuentro `{command}` en el PATH.")
+            QMessageBox.warning(self, "Missing command", f"`{command}` not found on PATH.")
             return
-        if pc.open_in_terminal(p, command=command) is None:
-            QMessageBox.critical(self, "Sin terminal",
-                                 "No encuentro un emulador de terminal soportado.")
+        # Build full argv: claude → ["claude", "--dangerously-skip-permissions"].
+        # Others stay as-is. Quote shell-safely when joining.
+        argv = aip.interactive_argv_for_binary(command)
+        cmd_str = " ".join(shlex.quote(a) for a in argv)
+        if pc.open_in_terminal(p, command=cmd_str) is None:
+            QMessageBox.critical(self, "No terminal",
+                                 "No supported terminal emulator found.")
 
     def _open_folder(self):
         p = self._selected_path()
@@ -3429,7 +3909,7 @@ class GalleryPanel(QWidget):
         # 3) puerto preview
         try:
             from preview import PORTS_FILE
-            ports = json.loads(PORTS_FILE.read_text()) if PORTS_FILE.exists() else {}
+            ports = json.loads(PORTS_FILE.read_text(encoding="utf-8")) if PORTS_FILE.exists() else {}
             if slug in ports:
                 items.append(f"🔌 Entrada en <code>ports.json</code> (puerto preview)")
         except Exception:
@@ -3521,7 +4001,7 @@ class GalleryPanel(QWidget):
         try:
             from preview import PORTS_FILE
             if PORTS_FILE.exists():
-                ports = json.loads(PORTS_FILE.read_text())
+                ports = json.loads(PORTS_FILE.read_text(encoding="utf-8"))
                 changed = False
                 # Borrar la clave del slug y cualquier sub-clave "slug:..."
                 for k in list(ports.keys()):
@@ -3529,7 +4009,7 @@ class GalleryPanel(QWidget):
                         del ports[k]
                         changed = True
                 if changed:
-                    PORTS_FILE.write_text(json.dumps(ports, indent=2, sort_keys=True))
+                    PORTS_FILE.write_text(json.dumps(ports, indent=2, sort_keys=True), encoding="utf-8")
         except Exception as e:
             errors.append(f"ports.json: {e}")
         # 4) Favorito
@@ -4584,6 +5064,12 @@ def main():
     # Para sesiones largas o demos pesadas usa el botón "🚀 Abrir en
     # navegador" que lanza Brave/Chromium externo nativo.
     from PyQt6.QtCore import Qt
+    # USE_SOFTWARE_GL se resolvió al cargar el módulo (arriba), donde ya
+    # se pusieron QT_OPENGL y QTWEBENGINE_CHROMIUM_FLAGS antes de importar
+    # Qt. Aquí solo falta el atributo, que debe ir antes de QApplication.
+    if USE_SOFTWARE_GL:
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseSoftwareOpenGL, True)
+        print("[gl] render por software activado (entorno sin GPU)", flush=True)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
 
     app = QApplication(sys.argv)
@@ -4663,7 +5149,44 @@ def main():
     app.aboutToQuit.connect(cleanup)
 
     w = ThemeForgeApp()
-    w.show()
+
+    def _enter_app():
+        # First-run setup: si faltan herramientas REQUERIDAS (Node/git),
+        # abre el wizard de dependencias modal antes de mostrar la app.
+        # Detecta + instala Node, git, gh, los CLIs de IA y netlify vía
+        # winget/brew/paru según el OS. Si todo está, no molesta.
+        try:
+            from dependency_wizard import maybe_run_first_run_setup
+            maybe_run_first_run_setup(w)
+        except Exception as e:
+            print(f"[deps] wizard error: {e}", file=sys.stderr)
+        w.show()
+        w.raise_()
+        w.activateWindow()
+
+    # Splash de bienvenida en video (assets/videosplash.mp4). Reproduce
+    # completo con audio; el usuario puede saltarlo con clic/tecla. Cuando
+    # acaba (o se salta, o falla el backend) entra a la app.
+    # Si no hay video o el módulo multimedia no carga, entramos directo.
+    _splash_video = _assets_dir / "videosplash.mp4"
+    _splash = None
+    # Saltar el splash si: lo pide el usuario (THEMEFORGE_NO_SPLASH=1) o si
+    # estamos en entorno sin GPU (USE_SOFTWARE_GL) — ahí el QVideoWidget deja
+    # el contexto OpenGL en mal estado y la ventana principal sale negra.
+    _no_splash = os.environ.get("THEMEFORGE_NO_SPLASH") == "1" or USE_SOFTWARE_GL
+    if _splash_video.is_file() and not _no_splash:
+        try:
+            from video_splash import VideoSplash
+            _splash = VideoSplash(_splash_video)
+            _splash.finished.connect(_enter_app)
+            _splash.start()
+        except Exception as e:
+            print(f"[splash] no se pudo reproducir el video: {e}", file=sys.stderr)
+            _splash = None
+
+    if _splash is None:
+        _enter_app()
+
     sys.exit(app.exec())
 
 
