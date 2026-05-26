@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-05-26
+
+### Changed / Fixed
+
+- **Installed skills are now in the agent's context.** When a new project (any
+  mode) installs autoskills / UI-UX Pro skills, the generated `CLAUDE.md`/`AGENTS.md`
+  now includes a **"Skills instaladas — ÚSALAS"** section and the agent's startup
+  prompt tells it to list `.claude/skills/` and use them — previously the skills
+  were installed but the agent didn't invoke them on launch (not in context).
+
 ## [1.2.3] - 2026-05-26
 
 ### Added
@@ -34,11 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed / Fixed
 
-- **Installed skills are now in the agent's context.** When a new project (any
-  mode) installs autoskills / UI-UX Pro skills, the generated `CLAUDE.md`/`AGENTS.md`
-  now includes a **"Skills instaladas — ÚSALAS"** section and the agent's startup
-  prompt tells it to list `.claude/skills/` and use them — previously the skills
-  were installed but the agent didn't invoke them on launch (not in context).
 - **Vibe no longer restyles the app.** The proposed `theme_hint` is now only a
   suggestion for the generated project (it is already part of the dev prompt); it
   no longer applies/persists itself onto ThemeForge's own UI, which could leave
