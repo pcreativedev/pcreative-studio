@@ -7,8 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-05-26
+
+### Added
+
+- **🚀 Operator (Hermes) — optional autonomous missions.** Optional integration
+  with [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous, MIT) as
+  an orchestration brain. A new **Operator** tab (Mission Control) takes a
+  natural-language brief and autonomously plans → creates → builds → QA-loops →
+  packages a project, with a **live web preview** and an interactive
+  **💬 Chat con Hermes** terminal to keep modifying it. **🚀 Operator** buttons in
+  the Gallery and in each ProjectWindow run it on *existing* projects; Hermes
+  learns per-project (`.hermes.md`). Installable from the dependency wizard.
+  **Fully optional** — the tab/buttons only appear if Hermes is installed;
+  ThemeForge works exactly as before without it. See User Guide §23.
+- **Build from a Figma design.** *New project → Recreate from reference →
+  Figma (URL)* lets the AI agent implement your Figma frame faithfully via the
+  `figma-context` MCP. Set your token at *Settings → 🔑 AI credentials → Figma*
+  (`FIGMA_API_KEY`, a Figma personal access token).
+- **Open/create more projects while one is running.** Each ProjectWindow now has
+  **➕ Nuevo** and **📂 Abrir otro** — multiple project windows run side by side.
+
 ### Changed / Fixed
 
+- **Dependency setup — auto-detect package manager.** The scaffold/open flow now
+  detects **pnpm / yarn / bun / npm** (a `workspace:*` dependency or
+  `pnpm-lock.yaml` ⇒ pnpm, with `corepack enable`). Dependency install is now
+  **non-fatal**, so the AI agent still launches if `install` fails (it can fix it)
+  — fixes monorepos failing with `EUNSUPPORTEDPROTOCOL "workspace:"`.
+- **Figma MCP fixed.** The `figma-context` catalog entry now uses `--stdio` and
+  passes the key only via env (`FIGMA_API_KEY`), not as a CLI arg.
 - **Dependency wizard — Windows winget in a single elevated window.** Instead
   of one UAC prompt per package, all admin installs (winget + npm + installers)
   now run in one elevated PowerShell launched via `ShellExecuteW("runas")` — a

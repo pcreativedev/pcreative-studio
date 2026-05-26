@@ -168,6 +168,8 @@ def _env_for_key_id(key_id: str) -> str:
         "openai": "OPENAI_API_KEY",
         "gemini": "GEMINI_API_KEY",
         "openrouter": "OPENROUTER_API_KEY",
+        # Integraciones (no son providers de IA, pero se guardan/inyectan igual):
+        "figma": "FIGMA_API_KEY",  # PAT de Figma para el MCP figma-context
     }.get(key_id, "")
 
 

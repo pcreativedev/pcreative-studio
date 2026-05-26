@@ -155,13 +155,18 @@ CATALOG: list[MCPEntry] = [
         relevance=["web-frontend", "design"],
         install={
             "command": "npx",
-            "args": ["-y", "figma-developer-mcp", "--figma-api-key=${FIGMA_API_KEY}"],
+            # `--stdio` = habla MCP por stdio (sin él arranca un server HTTP y el
+            # cliente no conecta). La key va SOLO por env (pasarla como arg CLI la
+            # filtra en la lista de procesos / el historial del shell).
+            "args": ["-y", "figma-developer-mcp", "--stdio"],
             "env": {"FIGMA_API_KEY": "${FIGMA_API_KEY}"},
         },
         env_hint=(
-            "Requires FIGMA_API_KEY env var with a personal access "
-            "token. Get one at figma.com → Settings → Personal access "
-            "tokens. Scope: read."
+            "Requires FIGMA_API_KEY env var with a Figma personal access "
+            "token. Get one at figma.com → Settings → Security → Personal "
+            "access tokens (scope: read file content). Then paste a Figma "
+            "frame/layer link (right-click → Copy link to selection) and "
+            "ask the agent to implement it."
         ),
         requires_auth=True,
     ),

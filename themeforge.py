@@ -204,6 +204,7 @@ from provider_picker import ProviderPicker
 # Mantenemos referencias vivas a las ProjectWindow abiertas para que Qt no las
 # recolecte mientras el user las usa.
 _OPEN_PROJECT_WINDOWS: list = []
+_MAIN_APP = None  # ref a la ThemeForgeApp principal (para enfocarla desde otras ventanas)
 
 
 def open_project_window(project_path: Path, initial_cmd: str | None = None,
@@ -223,6 +224,22 @@ def open_project_window(project_path: Path, initial_cmd: str | None = None,
     w.show()
     w.raise_()
     w.activateWindow()
+
+
+def focus_new_project() -> bool:
+    """Trae al frente la ventana principal y abre la pestaña New project, para
+    poder crear otro proyecto sin cerrar los que ya están funcionando."""
+    if _MAIN_APP is None:
+        return False
+    _MAIN_APP.show()
+    _MAIN_APP.raise_()
+    _MAIN_APP.activateWindow()
+    try:
+        _MAIN_APP.tabs.setCurrentIndex(0)  # pestaña New project
+    except Exception:
+        pass
+    return True
+
 
 HOME = Path.home()
 BUILDER_DIR = HOME / "Proyectos" / "themeforge"
@@ -741,14 +758,21 @@ _ZIP_EXCLUDE_DIRS: frozenset[str] = frozenset({
     ".pytest_cache", ".mypy_cache", ".ruff_cache", "coverage",
     ".turbo", ".vercel", ".netlify",
     ".vscode", ".idea", ".cursor", ".windsurf", ".claude", ".aider",
+    ".agents",  # skills de agente (autoskills, CC BY-NC) — tooling de dev, NO va al producto
     "target", "vendor", ".gradle", ".dart_tool",
     "screenshots-private", "tmp", ".tmp",
 })
+# Directorios que ThemeForge inyecta SOLO en la RAÍZ del proyecto y que no
+# forman parte del template vendible: contexto/investigación (puede tener datos
+# privados) y la referencia estudiada (copyright ajeno). Se excluyen solo a
+# nivel raíz para no chocar con código legítimo (p.ej. `src/context/` de React).
+_ZIP_EXCLUDE_ROOT_DIRS: frozenset[str] = frozenset({"context", "reference"})
 _ZIP_EXCLUDE_FILES: frozenset[str] = frozenset({
     ".env", ".env.local", ".env.development", ".env.production",
     ".env.test",
     ".DS_Store", "Thumbs.db", "desktop.ini",
     "CLAUDE.md", "AGENTS.md", "GEMINI.md", "MEMORY.md",
+    ".themeforge-init-prompt",  # prompt inicial que ThemeForge deja en el proyecto
     ".eslintcache",
 })
 _ZIP_EXCLUDE_SUFFIXES: tuple[str, ...] = (
@@ -819,8 +843,15 @@ def build_marketplace_zip(
             compression=zipfile.ZIP_DEFLATED, compresslevel=6,
         ) as zf:
             for root, dirs, files in os.walk(project_dir):
-                # Pruning in-place de dirs excluidos
-                dirs[:] = [d for d in dirs if should_include_dir(d)]
+                # Pruning in-place de dirs excluidos. En la RAÍZ del proyecto
+                # se excluyen además context/ y reference/ (solo ahí, para no
+                # tocar p.ej. src/context/).
+                at_root = Path(root) == project_dir
+                dirs[:] = [
+                    d for d in dirs
+                    if should_include_dir(d)
+                    and not (at_root and d in _ZIP_EXCLUDE_ROOT_DIRS)
+                ]
                 for f in files:
                     if not should_include_file(f):
                         continue
@@ -963,6 +994,27 @@ def render_context(
             "No hay template de referencia. Diseña la plantilla desde cero apuntando a\n"
             "lo que mejor vende según los MDs de mercado en `context/`.\n"
         )
+    elif mode == "recreate" and reference_kind == "figma":
+        # Importar diseño de Figma (del PROPIO usuario): implementar con
+        # fidelidad vía el MCP figma-context. NO aplican reglas anti-copia
+        # (no es un template ajeno — es su diseño).
+        mode_block = f"""## Modo: implementar diseño de Figma
+
+Diseño de origen (Figma, del usuario): {reference_value}
+
+### Tu tarea
+1. **Lee el diseño con el MCP de Figma** (figma-context / `figma-developer-mcp`):
+   extrae layout, espaciado, tipografía, colores/tokens, componentes y assets del
+   frame/archivo de la URL. El MCP usa el `node-id` de la URL (el usuario copia el
+   link con clic derecho → *Copy link to selection* en Figma).
+2. **Implementa el diseño con fidelidad** en el stack del proyecto: estructura,
+   responsive, estados, interacciones. Reprodúcelo con precisión — es del usuario.
+3. **Demo data completa + imágenes reales** (Unsplash/Pixabay) donde el diseño
+   tenga placeholders. Nada de lorem ipsum ni imágenes rotas.
+4. **Envato-ready**: responsive, accesible (WCAG AA), SEO, código limpio, docs.
+
+> Requiere `FIGMA_API_KEY` configurado (Settings → 🔑 AI credentials → Figma) y el
+> MCP `figma-context` activo. Si el MCP no responde, pídele al usuario su token."""
     elif mode == "recreate":
         if reference_kind == "url":
             ref_descr = f"Web demo descargada con wget desde: {reference_value}"
@@ -1559,6 +1611,7 @@ def write_setup_script(
     licensing_force_all_modes: bool = False,
     run_uipro: bool = False,
     niche: str | None = None,
+    launch_agent: bool = True,
 ) -> Path:
     """Si embedded=True, el script se ejecuta dentro de la terminal
     embebida del ProjectWindow (no necesita `read` final ni dejar la
@@ -1634,7 +1687,12 @@ def write_setup_script(
         else:
             parts.append('echo "→ Sin scaffolding (stack: Sin stack)."')
 
-    if mode == "recreate":
+    if mode == "recreate" and reference_kind == "figma":
+        # Figma no se descarga — el agente lee el diseño vía el MCP figma-context.
+        parts.append('echo ""')
+        parts.append('echo "→ Diseño de Figma: el agente lo leerá con el MCP '
+                     'figma-context (necesita FIGMA_API_KEY). No se descarga nada."')
+    elif mode == "recreate":
         parts.append('echo ""')
         parts.append('echo "→ Preparando reference/…"')
         parts.append("mkdir -p reference")
@@ -1869,16 +1927,27 @@ def write_setup_script(
     parts.append('    grep -q "NUXT_PUBLIC_DEMO_MODE" .env || echo "NUXT_PUBLIC_DEMO_MODE=true" >> .env')
     parts.append('    echo "  .env actualizado"')
     parts.append('    if [ -f package.json ]; then')
-    parts.append('      echo "→ Instalando dependencias (npm install)…"')
-    parts.append('      npm install --legacy-peer-deps')
-    parts.append('      if npm run 2>/dev/null | grep -qE "^  db:push$"; then')
-    parts.append('        echo "→ Empujando schema (db:push)…"')
-    parts.append('        npm run db:push || echo "(db:push falló — revisa drizzle.config / prisma)"')
-    parts.append('      fi')
-    parts.append('      if npm run 2>/dev/null | grep -qE "^  db:seed$"; then')
-    parts.append('        echo "→ Sembrando datos (db:seed)…"')
-    parts.append('        npm run db:seed || echo "(db:seed falló — revisa el seed)"')
-    parts.append('      fi')
+    parts.append('''      # Detectar el gestor de paquetes correcto. `workspace:*` es protocolo
+      # de pnpm/yarn (NO de npm → `npm install` peta con EUNSUPPORTEDPROTOCOL).
+      if [ -f pnpm-lock.yaml ] || grep -q "workspace:" package.json 2>/dev/null; then
+        PM=pnpm
+        command -v pnpm >/dev/null 2>&1 || { command -v corepack >/dev/null 2>&1 && corepack enable >/dev/null 2>&1; } || true
+      elif [ -f yarn.lock ]; then PM=yarn
+      elif [ -f bun.lockb ] || [ -f bun.lock ]; then PM=bun
+      else PM=npm; fi
+      echo "→ Instalando dependencias ($PM)…"
+      # NO fatal: si falla, seguimos igual (el agente puede arreglar las deps).
+      if [ "$PM" = npm ]; then
+        npm install --legacy-peer-deps || echo "(npm install falló — el agente puede arreglarlo)"
+      else
+        "$PM" install || echo "($PM install falló — el agente puede arreglarlo)"
+      fi
+      for _s in db:push db:seed; do
+        if grep -q "\\"$_s\\"" package.json 2>/dev/null; then
+          echo "→ Ejecutando $_s ($PM)…"
+          "$PM" run "$_s" || echo "($_s falló — revisa drizzle/prisma)"
+        fi
+      done''')
     parts.append('    fi')
     parts.append('  else')
     parts.append('    echo "(provision_postgres_for falló — revisa que docker funciona sin sudo: \\"docker info\\")"')
@@ -1949,7 +2018,12 @@ def write_setup_script(
     # así que la terminal embebida ya las hereda.
     cmd, extra_args = aip.interactive_cmd_args(agent_key)
     extra = (" " + " ".join(shell_quote(a) for a in extra_args)) if extra_args else ""
-    parts.append(f'{cmd}{extra} "$(cat .themeforge-init-prompt)"')
+    if launch_agent:
+        parts.append(f'{cmd}{extra} "$(cat .themeforge-init-prompt)"')
+    else:
+        # Modo headless (MCP create_project): NO lanzar el agente interactivo
+        # (fallaría sin TTY). El build autónomo lo hace run_agent_build.
+        parts.append('echo "✓ Proyecto preparado (build headless: usa run_agent_build)."')
 
     parts.append('echo ""')
     if embedded:
@@ -2622,6 +2696,7 @@ class ThemeForge(QWidget):
         self.ref_kind_combo.addItem("Carpeta local", userData="folder")
         self.ref_kind_combo.addItem("Archivo .zip", userData="zip")
         self.ref_kind_combo.addItem("URL de demo", userData="url")
+        self.ref_kind_combo.addItem("Figma (URL del frame)", userData="figma")
         self.ref_path_edit = QLineEdit()
         self.ref_path_edit.setPlaceholderText("Ruta o URL de la referencia…")
         self.ref_browse_btn = QPushButton("Examinar…")
@@ -3491,6 +3566,15 @@ class ThemeForge(QWidget):
                 project_dir.mkdir(parents=True, exist_ok=True)
                 stack_meta = STACKS.get(stack_key, {})
                 recs = _mc.recommend_for_stack(stack_key, stack_meta)
+                # Import de Figma → asegurar el MCP figma-context aunque el
+                # stack no lo recomiende por relevancia (el agente lo necesita
+                # para leer el diseño).
+                if (mode == "recreate"
+                        and self.ref_kind_combo.currentData() == "figma"
+                        and not any(getattr(e, "key", "") == "figma-context" for e in recs)):
+                    _fig = next((e for e in _mc.CATALOG if e.key == "figma-context"), None)
+                    if _fig:
+                        recs.append(_fig)
                 _mc.write_mcp_json(project_dir, recs)
             except Exception as e:
                 print(f"[mcp] could not write .mcp.json: {e}", file=sys.stderr)
@@ -3613,6 +3697,16 @@ class GalleryPanel(QWidget):
         self.btn_project = QPushButton("📺 Abrir proyecto (preview)")
         self.btn_project.setStyleSheet("font-weight:bold;")
         self.btn_project.clicked.connect(self._open_project_window)
+        # Operator (Hermes) — OPCIONAL: solo visible si Hermes está instalado.
+        self.btn_operator = QPushButton("🚀 Operator")
+        self.btn_operator.setToolTip("Automatizar este proyecto con el Operator "
+                                     "(Hermes) — opcional")
+        self.btn_operator.clicked.connect(self._automate_with_operator)
+        try:
+            from operator_panel import operator_available
+            self.btn_operator.setVisible(operator_available())
+        except Exception:
+            self.btn_operator.setVisible(False)
         self.btn_delete = QPushButton("🗑️ Eliminar")
         self.btn_delete.setToolTip(
             "Eliminar el proyecto del disco completamente: directorio, "
@@ -3634,6 +3728,7 @@ class GalleryPanel(QWidget):
         btns.addWidget(self.btn_vscode)
         btns.addWidget(self.btn_codex)
         btns.addWidget(self.btn_claude)
+        btns.addWidget(self.btn_operator)
         btns.addWidget(self.btn_project)
 
         root = QVBoxLayout()
@@ -3791,6 +3886,24 @@ class GalleryPanel(QWidget):
             QMessageBox.warning(self, "Galería", "Selecciona primero un template.")
             return
         open_project_window(p)
+
+    def _automate_with_operator(self):
+        """Lanza el Operator (Hermes) sobre el proyecto seleccionado."""
+        p = self._selected_path()
+        if not p:
+            QMessageBox.warning(self, "Galería", "Selecciona primero un template.")
+            return
+        try:
+            from operator_panel import OperatorMissionDialog, operator_available
+            if not operator_available():
+                QMessageBox.information(
+                    self, "Operator",
+                    "Instala Hermes Agent (opcional) para automatizar proyectos "
+                    "con el Operator. Settings → 🔧 Setup dependencies → Hermes.")
+                return
+            OperatorMissionDialog(p.name, p, self).exec()
+        except Exception as e:
+            QMessageBox.warning(self, "Operator", f"Error: {e}")
 
     def _toggle_favorite(self):
         p = self._selected_path()
@@ -4925,6 +5038,10 @@ class ThemeForgeApp(QWidget):
 
     def __init__(self):
         super().__init__()
+        # Registrar como ventana principal (focus_new_project vuelve a
+        # "New project" desde una ProjectWindow sin cerrar lo que corre).
+        global _MAIN_APP
+        _MAIN_APP = self
         self.setWindowTitle("ThemeForge")
         self.setMinimumWidth(820)
         self.setMinimumHeight(640)
@@ -4937,6 +5054,17 @@ class ThemeForgeApp(QWidget):
         self.settings = SettingsPanel()
         self.cost = _CostTrackerPanel()
         self.multi_agent = _MultiAgentPanel()
+        # Operator (Hermes Mission Control) — TOTALMENTE OPCIONAL. El tab solo
+        # aparece si Hermes está instalado. Sin Hermes, ThemeForge funciona
+        # exactamente igual y NO muestra el tab: nunca se fuerza la dependencia.
+        self.operator = None
+        try:
+            from operator_panel import OperatorPanel, find_hermes
+            if find_hermes():
+                self.operator = OperatorPanel()
+        except Exception as e:
+            print(f"[operator] panel no disponible: {e}")
+            self.operator = None
 
         self.tabs = QTabWidget()
         # Tabs use Lucide SVG icons (theme-aware: re-colored on theme change).
@@ -4951,6 +5079,9 @@ class ThemeForgeApp(QWidget):
             (self.licensing,   "key",      "Licensing"),
             (self.settings,    "settings", "Settings"),
         ]
+        if getattr(self, "operator", None) is not None:
+            # Tras "Compare": New project · Gallery · AI cost · Compare · Operator · …
+            self._tab_specs.insert(4, (self.operator, "rocket", "Operator"))
         for widget, icon_name, label in self._tab_specs:
             self.tabs.addTab(widget, label)
         self._apply_tab_icons()

@@ -345,6 +345,163 @@ def build_zip(
     }
 
 
+# ─────────────────── Action tools (Operator) ────────────────────────
+@mcp.tool()
+def create_project(
+    name: str,
+    stack: str,
+    template_type: str = "(Sin tipo específico)",
+    niche: str = "",
+    provider: str = "codex",
+    run_autoskills: bool = True,
+    run_uipro: bool = True,
+    run_setup: bool = True,
+    timeout: int = 420,
+) -> dict:
+    """Create a new ThemeForge project and prepare it for an AI agent build.
+
+    Creates `~/Proyectos/themes/<slug>/`, writes the AI context file
+    (marketplace / Envato requirements), and — when run_setup=True — runs the
+    stack scaffold + autoskills (stack + a11y/SEO/design skills) + UI/UX Pro Max
+    design system (67 styles / 161 palettes) HEADLESS. It does NOT run the
+    agentic build — call run_agent_build() next.
+
+    Args:
+      name: human project name (folder slug is derived).
+      stack: a key from list_stacks() (e.g. "nextjs-tailwind").
+      template_type: marketplace template type, or leave default.
+      niche: optional niche/industry injected into the AI context.
+      provider: agent the build will target; maps the autoskills/uipro flags.
+        One of list_supported_providers() keys; default "codex".
+      run_autoskills / run_uipro: keep True to inherit ThemeForge's quality layer.
+      run_setup: run scaffold+autoskills+uipro now (True) or just dir+context (False).
+      timeout: seconds for the setup step (scaffold/npm can be slow).
+
+    Returns project_path, slug, setup_script, setup_exit and an output tail.
+    """
+    import os
+    import subprocess
+    from stacks import STACKS
+    import ai_providers as aip
+    from themeforge import (
+        write_setup_script, PROJECTS_DIR,
+        load_projects_meta, save_projects_meta, slugify,
+    )
+
+    if stack not in STACKS:
+        return {"error": f"unknown stack '{stack}' — call list_stacks() first."}
+    if provider not in aip.PROVIDERS:
+        return {"error": f"unknown provider '{provider}' — call list_supported_providers()."}
+
+    slug = slugify(name)
+    project_dir = PROJECTS_DIR / slug
+    if project_dir.exists() and any(project_dir.iterdir()):
+        return {"error": f"project dir already exists and is non-empty: {project_dir}"}
+
+    try:
+        script = write_setup_script(
+            project_dir=project_dir, stack_key=stack, template_type=template_type,
+            project_name=name, agent_key=provider, run_autoskills=run_autoskills,
+            mode="scratch", reference_kind=None, reference_value=None,
+            existing_repo=None, create_github_repo=False, github_user=None,
+            embedded=True, run_uipro=run_uipro, niche=(niche or None),
+            launch_agent=False,
+        )
+    except Exception as e:
+        return {"error": f"write_setup_script failed: {e}"}
+
+    out = {
+        "project_path": str(project_dir), "slug": slug, "stack": stack,
+        "provider": provider, "setup_script": str(script),
+        "run_autoskills": run_autoskills, "run_uipro": run_uipro,
+        "ran_setup": run_setup,
+    }
+    if run_setup:
+        PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            proc = subprocess.run(
+                ["bash", str(script)], cwd=str(PROJECTS_DIR),
+                capture_output=True, text=True, timeout=timeout,
+                env={**os.environ},
+            )
+            out["setup_exit"] = proc.returncode
+            out["setup_output_tail"] = (proc.stdout + "\n" + proc.stderr)[-2000:]
+        except subprocess.TimeoutExpired:
+            out["setup_exit"] = -1
+            out["setup_output_tail"] = (
+                f"(setup timed out after {timeout}s; it may still be finishing)"
+            )
+    try:
+        meta = load_projects_meta()
+        if slug not in meta:
+            meta[slug] = {"name": name, "stack": stack}
+            save_projects_meta(meta)
+    except Exception:
+        pass
+    out["next"] = (
+        "Call run_agent_build(project_path, prompt, provider) to build it, "
+        "then run_preflight() to verify and build_zip() to package."
+    )
+    return out
+
+
+@mcp.tool()
+def run_agent_build(
+    project_path: str,
+    prompt: str,
+    provider: str = "codex",
+    timeout: int = 900,
+) -> dict:
+    """Run an AI agent autonomously (one-shot, non-interactive) inside an
+    existing project to build or modify it per `prompt`.
+
+    Uses the same autonomous CLI invocation as the GUI (`codex exec`,
+    `claude --print`, `gemini -p`…). The agent edits files in the project
+    directory. Pair with run_preflight() to verify, then call again with the
+    issues to iterate. Returns the agent output tail + exit code.
+
+    Args:
+      project_path: absolute path (from create_project()).
+      prompt: what to build/fix (the dev prompt; be specific).
+      provider: which agent CLI to drive; default "codex".
+      timeout: seconds (full template builds can take many minutes).
+    """
+    import os
+    import shlex
+    import subprocess
+    import ai_providers as aip
+    import platform_compat as _pc
+
+    p = Path(project_path).expanduser().resolve()
+    if not p.is_dir():
+        return {"error": f"not a directory: {p}"}
+    if provider not in aip.PROVIDERS:
+        return {"error": f"unknown provider '{provider}'."}
+    state, info = aip.detect_status(provider)
+    if state != "ok":
+        return {"error": f"provider '{provider}' not ready: {info}"}
+
+    argv = aip.oneshot_argv(provider, allow_web=True)
+    cmd_str = " ".join(shlex.quote(a) for a in argv)
+    env = {**os.environ, **dict(aip.get_env(provider))}
+    try:
+        proc = subprocess.run(
+            _pc.shell_argv(cmd_str), input=prompt, cwd=str(p),
+            capture_output=True, text=True, timeout=timeout, env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return {"error": f"agent build timed out ({timeout}s)",
+                "timed_out": True, "project_path": str(p)}
+    except Exception as e:
+        return {"error": f"agent run failed: {e}"}
+    return {
+        "project_path": str(p), "provider": provider,
+        "exit_code": proc.returncode,
+        "output_tail": (proc.stdout or "")[-3000:],
+        "stderr_tail": (proc.stderr or "")[-500:],
+    }
+
+
 # ─────────────────── Entry point ────────────────────────────────────
 if __name__ == "__main__":
     mcp.run(transport="stdio")

@@ -37,7 +37,8 @@ system, and troubleshooting.
 20. [Optional licensing system](#20-optional-licensing-system)
 21. [Configuration files](#21-configuration-files)
 22. [Troubleshooting](#22-troubleshooting)
-23. [Credits and third-party licenses](#23-credits-and-third-party-licenses)
+23. [Operator (Hermes) — autonomous missions](#23-operator-hermes--autonomous-missions)
+24. [Credits and third-party licenses](#24-credits-and-third-party-licenses)
 
 ---
 
@@ -1617,7 +1618,175 @@ OAuth, or set the key via the Settings panel.
 
 ---
 
-## 23. Credits and third-party licenses
+## 23. Operator (Hermes) — autonomous missions
+
+The **Operator** is an **optional** integration that lets
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research, MIT)
+act as an **autonomous orchestration brain** for ThemeForge: you give it a brief
+in natural language and it plans, creates/builds, quality-checks, packages — and
+**learns from each project** — without you driving every step.
+
+> **100% optional.** ThemeForge works fully without Hermes. The Operator tab and
+> the 🚀 buttons only appear **if Hermes is installed**. If you never install
+> Hermes, nothing changes.
+
+### 23.1 How it works (architecture)
+
+- **Brain** = Hermes. It reasons/plans using an LLM provider (see below) and calls
+  tools. It runs as a local CLI (`hermes`).
+- **Hands** = ThemeForge's engine, exposed to Hermes as an **MCP server**
+  (`mcp_server.py`), plus the AI coding agents ThemeForge already drives
+  (Codex, Claude Code, OpenCode…). Hermes calls `create_project`,
+  `run_agent_build`, `run_preflight`, `build_zip`, `list_recent_projects`, etc.
+- The autoskills + UI/UX Pro Max quality layer is inherited automatically.
+
+```
+You (brief) → Hermes (plan) → MCP → ThemeForge tools → your agent CLIs (build)
+                    │                                         │
+                    └── QA loop (preflight) ── package (zip) ─┘
+```
+
+### 23.2 Install Hermes
+
+Two ways (both optional):
+
+- **From ThemeForge:** *Settings → 🔧 Setup dependencies → check
+  “🚀 Hermes Agent (Operator)” → Install.* (Linux/macOS; on Windows it needs WSL.)
+- **Manual:**
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+  ```
+  Installs to `~/.hermes/`, binary at `~/.local/bin/hermes`.
+
+### 23.3 Configure the brain (provider + API key)
+
+Hermes uses an **API key** provider (not a subscription — see the compliance note).
+Recommended: **OpenRouter** (one key, 200+ models).
+
+```bash
+hermes config set OPENROUTER_API_KEY sk-or-...
+hermes config set model.provider openrouter
+hermes config set model.default anthropic/claude-sonnet-4.6
+```
+
+Direct providers also work: `anthropic` / `openai` (`ANTHROPIC_API_KEY` /
+`OPENAI_API_KEY`). Config lives in `~/.hermes/config.yaml` (settings) and
+`~/.hermes/.env` (keys).
+
+> **⚠ Compliance — important.** Anthropic's terms **prohibit** driving the Claude
+> Code CLI with a **Pro/Max subscription** from an automated third-party tool;
+> use an **API key** instead. OpenAI/ChatGPT subscriptions carry the same risk.
+> The safe, supported path for any automation is **API keys, not subscriptions**.
+> Using your own subscription (e.g. Codex logged in with ChatGPT) is your own
+> decision and risk. This is not legal advice — check your plan's current terms.
+
+### 23.4 Register the ThemeForge MCP server in Hermes
+
+Add to `~/.hermes/config.yaml` so Hermes can call ThemeForge:
+
+```yaml
+mcp_servers:
+  themeforge:
+    command: python3
+    args:
+      - /home/<you>/Proyectos/themeforge/mcp_server.py
+    env:
+      QT_QPA_PLATFORM: offscreen
+```
+
+Verify the bridge:
+
+```bash
+hermes -z "Use the themeforge MCP list_stacks tool; reply with only the count."
+# → e.g. 62
+```
+
+### 23.5 The Operator skill
+
+The orchestration logic lives in a Hermes skill at
+`~/.hermes/skills/themeforge/themeforge-operator/SKILL.md` (it ships with the
+Operator setup). It teaches Hermes the workflow (plan → create/continue → build →
+QA loop → package), how to assign a **distinct UI/UX Pro Max style+palette per
+variant**, when to spawn **parallel subagents** (`delegate_task`), and how to
+**learn** (see 23.8). Load it with `-s themeforge-operator`.
+
+### 23.6 Using it — three entry points
+
+**A) Operator tab → NEW project (from scratch).**
+Open the **🚀 Operator** tab. Write a brief, pick the number of variants and the
+build agent, and hit **🚀 Lanzar misión**. Hermes **creates the project**
+(`create_project`) and builds it. A **live web preview** of the project Hermes
+builds appears on the right (it auto-loads the newest project when the mission
+ends — press **▶ Preview**).
+
+> Example brief: *“Build ONE Envato-ready coffee-shop landing, stack
+> astro-tailwind, provider codex, single variant. create_project → run_agent_build
+> → run_preflight, then report the path.”*
+
+**B) Gallery / Preview → EXISTING project (continue / automate).**
+Select a project in the **Gallery** (or open it and use the **ProjectWindow**
+toolbar) and click **🚀 Operator**. A dialog asks what to do; Hermes works **on the
+existing project** (it does *not* create a new one) via `run_agent_build` in its
+folder, then `run_preflight`. Example task: *“add a pricing section with 3 plans
+and pass preflight”*.
+
+**C) Terminal.**
+```bash
+# interactive (you can watch and stop with Ctrl+C)
+hermes -s themeforge-operator
+# one-shot
+hermes chat -q "Build ONE Envato-ready ... " -s themeforge-operator
+```
+
+### 23.7 What a mission does
+
+1. **Plan** — choose stack (`suggest_stack`/`list_stacks`), style/palette per variant.
+2. **Create or continue** — `create_project` (new) or work in the existing path.
+3. **Build** — `run_agent_build` runs your agent (e.g. Codex) autonomously with a
+   detailed prompt (sections + complete demo data + Unsplash/Pixabay images,
+   Envato-ready), with autoskills + UI/UX Pro Max applied.
+4. **QA loop** — `run_preflight`; if it fails, build again with the issues (max 3).
+5. **Package** — `build_zip` → marketplace ZIP (only the template, no dev tooling).
+6. **Report** — path, style, QA result, zip. Multiple variants run as parallel
+   `delegate_task` subagents.
+
+### 23.8 How Hermes learns from a project
+
+- **Per-project context (auto):** Hermes auto-loads the project's `AGENTS.md` /
+  `.hermes.md` / `CLAUDE.md` when working in its directory — so it inherits prior
+  decisions and conventions.
+- **Per-project notes:** the skill has Hermes maintain a **`.hermes.md`** in each
+  project (decisions, TODOs, gotchas, your preferences) — auto-loaded next time
+  (highest priority), so the project “teaches” it across sessions.
+- **Cross-project memory:** Hermes's `memory` tool (`~/.hermes/memories/MEMORY.md`)
+  captures reusable lessons; `session_search` recalls past work.
+- **Procedural skills:** after non-trivial workflows, Hermes saves reusable skills
+  via `skill_manage` (e.g. “build-pricing-section-astro”).
+
+### 23.9 Figma integration (related)
+
+ThemeForge can build **from a Figma design**: in *New project → Recreate from
+reference* choose **“Figma (URL del frame)”** and paste the frame link
+(right-click in Figma → *Copy link to selection*). The build agent reads it via
+the **figma-context MCP** (read-only Figma→code, MIT). Set your Figma token at
+*Settings → 🔑 AI credentials → Figma* (`FIGMA_API_KEY`, a Figma personal access
+token, scope: read). See §19 (MCP servers).
+
+### 23.10 Troubleshooting
+
+- **No Operator tab / buttons:** Hermes isn't installed (it's optional). Install it
+  (23.2) and restart ThemeForge.
+- **`list_stacks` count not returned / MCP errors:** the `themeforge` MCP isn't
+  registered or `python3` lacks deps. Check `~/.hermes/config.yaml` (23.4) and that
+  `python3 mcp_server.py` runs.
+- **Build fails immediately:** the build agent (e.g. `codex`) isn't authenticated.
+  Check `hermes`'s provider key and the agent CLI auth.
+- **Preview empty:** the dev server didn't start (missing deps) or the stack has no
+  preview profile. Run the project's install (`npm install`, etc.) first.
+
+---
+
+## 24. Credits and third-party licenses
 
 ThemeForge is licensed under **GPL v3** (forced by the PyQt6
 dependency which is GPL v3 or commercial). See `LICENSE`.

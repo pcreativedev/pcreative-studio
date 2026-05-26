@@ -53,6 +53,9 @@ class CredentialsWidget(QWidget):
             row = self._build_row(key)
             root.addWidget(row)
 
+        # Integraciones (no-IA): token de Figma para el MCP figma-context.
+        root.addWidget(self._build_figma_row())
+
         btns = QHBoxLayout()
         btns.addStretch()
         self._btn_refresh = QPushButton("🔄 Re-detectar")
@@ -117,6 +120,24 @@ class CredentialsWidget(QWidget):
             w["addkey"].setVisible(state == "need_key" and bool(is_api))
             w["editkey"].setVisible(state == "ok" and bool(is_api))
             w["logout"].setVisible(state == "ok" and bool(is_api))
+
+        # Estado del token de Figma (integración MCP, no provider de IA).
+        if hasattr(self, "_figma_status"):
+            try:
+                has_figma = bool(aip.load_keys().get("figma"))
+            except Exception:
+                has_figma = False
+            self._figma_status.setText(
+                ("🟢" if has_figma else "⚪")
+                + " <b>Figma</b> <small>(token para el MCP figma-context)</small><br>"
+                + "<small style='color:#9aa'>"
+                + ("token guardado — el agente puede leer/importar tus diseños de Figma"
+                   if has_figma else
+                   "sin token — añádelo para importar/leer diseños de Figma")
+                + "</small>"
+            )
+            self._figma_set.setText("✏️ Cambiar token" if has_figma else "🔑 Añadir token")
+            self._figma_clear.setVisible(has_figma)
 
     # ── Acciones ────────────────────────────────────────────────────────
     def _install_cli(self, key: str):
@@ -186,3 +207,55 @@ class CredentialsWidget(QWidget):
                 self.changed.emit()
             except Exception as e:
                 QMessageBox.warning(self, "Quitar key", f"Error: {e}")
+
+    # ── Integración Figma (token MCP) ────────────────────────────────────
+    def _build_figma_row(self) -> QFrame:
+        frame = QFrame()
+        frame.setStyleSheet("QFrame { border-top: 1px solid #2a2a33; }")
+        lay = QHBoxLayout(frame)
+        lay.setContentsMargins(4, 8, 4, 4)
+        self._figma_status = QLabel("…")
+        self._figma_status.setTextFormat(Qt.TextFormat.RichText)
+        self._figma_status.setWordWrap(True)
+        lay.addWidget(self._figma_status, 1)
+        self._figma_set = QPushButton("🔑 Añadir token")
+        self._figma_set.clicked.connect(self._set_figma_key)
+        self._figma_clear = QPushButton("🚪 Quitar")
+        self._figma_clear.clicked.connect(self._remove_figma_key)
+        lay.addWidget(self._figma_set)
+        lay.addWidget(self._figma_clear)
+        return frame
+
+    def _set_figma_key(self):
+        import os
+        text, ok = QInputDialog.getText(
+            self, "Token de Figma",
+            "Pega tu Figma Personal Access Token\n"
+            "(figma.com → Settings → Security → Personal access tokens, scope lectura):",
+            echo=QLineEdit.EchoMode.Password,
+        )
+        if ok and text.strip():
+            try:
+                aip.save_key("figma", text.strip())
+                os.environ["FIGMA_API_KEY"] = text.strip()  # disponible ya en esta sesión
+                self.refresh()
+                self.changed.emit()
+                QMessageBox.information(
+                    self, "Figma",
+                    "Token guardado (chmod 0600). El MCP de Figma ya puede leer "
+                    "tus diseños. Copia el link de un frame en Figma (clic derecho "
+                    "→ Copy link to selection) y pídeselo al agente.")
+            except Exception as e:
+                QMessageBox.warning(self, "Figma", f"Error guardando: {e}")
+
+    def _remove_figma_key(self):
+        import os
+        r = QMessageBox.question(self, "Quitar token", "¿Quitar el token de Figma?")
+        if r == QMessageBox.StandardButton.Yes:
+            try:
+                aip.delete_key("figma")
+                os.environ.pop("FIGMA_API_KEY", None)
+                self.refresh()
+                self.changed.emit()
+            except Exception as e:
+                QMessageBox.warning(self, "Figma", f"Error: {e}")

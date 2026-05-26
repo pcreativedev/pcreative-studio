@@ -70,8 +70,9 @@ class DependencyWizard(QDialog):
             "core":  "🔧 Imprescindibles (Node, git)",
             "ai":    "🤖 Agentes de IA",
             "stack": "📦 Runtimes de stacks (instala solo el que vayas a usar)",
+            "operator": "🚀 Operator (opcional — Hermes para misiones autónomas)",
         }
-        for cat in ("core", "ai", "stack"):
+        for cat in ("core", "ai", "stack", "operator"):
             tools = [t for t in ds.TOOLS if t.category == cat]
             if not tools:
                 continue
@@ -86,8 +87,9 @@ class DependencyWizard(QDialog):
                 row_lay.setContentsMargins(16, 2, 6, 2)
 
                 cb = QCheckBox()
-                # Marcar lo que falta, SALVO los runtimes de stack (a demanda).
-                cb.setChecked(not installed and cat != "stack")
+                # Marcar lo que falta, SALVO runtimes de stack y el Operator
+                # (Hermes) — esos son opcionales / a demanda.
+                cb.setChecked(not installed and cat not in ("stack", "operator"))
                 cb.setEnabled(not installed)
                 self._checks[tool.key] = cb
                 row_lay.addWidget(cb)

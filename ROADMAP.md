@@ -10,7 +10,7 @@ For pre-publication blockers (private to the maintainer), see
 
 ## Where we are right now
 
-**v1.2.2 shipped on 2026-05-25.** Releases out the door:
+**v1.2.3 shipped on 2026-05-26.** Releases out the door:
 
 - **v1.0.0** (2026-05-23) — initial public release. 60+ stacks,
   embedded preview + terminal, pre-flight, ZIP builder, demo
@@ -27,11 +27,18 @@ For pre-publication blockers (private to the maintainer), see
   fallback, prebuilt node-pty, cross-platform paths. Video splash,
   predefined niche field (90 niches), dependency setup wizard,
   assets/demo-data policy in generated CLAUDE.md.
-- **v1.2.2** (2026-05-25, current Latest) — first-run onboarding
+- **v1.2.2** (2026-05-25) — first-run onboarding
   wizard, AI credentials manager (7 providers), form defaults, and
   cross-platform dependency-wizard hardening (Linux npm `~/.local` +
   single-terminal sudo, macOS Homebrew PATH/bootstrap, Windows winget
   `--disable-interactivity` + exit-code re-check, validated on a Win10 VM).
+- **v1.2.3** (2026-05-26, current Latest) — **🚀 Operator (Hermes,
+  optional)**: autonomous missions (Mission Control tab) + live preview +
+  interactive chat, run on new or existing/gallery projects, learns per-project.
+  **Figma → build** (implement a Figma frame via figma-context MCP) + Figma token
+  in credentials. Multiple project windows (open/create more while one runs).
+  Windows single-UAC winget + PHP/Composer + venv path + terminal scrollbar.
+  Package-manager auto-detect (pnpm/yarn/bun) with non-fatal install.
 
 Linux ships as AppImage / .deb / .rpm / AUR; macOS + Windows alpha
 builds from CI. See [Releases](../../releases) for downloads and

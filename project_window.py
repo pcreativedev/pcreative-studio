@@ -285,8 +285,29 @@ class ProjectWindow(QWidget):
         self.btn_github.clicked.connect(self._github_create_or_push)
         self.btn_open_external_term = QPushButton("External terminal")
         self.btn_open_external_term.clicked.connect(self._open_external_terminal)
+        # Operator (Hermes) — OPCIONAL: solo visible si Hermes está instalado.
+        self.btn_operator = QPushButton("🚀 Operator")
+        self.btn_operator.setToolTip("Automatizar/continuar este proyecto con el "
+                                     "Operator (Hermes) — opcional")
+        self.btn_operator.clicked.connect(self._automate_with_operator)
+        try:
+            from operator_panel import operator_available
+            self.btn_operator.setVisible(operator_available())
+        except Exception:
+            self.btn_operator.setVisible(False)
+        # Abrir/crear MÁS proyectos sin cerrar este (ThemeForge soporta varias
+        # ProjectWindow a la vez).
+        self.btn_new_project = QPushButton("➕ Nuevo")
+        self.btn_new_project.setToolTip("Crear otro proyecto (abre 'New project' "
+                                        "en la ventana principal) — sin cerrar este")
+        self.btn_new_project.clicked.connect(self._new_project)
+        self.btn_open_other = QPushButton("📂 Abrir otro")
+        self.btn_open_other.setToolTip("Abrir otro proyecto en una ventana nueva")
+        self.btn_open_other.clicked.connect(self._open_other_project)
 
         toolbar = QHBoxLayout()
+        toolbar.addWidget(self.btn_new_project)
+        toolbar.addWidget(self.btn_open_other)
         toolbar.addWidget(self.btn_open_folder)
         toolbar.addWidget(self.btn_open_vscode)
         toolbar.addWidget(self.btn_refresh_profile)
@@ -294,6 +315,7 @@ class ProjectWindow(QWidget):
         toolbar.addWidget(self.btn_zip)
         toolbar.addWidget(self.btn_deploy_demo)
         toolbar.addWidget(self.btn_github)
+        toolbar.addWidget(self.btn_operator)
         toolbar.addStretch()
         toolbar.addWidget(self.btn_open_external_term)
 
@@ -449,6 +471,16 @@ class ProjectWindow(QWidget):
                     # interactive_argv_for_binary)
                     extra_argv = _aip2.interactive_argv_for_binary(binary)[1:]
                     self._add_term_tab(label, binary, extra_argv or None)
+        # Tab 🚀 Hermes (Operator) — OPCIONAL: solo si Hermes está instalado.
+        # Corre `hermes -s themeforge-operator` interactivo en el cwd del
+        # proyecto → auto-carga su AGENTS.md/.hermes.md, lo modifica y aprende.
+        try:
+            _hermes_bin = _sh.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
+            if Path(_hermes_bin).is_file():
+                self._add_term_tab("🚀 Hermes", _hermes_bin,
+                                   ["-s", "themeforge-operator"])
+        except Exception as e:
+            print(f"[project_window] no se añadió tab Hermes: {e}")
         # Indicador en la barra de status si el server falla
         self._terminal_ready = False
 
@@ -711,6 +743,46 @@ class ProjectWindow(QWidget):
         if pc.open_in_terminal(self.project_path) is None:
             QMessageBox.warning(self, "Terminal externa",
                                 "No encuentro un emulador de terminal soportado.")
+
+    def _new_project(self):
+        """Vuelve a 'New project' en la ventana principal (sin cerrar este)."""
+        from PyQt6.QtWidgets import QMessageBox
+        try:
+            from themeforge import focus_new_project
+            if not focus_new_project():
+                QMessageBox.information(
+                    self, "Nuevo proyecto",
+                    "Abre la ventana principal de ThemeForge y usa la pestaña "
+                    "'New project'. Este proyecto seguirá abierto.")
+        except Exception as e:
+            QMessageBox.warning(self, "Nuevo proyecto", f"Error: {e}")
+
+    def _open_other_project(self):
+        """Abre OTRO proyecto en una ventana nueva (sin cerrar este)."""
+        from PyQt6.QtWidgets import QMessageBox, QFileDialog
+        try:
+            from themeforge import open_project_window, PROJECTS_DIR
+            base = str(PROJECTS_DIR if Path(PROJECTS_DIR).is_dir() else Path.home())
+            d = QFileDialog.getExistingDirectory(self, "Abrir otro proyecto", base)
+            if d:
+                open_project_window(Path(d))
+        except Exception as e:
+            QMessageBox.warning(self, "Abrir proyecto", f"Error: {e}")
+
+    def _automate_with_operator(self):
+        """Abre el Operator (Hermes) sobre ESTE proyecto (el de la preview)."""
+        from PyQt6.QtWidgets import QMessageBox
+        try:
+            from operator_panel import OperatorMissionDialog, operator_available
+            if not operator_available():
+                QMessageBox.information(
+                    self, "Operator",
+                    "Instala Hermes Agent (opcional) para automatizar este "
+                    "proyecto con el Operator.")
+                return
+            OperatorMissionDialog(self.project_path.name, self.project_path, self).exec()
+        except Exception as e:
+            QMessageBox.warning(self, "Operator", f"Error: {e}")
 
     def _run_preflight(self):
         """Ejecuta `preflight.run_all` y abre un diálogo con resultados

@@ -378,7 +378,20 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#reference-analysis-dialog-says-need-login-for-gemini">Reference-analysis dialog says "Need login" for Gemini</a></li>
 </ul>
 </li>
-<li><a href="#23-credits-and-third-party-licenses">23. Credits and third-party licenses</a><ul>
+<li><a href="#23-operator-hermes-autonomous-missions">23. Operator (Hermes) — autonomous missions</a><ul>
+<li><a href="#231-how-it-works-architecture">23.1 How it works (architecture)</a></li>
+<li><a href="#232-install-hermes">23.2 Install Hermes</a></li>
+<li><a href="#233-configure-the-brain-provider-api-key">23.3 Configure the brain (provider + API key)</a></li>
+<li><a href="#234-register-the-themeforge-mcp-server-in-hermes">23.4 Register the ThemeForge MCP server in Hermes</a></li>
+<li><a href="#235-the-operator-skill">23.5 The Operator skill</a></li>
+<li><a href="#236-using-it-three-entry-points">23.6 Using it — three entry points</a></li>
+<li><a href="#237-what-a-mission-does">23.7 What a mission does</a></li>
+<li><a href="#238-how-hermes-learns-from-a-project">23.8 How Hermes learns from a project</a></li>
+<li><a href="#239-figma-integration-related">23.9 Figma integration (related)</a></li>
+<li><a href="#2310-troubleshooting">23.10 Troubleshooting</a></li>
+</ul>
+</li>
+<li><a href="#24-credits-and-third-party-licenses">24. Credits and third-party licenses</a><ul>
 <li><a href="#direct-integrations">Direct integrations</a></li>
 <li><a href="#invoked-as-subprocess">Invoked-as-subprocess</a></li>
 <li><a href="#referenced-skill-packages-not-redistributed-invoked-by-name">Referenced skill packages (not redistributed — invoked by name)</a></li>
@@ -426,7 +439,8 @@ system, and troubleshooting.</p>
 <li><a href="#20-optional-licensing-system">Optional licensing system</a></li>
 <li><a href="#21-configuration-files">Configuration files</a></li>
 <li><a href="#22-troubleshooting">Troubleshooting</a></li>
-<li><a href="#23-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
+<li><a href="#23-operator-hermes--autonomous-missions">Operator (Hermes) — autonomous missions</a></li>
+<li><a href="#24-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
 </ol>
 <hr />
 <h2 id="1-what-is-themeforge">1. What is ThemeForge<a class="anchor" href="#1-what-is-themeforge" title="Link to this section">#</a></h2>
@@ -2245,7 +2259,150 @@ default; <code>ntfs-3g</code> provides FUSE-based access.</p>
 <code>GEMINI_API_KEY</code> env var. Run <code>gemini</code> once in a terminal to complete
 OAuth, or set the key via the Settings panel.</p>
 <hr />
-<h2 id="23-credits-and-third-party-licenses">23. Credits and third-party licenses<a class="anchor" href="#23-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
+<h2 id="23-operator-hermes-autonomous-missions">23. Operator (Hermes) — autonomous missions<a class="anchor" href="#23-operator-hermes-autonomous-missions" title="Link to this section">#</a></h2>
+<p>The <strong>Operator</strong> is an <strong>optional</strong> integration that lets
+<a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a> (Nous Research, MIT)
+act as an <strong>autonomous orchestration brain</strong> for ThemeForge: you give it a brief
+in natural language and it plans, creates/builds, quality-checks, packages — and
+<strong>learns from each project</strong> — without you driving every step.</p>
+<blockquote>
+<p><strong>100% optional.</strong> ThemeForge works fully without Hermes. The Operator tab and
+the 🚀 buttons only appear <strong>if Hermes is installed</strong>. If you never install
+Hermes, nothing changes.</p>
+</blockquote>
+<h3 id="231-how-it-works-architecture">23.1 How it works (architecture)<a class="anchor" href="#231-how-it-works-architecture" title="Link to this section">#</a></h3>
+<ul>
+<li><strong>Brain</strong> = Hermes. It reasons/plans using an LLM provider (see below) and calls
+  tools. It runs as a local CLI (<code>hermes</code>).</li>
+<li><strong>Hands</strong> = ThemeForge's engine, exposed to Hermes as an <strong>MCP server</strong>
+  (<code>mcp_server.py</code>), plus the AI coding agents ThemeForge already drives
+  (Codex, Claude Code, OpenCode…). Hermes calls <code>create_project</code>,
+  <code>run_agent_build</code>, <code>run_preflight</code>, <code>build_zip</code>, <code>list_recent_projects</code>, etc.</li>
+<li>The autoskills + UI/UX Pro Max quality layer is inherited automatically.</li>
+</ul>
+<pre><code>You (brief) → Hermes (plan) → MCP → ThemeForge tools → your agent CLIs (build)
+                    │                                         │
+                    └── QA loop (preflight) ── package (zip) ─┘
+</code></pre>
+<h3 id="232-install-hermes">23.2 Install Hermes<a class="anchor" href="#232-install-hermes" title="Link to this section">#</a></h3>
+<p>Two ways (both optional):</p>
+<ul>
+<li><strong>From ThemeForge:</strong> <em>Settings → 🔧 Setup dependencies → check
+  “🚀 Hermes Agent (Operator)” → Install.</em> (Linux/macOS; on Windows it needs WSL.)</li>
+<li><strong>Manual:</strong>
+  <code>bash
+  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash</code>
+  Installs to <code>~/.hermes/</code>, binary at <code>~/.local/bin/hermes</code>.</li>
+</ul>
+<h3 id="233-configure-the-brain-provider-api-key">23.3 Configure the brain (provider + API key)<a class="anchor" href="#233-configure-the-brain-provider-api-key" title="Link to this section">#</a></h3>
+<p>Hermes uses an <strong>API key</strong> provider (not a subscription — see the compliance note).
+Recommended: <strong>OpenRouter</strong> (one key, 200+ models).</p>
+<pre><code class="language-bash">hermes config set OPENROUTER_API_KEY sk-or-...
+hermes config set model.provider openrouter
+hermes config set model.default anthropic/claude-sonnet-4.6
+</code></pre>
+<p>Direct providers also work: <code>anthropic</code> / <code>openai</code> (<code>ANTHROPIC_API_KEY</code> /
+<code>OPENAI_API_KEY</code>). Config lives in <code>~/.hermes/config.yaml</code> (settings) and
+<code>~/.hermes/.env</code> (keys).</p>
+<blockquote>
+<p><strong>⚠ Compliance — important.</strong> Anthropic's terms <strong>prohibit</strong> driving the Claude
+Code CLI with a <strong>Pro/Max subscription</strong> from an automated third-party tool;
+use an <strong>API key</strong> instead. OpenAI/ChatGPT subscriptions carry the same risk.
+The safe, supported path for any automation is <strong>API keys, not subscriptions</strong>.
+Using your own subscription (e.g. Codex logged in with ChatGPT) is your own
+decision and risk. This is not legal advice — check your plan's current terms.</p>
+</blockquote>
+<h3 id="234-register-the-themeforge-mcp-server-in-hermes">23.4 Register the ThemeForge MCP server in Hermes<a class="anchor" href="#234-register-the-themeforge-mcp-server-in-hermes" title="Link to this section">#</a></h3>
+<p>Add to <code>~/.hermes/config.yaml</code> so Hermes can call ThemeForge:</p>
+<pre><code class="language-yaml">mcp_servers:
+  themeforge:
+    command: python3
+    args:
+      - /home/&lt;you&gt;/Proyectos/themeforge/mcp_server.py
+    env:
+      QT_QPA_PLATFORM: offscreen
+</code></pre>
+<p>Verify the bridge:</p>
+<pre><code class="language-bash">hermes -z &quot;Use the themeforge MCP list_stacks tool; reply with only the count.&quot;
+# → e.g. 62
+</code></pre>
+<h3 id="235-the-operator-skill">23.5 The Operator skill<a class="anchor" href="#235-the-operator-skill" title="Link to this section">#</a></h3>
+<p>The orchestration logic lives in a Hermes skill at
+<code>~/.hermes/skills/themeforge/themeforge-operator/SKILL.md</code> (it ships with the
+Operator setup). It teaches Hermes the workflow (plan → create/continue → build →
+QA loop → package), how to assign a <strong>distinct UI/UX Pro Max style+palette per
+variant</strong>, when to spawn <strong>parallel subagents</strong> (<code>delegate_task</code>), and how to
+<strong>learn</strong> (see 23.8). Load it with <code>-s themeforge-operator</code>.</p>
+<h3 id="236-using-it-three-entry-points">23.6 Using it — three entry points<a class="anchor" href="#236-using-it-three-entry-points" title="Link to this section">#</a></h3>
+<p><strong>A) Operator tab → NEW project (from scratch).</strong>
+Open the <strong>🚀 Operator</strong> tab. Write a brief, pick the number of variants and the
+build agent, and hit <strong>🚀 Lanzar misión</strong>. Hermes <strong>creates the project</strong>
+(<code>create_project</code>) and builds it. A <strong>live web preview</strong> of the project Hermes
+builds appears on the right (it auto-loads the newest project when the mission
+ends — press <strong>▶ Preview</strong>).</p>
+<blockquote>
+<p>Example brief: <em>“Build ONE Envato-ready coffee-shop landing, stack
+astro-tailwind, provider codex, single variant. create_project → run_agent_build
+→ run_preflight, then report the path.”</em></p>
+</blockquote>
+<p><strong>B) Gallery / Preview → EXISTING project (continue / automate).</strong>
+Select a project in the <strong>Gallery</strong> (or open it and use the <strong>ProjectWindow</strong>
+toolbar) and click <strong>🚀 Operator</strong>. A dialog asks what to do; Hermes works <strong>on the
+existing project</strong> (it does <em>not</em> create a new one) via <code>run_agent_build</code> in its
+folder, then <code>run_preflight</code>. Example task: <em>“add a pricing section with 3 plans
+and pass preflight”</em>.</p>
+<p><strong>C) Terminal.</strong></p>
+<pre><code class="language-bash"># interactive (you can watch and stop with Ctrl+C)
+hermes -s themeforge-operator
+# one-shot
+hermes chat -q &quot;Build ONE Envato-ready ... &quot; -s themeforge-operator
+</code></pre>
+<h3 id="237-what-a-mission-does">23.7 What a mission does<a class="anchor" href="#237-what-a-mission-does" title="Link to this section">#</a></h3>
+<ol>
+<li><strong>Plan</strong> — choose stack (<code>suggest_stack</code>/<code>list_stacks</code>), style/palette per variant.</li>
+<li><strong>Create or continue</strong> — <code>create_project</code> (new) or work in the existing path.</li>
+<li><strong>Build</strong> — <code>run_agent_build</code> runs your agent (e.g. Codex) autonomously with a
+   detailed prompt (sections + complete demo data + Unsplash/Pixabay images,
+   Envato-ready), with autoskills + UI/UX Pro Max applied.</li>
+<li><strong>QA loop</strong> — <code>run_preflight</code>; if it fails, build again with the issues (max 3).</li>
+<li><strong>Package</strong> — <code>build_zip</code> → marketplace ZIP (only the template, no dev tooling).</li>
+<li><strong>Report</strong> — path, style, QA result, zip. Multiple variants run as parallel
+   <code>delegate_task</code> subagents.</li>
+</ol>
+<h3 id="238-how-hermes-learns-from-a-project">23.8 How Hermes learns from a project<a class="anchor" href="#238-how-hermes-learns-from-a-project" title="Link to this section">#</a></h3>
+<ul>
+<li><strong>Per-project context (auto):</strong> Hermes auto-loads the project's <code>AGENTS.md</code> /
+  <code>.hermes.md</code> / <code>CLAUDE.md</code> when working in its directory — so it inherits prior
+  decisions and conventions.</li>
+<li><strong>Per-project notes:</strong> the skill has Hermes maintain a <strong><code>.hermes.md</code></strong> in each
+  project (decisions, TODOs, gotchas, your preferences) — auto-loaded next time
+  (highest priority), so the project “teaches” it across sessions.</li>
+<li><strong>Cross-project memory:</strong> Hermes's <code>memory</code> tool (<code>~/.hermes/memories/MEMORY.md</code>)
+  captures reusable lessons; <code>session_search</code> recalls past work.</li>
+<li><strong>Procedural skills:</strong> after non-trivial workflows, Hermes saves reusable skills
+  via <code>skill_manage</code> (e.g. “build-pricing-section-astro”).</li>
+</ul>
+<h3 id="239-figma-integration-related">23.9 Figma integration (related)<a class="anchor" href="#239-figma-integration-related" title="Link to this section">#</a></h3>
+<p>ThemeForge can build <strong>from a Figma design</strong>: in <em>New project → Recreate from
+reference</em> choose <strong>“Figma (URL del frame)”</strong> and paste the frame link
+(right-click in Figma → <em>Copy link to selection</em>). The build agent reads it via
+the <strong>figma-context MCP</strong> (read-only Figma→code, MIT). Set your Figma token at
+<em>Settings → 🔑 AI credentials → Figma</em> (<code>FIGMA_API_KEY</code>, a Figma personal access
+token, scope: read). See §19 (MCP servers).</p>
+<h3 id="2310-troubleshooting">23.10 Troubleshooting<a class="anchor" href="#2310-troubleshooting" title="Link to this section">#</a></h3>
+<ul>
+<li><strong>No Operator tab / buttons:</strong> Hermes isn't installed (it's optional). Install it
+  (23.2) and restart ThemeForge.</li>
+<li><strong><code>list_stacks</code> count not returned / MCP errors:</strong> the <code>themeforge</code> MCP isn't
+  registered or <code>python3</code> lacks deps. Check <code>~/.hermes/config.yaml</code> (23.4) and that
+  <code>python3 mcp_server.py</code> runs.</li>
+<li><strong>Build fails immediately:</strong> the build agent (e.g. <code>codex</code>) isn't authenticated.
+  Check <code>hermes</code>'s provider key and the agent CLI auth.</li>
+<li><strong>Preview empty:</strong> the dev server didn't start (missing deps) or the stack has no
+  preview profile. Run the project's install (<code>npm install</code>, etc.) first.</li>
+</ul>
+<hr />
+<h2 id="24-credits-and-third-party-licenses">24. Credits and third-party licenses<a class="anchor" href="#24-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
 <p>ThemeForge is licensed under <strong>GPL v3</strong> (forced by the PyQt6
 dependency which is GPL v3 or commercial). See <code>LICENSE</code>.</p>
 <h3 id="direct-integrations">Direct integrations<a class="anchor" href="#direct-integrations" title="Link to this section">#</a></h3>

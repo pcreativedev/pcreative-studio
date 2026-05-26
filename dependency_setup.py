@@ -35,8 +35,13 @@ class Tool:
     description: str              # para qué sirve (UI)
     required: bool = False        # True → la app no funciona sin esto
     # Categoría para agrupar en la UI: "core" (Node/git, imprescindible),
-    # "ai" (CLIs de agentes), "stack" (runtimes de stacks concretos).
+    # "ai" (CLIs de agentes), "stack" (runtimes de stacks concretos),
+    # "operator" (Hermes — opcional, orquestación autónoma).
     category: str = "core"
+    # Instalador genérico Unix (Linux/macOS) vía shell — para herramientas que
+    # no están en gestor de paquetes ni npm (p.ej. el `curl … | bash` de Hermes).
+    # Se ejecuta como `bash -c "<unix_install>"`. En Windows se ignora (warning).
+    unix_install: str | None = None
     winget: str | None = None     # winget package id (Windows)
     brew: str | None = None       # homebrew formula (macOS)
     # Paquetes de sistema por gestor Linux (paru/pacman usan el mismo id):
@@ -158,6 +163,16 @@ TOOLS: list[Tool] = [
          brew="composer", pacman="composer", apt="composer", dnf="composer",
          win_url="https://getcomposer.org/Composer-Setup.exe",
          win_kind="exe", win_args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"),
+    # ── Operator (OPCIONAL) ─────────────────────────────────────────────
+    # Hermes Agent: cerebro orquestador del "Operator" (misiones autónomas).
+    # ThemeForge funciona perfectamente SIN esto; solo se instala si el user
+    # quiere el modo Operator. Instalador oficial Unix (curl|bash). En Windows
+    # requiere WSL (el wizard avisará).
+    Tool("hermes", "Hermes Agent (Operator)", "hermes",
+         "OPCIONAL — orquestación autónoma de misiones (Operator). No requerido.",
+         required=False, category="operator",
+         unix_install="curl -fsSL https://raw.githubusercontent.com/NousResearch/"
+                      "hermes-agent/main/scripts/install.sh | bash"),
 ]
 
 
@@ -383,6 +398,17 @@ def install_plan(tools: list[Tool]) -> tuple[list[InstallStep], list[str]]:
                 argv = ["npm", "install", "-g", t.npm]
             steps.append(InstallStep(f"Instalando {t.name} (npm)…", argv, t.key,
                                      env=_npm_env))
+        elif t.unix_install and not pc.IS_WINDOWS:
+            # Instalador genérico Unix (curl|bash de Hermes). Sin sudo
+            # (instala per-user). Corre por QProcess con el log en vivo.
+            steps.append(InstallStep(
+                f"Instalando {t.name} (instalador oficial)…",
+                ["bash", "-lc", t.unix_install], t.key))
+        elif t.unix_install and pc.IS_WINDOWS:
+            warnings.append(
+                f"{t.name}: en Windows requiere WSL (el instalador es Unix). "
+                "Instálalo desde una terminal WSL."
+            )
         else:
             warnings.append(
                 f"{t.name}: sin método de instalación automática para "
