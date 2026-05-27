@@ -208,7 +208,8 @@ _MAIN_APP = None  # ref a la ThemeForgeApp principal (para enfocarla desde otras
 
 
 def open_project_window(project_path: Path, initial_cmd: str | None = None,
-                        provider_key: str | None = None) -> None:
+                        provider_key: str | None = None,
+                        auto_agent: bool = False) -> None:
     """Abre una ProjectWindow para el proyecto dado. Importa lazy para
     no cargar QtWebEngine si nadie la usa. Si se pasa `initial_cmd`,
     se ejecuta en la primera pestaña de la terminal embebida. Si se
@@ -218,7 +219,8 @@ def open_project_window(project_path: Path, initial_cmd: str | None = None,
     except Exception as e:
         QMessageBox.critical(None, "ThemeForge", f"No se pudo cargar ProjectWindow:\n{e}")
         return
-    w = ProjectWindow(project_path, initial_cmd=initial_cmd, provider_key=provider_key)
+    w = ProjectWindow(project_path, initial_cmd=initial_cmd,
+                      provider_key=provider_key, auto_agent=auto_agent)
     _OPEN_PROJECT_WINDOWS.append(w)
     w.destroyed.connect(lambda *_: _OPEN_PROJECT_WINDOWS.remove(w) if w in _OPEN_PROJECT_WINDOWS else None)
     w.show()
@@ -969,6 +971,37 @@ def _read_context(name: str) -> str:
         return f"_(no se pudo leer {name})_"
 
 
+# Formato de producto Envato derivado del stack. Decide qué checklist (§B)
+# aplica al generar el CLAUDE.md: Site Template estático (ThemeForest) vs
+# Script/App full-stack (CodeCanyon) vs tema WordPress vs app móvil. Sin esto,
+# un PHP Script/SaaS caía en el checklist de Site Template estático y el agente
+# se bloqueaba ante la contradicción.
+_FORMAT_MOBILE = {"expo-rn-nativewind", "expo-rn-router", "flutter", "ionic-capacitor", "kotlin-compose"}
+_FORMAT_WORDPRESS = {"wordpress-block", "wordpress-plugin"}
+_FORMAT_SCRIPT_APP = {
+    "laravel-inertia", "nestjs-prisma", "fastapi", "django-tailwind", "t3-stack",
+    "hono-bun", "hono-cloudflare", "phoenix-liveview", "rails-tailwind", "go-fiber",
+    "rust-axum", "bun-elysia", "deno-fresh", "spring-boot", "ktor-server",
+    "payload-cms", "strapi", "medusa", "directus", "sanity-studio",
+    "nextjs-tailwind", "nextjs-shadcn", "nextjs-mantine", "nextjs-heroui",
+    "nuxt-tailwind", "sveltekit-tailwind", "remix-tailwind", "solidstart-tailwind",
+    "qwik-tailwind", "tauri-react", "electron-react",
+}
+
+
+def product_format_for(stack_key: str) -> str:
+    """stack_key → 'site-template' | 'script-app' | 'mobile' | 'wordpress' | 'unknown'."""
+    if stack_key == "none":
+        return "unknown"
+    if stack_key in _FORMAT_MOBILE:
+        return "mobile"
+    if stack_key in _FORMAT_WORDPRESS:
+        return "wordpress"
+    if stack_key in _FORMAT_SCRIPT_APP:
+        return "script-app"
+    return "site-template"
+
+
 def render_context(
     stack_key: str,
     template_type: str,
@@ -986,7 +1019,131 @@ def render_context(
     niche_clean = (niche or "").strip()
     niche_unspecified = (not niche_clean) or niche_clean.startswith("(Sin nicho")
     sistema_licencias = _read_context("LICENSING-SYSTEM.md")
-    requisitos_envato = _read_context("REQUISITOS-THEMEFOREST.md")
+
+    # ── Formato de producto Envato derivado del stack ────────────────────
+    product_format = product_format_for(stack_key)
+    if product_format in ("script-app", "mobile"):
+        envato_doc_name = "REQUISITOS-CODECANYON-SCRIPT.md"
+        requisitos_envato = _read_context(envato_doc_name)
+    elif product_format == "unknown":
+        envato_doc_name = None
+        requisitos_envato = (
+            "El stack aún NO está fijado, así que el formato Envato tampoco. "
+            "**Primero** propón el stack en `ANALYSIS.md`; el formato — y por tanto "
+            "el checklist que debes cumplir — se deriva de él:\n\n"
+            "- Stack **estático** (HTML/Astro/Hugo/SPA build) → **Site Template** "
+            "(ThemeForest): HTML/CSS válido, Lighthouse ≥ 90 y docs HTML estáticas.\n"
+            "- Stack **backend/full-stack** (Laravel, Django, Next+BD, Rails, Nest, "
+            "FastAPI…) → **Script/App** (CodeCanyon): instalador, esquema de BD + "
+            "seeders, panel admin, configuración por `.env` y documentación de "
+            "instalación. **NO** apliques el checklist de Site Template estático.\n"
+            "- **WordPress** → tema/plugin (estándares WP + Theme Check).\n"
+            "- **Móvil** → app (CodeCanyon mobile).\n\n"
+            "Una vez fijes el stack, adopta el checklist Envato del formato "
+            "correspondiente y avísame de cuál es."
+        )
+    else:  # site-template, wordpress
+        envato_doc_name = "REQUISITOS-THEMEFOREST.md"
+        requisitos_envato = _read_context(envato_doc_name)
+
+    _PRODUCT_KIND = {
+        "site-template": "plantilla web (Site Template)",
+        "script-app": "script / aplicación full-stack",
+        "mobile": "app móvil",
+        "wordpress": "tema / plugin de WordPress",
+        "unknown": "producto digital (formato a determinar según el stack)",
+    }
+    _MARKETPLACES = {
+        "site-template": "ThemeForest, TemplateMonster, Creative Market, Gumroad",
+        "script-app": "CodeCanyon (Envato), Gumroad y tu propia web",
+        "mobile": "CodeCanyon (Envato), Apptopia, marketplaces de Flutter, GitHub",
+        "wordpress": "ThemeForest / CodeCanyon (Envato), Gumroad",
+        "unknown": "ThemeForest o CodeCanyon (Envato) según el formato que elijas",
+    }
+    product_kind = _PRODUCT_KIND[product_format]
+    marketplaces = _MARKETPLACES[product_format]
+
+    # Contexto para el agente: si es WordPress, ThemeForge ya levantó WP en
+    # Docker (ver bloque WP del setup) y el preview apunta ahí.
+    if product_format == "wordpress":
+        wp_kind = "theme" if stack_key == "wordpress-block" else "plugin"
+        wp_dir = "themes" if wp_kind == "theme" else "plugins"
+        wp_dev_block = f"""
+## Entorno WordPress (Docker) — YA INSTALADO Y FUNCIONAL
+
+ThemeForge ha levantado **WordPress + MariaDB en Docker** y ha **instalado WordPress**
+(admin / admin) **antes** de este setup. **El preview de ThemeForge ya apunta a ese
+WordPress en vivo** — NO tienes que instalar, configurar ni levantar nada.
+
+- URL, puerto y credenciales exactas: en **`WORDPRESS-DEV.md`** (raíz del proyecto). Léelo.
+- Tu {wp_kind} está montado en `wp-content/{wp_dir}/<slug>`: lo que escribas se ve en vivo.
+- Hay un helper **`./wp`** (wp-cli dentro del contenedor). Activa tu {wp_kind} cuando tenga
+  su cabecera: `./wp {wp_kind} activate <slug>`.
+- **MCP de WordPress activo** (`.mcp.json` → bridge oficial de Automattic): tienes herramientas
+  MCP nativas para operar WordPress en vivo (posts, páginas, opciones, customizer…). Úsalo
+  además de las **skills de WordPress** (`.claude/skills/`: wp-block-themes, wp-rest-api…)
+  que te dan el know-how de desarrollo.
+
+⚠️ **NO** ejecutes `wp core install`, ni levantes otro WordPress, ni edites `wp-config.php`:
+ya está corriendo y servido en el preview. Trabaja directamente sobre tu {wp_kind}.
+"""
+        # Spec del plugin instalador de demos — OBLIGATORIO en themes WP.
+        wp_installer_block = ("\n---\n\n" + _read_context("WP-DEMO-INSTALLER.md")) if wp_kind == "theme" else ""
+    else:
+        wp_dev_block = ""
+        wp_installer_block = ""
+
+    if product_format in ("script-app", "mobile"):
+        objetivos_block = """## Objetivos finales
+
+1. Cumplir el checklist Envato del §B (CodeCanyon Script/App) al 100%.
+2. **Instalación reproducible**: `.env.example` completo, migraciones + seeders de
+   demo, y un comando documentado que deja la app corriendo en una máquina limpia.
+3. **Funcional de verdad**: auth, BD, panel admin y flujos principales operativos
+   con demo data realista (no maqueta estática).
+4. **Documentación de instalación y uso** (no "docs HTML estáticas" de site template).
+5. Seguridad básica: validación en servidor, hashing de credenciales, sin secretos
+   hardcodeados (todo por `.env`).
+
+## Restricciones
+
+- Código limpio y mantenible; configuración 100% por `.env`.
+- Protección contra SQLi/XSS/CSRF; manejo de errores sin filtrar trazas en prod.
+- UI del panel responsive y accesible (WCAG AA), con estados hover/focus/error.
+- Assets libres de derechos (ver sección §C abajo)."""
+    elif product_format == "unknown":
+        objetivos_block = """## Objetivos finales
+
+> El formato (y su checklist) depende del stack que elijas — ver §B. Cuando lo
+> fijes, adopta los objetivos del formato correspondiente:
+> - **Site Template** (estático): Lighthouse ≥ 90, HTML/CSS válido, docs HTML.
+> - **Script/App** (backend): instalador, BD + seeders, admin, docs de instalación.
+
+1. Cumplir el checklist Envato del §B al 100% (el del formato real de tu stack).
+2. Producto que arranca y funciona con demo data realista desde el primer momento.
+3. Responsive (360→1920) + accesible (WCAG AA) en la UI.
+4. Variantes/demos competitivos en el nicho.
+
+## Restricciones
+
+- Sin secretos hardcodeados; configuración por `.env` si el stack tiene backend.
+- WCAG AA y `prefers-reduced-motion` respetado en la UI.
+- Assets libres de derechos (ver sección §C abajo)."""
+    else:  # site-template / wordpress
+        objetivos_block = """## Objetivos finales
+
+1. Cumplir el checklist Envato del §B (ThemeForest Site Template) al 100%.
+2. Lighthouse ≥ 90 Performance / SEO / Accessibility / Best Practices.
+3. Documentación HTML estática en `documentation/`.
+4. Variantes/demos competitivos en el nicho.
+
+## Restricciones
+
+- HTML/CSS válido (W3C).
+- Responsive 360/768/1024/1280/1440/1920.
+- WCAG AA: contraste, ARIA, navegación teclado.
+- `prefers-reduced-motion` respetado.
+- Assets libres de derechos (ver sección §C abajo)."""
 
     if mode == "scratch":
         mode_block = (
@@ -1033,7 +1190,7 @@ En `reference/` tienes el material de referencia.
 1. **Estudia** la referencia: estructura de páginas, layout, paleta, tipografía,
    componentes, animaciones, copy, sectores objetivo.
 2. **Documenta** un análisis breve en `ANALYSIS.md`: qué está bien, qué hay
-   que mejorar, qué incumple los REQUISITOS-THEMEFOREST.
+   que mejorar, qué incumple los REQUISITOS ENVATO (§B).
 3. **Reimplementa desde cero** usando el stack del proyecto, sin copiar
    código. Renombra clases, reorganiza componentes, mejora a11y/SEO/perf.
 4. **Mejora** sobre la referencia: variantes de color, modo oscuro, mejor
@@ -1109,7 +1266,7 @@ archivos.
    un backend Laravel/Node y clientes que lo consumen, deja documentado el
    contrato (rutas, payloads, auth).
 3. **Define el plan de modernización**: actualización de versiones, refactor
-   de capas obsoletas, mejoras según `context/REQUISITOS-THEMEFOREST.md`.
+   de capas obsoletas, mejoras según los REQUISITOS ENVATO (§B).
 4. **Mantén coherencia entre piezas**: cualquier cambio en el modelo de
    datos o las rutas se propaga a todos los clientes (web + mobile +
    admin).
@@ -1131,22 +1288,17 @@ Este proyecto es un clone de `{existing_repo}` con su historial git intacto.
    actualización de versiones, añadir feature X, refactor Y, mejor doc, etc.
 4. Trabaja **manteniendo coherencia** con el código y convenciones existentes.
    No reescribas a tu gusto componentes que ya funcionan.
-5. Verifica que el resultado sigue cumpliendo los REQUISITOS-THEMEFOREST.
+5. Verifica que el resultado sigue cumpliendo los REQUISITOS ENVATO (§B).
 
 Los commits que hagas se añaden encima del historial existente.
 """
-
-    is_mobile = stack_key in ("expo-rn-nativewind", "expo-rn-router", "flutter", "ionic-capacitor", "kotlin-compose")
-    product_kind = "app móvil" if is_mobile else "plantilla web"
-    marketplaces = "CodeCanyon (Envato), Apptopia, marketplaces de Flutter, GitHub" if is_mobile \
-                   else "ThemeForest, TemplateMonster, Creative Market, Gumroad"
 
     return f"""# Contexto del proyecto: {project_name}
 
 > **LECTURA OBLIGATORIA**
 >
 > Antes de cualquier otra acción en este proyecto, asimila TODO el contenido
-> de las secciones **§A "LICENSING SYSTEM"** y **§B "REQUISITOS THEMEFOREST"**
+> de las secciones **§A "LICENSING SYSTEM"** y **§B "REQUISITOS ENVATO"**
 > que vienen al final de este archivo. Son requisitos no negociables:
 >
 > - §A define cómo este theme conecta al sistema de licencias (si lo hay).
@@ -1160,7 +1312,7 @@ Los commits que hagas se añaden encima del historial existente.
 > con la tool Read cuando los necesites. Listado completo con `ls context/`.
 
 {product_kind.capitalize()} destinada a {marketplaces}.
-
+{wp_dev_block}
 ## Stack
 
 {('- **Stack**: no fijado a priori. Antes de empezar, analiza la referencia '
@@ -1256,7 +1408,7 @@ equivalente privado.
 
 Archivos típicamente presentes en `context/`:
 
-- `REQUISITOS-THEMEFOREST.md` — **checklist obligatorio Envato**.
+- El **checklist Envato (§B)**, al final de este archivo, es el criterio de aceptación obligatorio.
 - `LICENSING-SYSTEM.md` — arquitectura del sistema de licencias
   configurado en `~/.config/themeforge/licensing.json` (verify endpoint,
   panel admin, integración en el theme). Léelo si vas a publicar este
@@ -1264,20 +1416,7 @@ Archivos típicamente presentes en `context/`:
 - `MARKET-RESEARCH.md`, `IDEAS.md`, `COMPETITORS.md` — research del
   autor sobre el mercado y la competencia (opcional, contenido libre).
 
-## Objetivos finales
-
-1. Cumplir `REQUISITOS-THEMEFOREST.md` al 100%.
-2. Lighthouse ≥ 90 Performance / SEO / Accessibility / Best Practices.
-3. Documentación HTML estática en `documentation/`.
-4. Variantes/demos competitivos en el nicho.
-
-## Restricciones
-
-- HTML/CSS válido (W3C).
-- Responsive 360/768/1024/1280/1440/1920.
-- WCAG AA: contraste, ARIA, navegación teclado.
-- `prefers-reduced-motion` respetado.
-- Assets libres de derechos (ver sección §C abajo).
+{objetivos_block}
 
 ## §C — Assets visuales y demo data (OBLIGATORIO desde el primer commit)
 
@@ -1576,13 +1715,15 @@ es una molestia, es lo que evita el trabajo perdido.
 
 ---
 
+{wp_installer_block}
+
 # §A. LICENSING SYSTEM (lectura obligatoria si el theme se publica con licencia)
 
 {sistema_licencias}
 
 ---
 
-# §B. REQUISITOS THEMEFOREST (lectura obligatoria)
+# §B. REQUISITOS ENVATO (lectura obligatoria)
 
 {requisitos_envato}
 """
@@ -1713,6 +1854,31 @@ def write_setup_script(
         else:
             parts.append('echo "→ Sin scaffolding (stack: Sin stack)."')
 
+    # ── WordPress dev env (Docker) — SOLO stacks WordPress, ANTES de todo lo
+    #    demás. Levanta WP + MariaDB, instala WP (admin/admin) y monta el
+    #    proyecto en wp-content. No-fatal: si docker falla, el setup sigue.
+    if stack_key in ("wordpress-block", "wordpress-plugin"):
+        wp_kind = "theme" if stack_key == "wordpress-block" else "plugin"
+        _wp_builder = Path(__file__).resolve().parent
+        _wp_slug = project_dir.name
+        parts.append('echo ""')
+        parts.append('echo "──── WordPress dev env (Docker) ────"')
+        parts.append('if command -v docker >/dev/null 2>&1; then')
+        parts.append('  echo "→ Provisionando WordPress + MariaDB en Docker (el primer pull puede tardar)…"')
+        parts.append(
+            f'  if WP_OUT=$(PYTHONPATH={shell_quote(str(_wp_builder))} python3 -m wp_provisioner '
+            f'provision {shell_quote(_wp_slug)} "$(pwd)" {wp_kind} 2>&1); then'
+        )
+        parts.append('    WP_URL=$(echo "$WP_OUT" | python3 -c "import json,sys; print(json.load(sys.stdin)[\\"url\\"])" 2>/dev/null)')
+        parts.append('    echo "✓ WordPress listo en ${WP_URL:-localhost} (admin/admin) — ver WORDPRESS-DEV.md"')
+        parts.append('  else')
+        parts.append('    echo "(No se pudo provisionar WordPress — el setup continúa.)"')
+        parts.append('    echo "$WP_OUT" | tail -5')
+        parts.append('  fi')
+        parts.append('else')
+        parts.append('  echo "(docker no disponible — WordPress no se autoinstala; instálalo a mano)"')
+        parts.append('fi')
+
     if mode == "recreate" and reference_kind == "figma":
         # Figma no se descarga — el agente lee el diseño vía el MCP figma-context.
         parts.append('echo ""')
@@ -1814,8 +1980,8 @@ def write_setup_script(
         parts.append('echo ""')
         parts.append(
             'echo "→ Saltando autoskills: stack=none. Tras el primer '
-            'scaffold real, el agente puede ejecutar `npx --yes autoskills '
-            f'-a {skills_flag}` manualmente (ver CLAUDE.md)."'
+            "scaffold real, el agente puede ejecutar 'npx --yes autoskills "
+            f"-a {skills_flag}' manualmente (ver CLAUDE.md).\""
         )
     elif run_autoskills and skills_flag:
         parts.append('echo ""')
@@ -1876,49 +2042,16 @@ def write_setup_script(
     # stack) a la raíz para que estén disponibles desde cualquier cwd.
     # Las stack-specific (laravel/next/flutter/react/php/dart) quedan
     # solo per-app para evitar contaminación.
+    # ── Cablear skills de autoskills (.agents/skills/) → .claude/skills/ ──
+    # autoskills instala en `.agents/skills/` pero no siempre crea el symlink
+    # en `.claude/skills/` (lo único que escanea Claude Code), así que el
+    # agente no las veía. `skills_wireup` lo arregla (single-app y mono-repo).
+    _sw_dir = Path(__file__).resolve().parent
     parts.append('echo ""')
-    parts.append('echo "→ Agregando skills cross-cutting a la raíz (solo aplica a mono-repos)…"')
-    parts.append("python3 - <<'PY_WIREUP_EOF' || true")
-    parts.append("import json, os")
-    parts.append("from pathlib import Path")
-    parts.append("")
-    parts.append("CROSS_CUTTING = {")
-    parts.append("    'accessibility', 'seo', 'frontend-design', 'tailwind-css-patterns',")
-    parts.append("    'bash-defensive-patterns', 'typescript-advanced-types',")
-    parts.append("}")
-    parts.append("")
-    parts.append("root = Path('.').resolve()")
-    parts.append("cross_found = {}  # name -> canonical Path")
-    parts.append("for sub_pattern in ['apps/*', 'packages/*']:")
-    parts.append("    for sub in sorted(root.glob(sub_pattern)):")
-    parts.append("        if not sub.is_dir(): continue")
-    parts.append("        skills_dir = sub / '.agents' / 'skills'")
-    parts.append("        if not skills_dir.is_dir(): continue")
-    parts.append("        for skill in skills_dir.iterdir():")
-    parts.append("            if skill.is_dir() and skill.name in CROSS_CUTTING and skill.name not in cross_found:")
-    parts.append("                cross_found[skill.name] = skill")
-    parts.append("")
-    parts.append("if not cross_found:")
-    parts.append("    print('  (no es mono-repo o sin cross-cutting detectadas — autoskills ya cableó las que aplican)')")
-    parts.append("else:")
-    parts.append("    root_skills = root / '.claude' / 'skills'")
-    parts.append("    root_skills.mkdir(parents=True, exist_ok=True)")
-    parts.append("    # Crear settings.json vacío en raíz si no existe (señaliza a Claude Code)")
-    parts.append("    settings_path = root / '.claude' / 'settings.json'")
-    parts.append("    if not settings_path.exists():")
-    parts.append("        settings_path.write_text('{}\\n', encoding='utf-8')")
-    parts.append("    for name, canonical in cross_found.items():")
-    parts.append("        link = root_skills / name")
-    parts.append("        target = os.path.relpath(canonical, root_skills)")
-    parts.append("        if link.is_symlink() or link.exists():")
-    parts.append("            try: link.unlink()")
-    parts.append("            except: pass")
-    parts.append("        try:")
-    parts.append("            link.symlink_to(target)")
-    parts.append("            print(f'  ✓ {name} agregada a raíz')")
-    parts.append("        except Exception as e:")
-    parts.append("            print(f'  ✗ {name} falló: {e}')")
-    parts.append("PY_WIREUP_EOF")
+    parts.append('echo "→ Cableando skills de autoskills a .claude/skills/ (para que el agente las use)…"')
+    parts.append(
+        f'PYTHONPATH={shell_quote(str(_sw_dir))} python3 -m skills_wireup "$(pwd)" || true'
+    )
 
     # ── BD: aprovisionamiento automático post-clone/scaffold ──
     # El propio script detecta si el proyecto necesita Postgres (drizzle/
@@ -1931,7 +2064,9 @@ def write_setup_script(
     parts.append('echo "→ Detectando BD requerida por el proyecto…"')
     parts.append(f'export PYTHONPATH={shell_quote(str(builder_dir))}')
     parts.append('DB_KIND=$(python3 -m db_provisioner detect "$(pwd)" 2>/dev/null || true)')
-    if force_postgres:
+    # WordPress trae su propia MariaDB (en el contenedor de wp_provisioner),
+    # así que NO forzamos Postgres aunque el checkbox esté marcado.
+    if force_postgres and stack_key not in ("wordpress-block", "wordpress-plugin"):
         parts.append('# Override: el usuario marcó "Provisionar Postgres" en la UI')
         parts.append('if [ -z "$DB_KIND" ]; then')
         parts.append('  echo "  (No detectada en archivos, pero forzada por checkbox UI)"')
@@ -3012,7 +3147,10 @@ class ThemeForge(QWidget):
         # señales para preview
         for w in (self.type_combo, self.ref_kind_combo, self.repo_combo):
             w.currentIndexChanged.connect(self._update_preview)
-        self.provider_picker.providerChanged.connect(lambda _k: self._update_preview())
+        # Persistir el provider elegido como default → lo usan las ventanas de
+        # proyecto (galería / abrir otro) para abrir SOLO esa IA.
+        self.provider_picker.providerChanged.connect(
+            lambda k: (_ap.set_defaults(provider=k), self._update_preview()))
         self.ref_path_edit.textChanged.connect(self._update_preview)
         self.ref_path_edit.textChanged.connect(self._invalidate_analysis_if_path_changed)
         self.adopt_path_edit.textChanged.connect(self._update_preview)
@@ -3282,6 +3420,26 @@ class ThemeForge(QWidget):
             return
 
         facts = gather_facts(path)
+
+        # Si la referencia es WordPress, fijamos el stack a WordPress
+        # (theme/plugin). Eso dispara, al crear: auto-instalación de WP en
+        # Docker, el §B WordPress y el preview apuntando al contenedor. El
+        # prompt de análisis (build_prompt) recomendará SOLO enfoques WordPress.
+        _wp_kind = facts.get("kind") if isinstance(facts, dict) else None
+        if _wp_kind in ("wordpress-theme", "wordpress-plugin"):
+            _new_stack = "wordpress-block" if _wp_kind == "wordpress-theme" else "wordpress-plugin"
+            if self._stack_key != _new_stack:
+                self._stack_key = _new_stack
+                self._refresh_stack_button()
+                if hasattr(self, "uipro_check"):
+                    self.uipro_check.setChecked(self._is_ui_stack(self._stack_key))
+                self._update_preview()
+            self.analysis_status_lbl.setText(
+                f"🔌 Referencia WordPress detectada → stack fijado a «{STACKS[_new_stack]['name']}». "
+                f"Al crear, ThemeForge auto-instala WordPress en Docker y el preview apuntará ahí."
+            )
+            self.analysis_status_lbl.setVisible(True)
+
         prompt = build_prompt(facts)
 
         agent_key = self.provider_picker.current_key()
@@ -3926,7 +4084,8 @@ class GalleryPanel(QWidget):
         if not p:
             QMessageBox.warning(self, "Galería", "Selecciona primero un template.")
             return
-        open_project_window(p)
+        # Abrir desde galería → auto-ejecutar el agente con el contexto del tema.
+        open_project_window(p, auto_agent=True)
 
     def _automate_with_operator(self):
         """Lanza el Operator (Hermes) sobre el proyecto seleccionado."""

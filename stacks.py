@@ -89,104 +89,13 @@ STACKS = {
             '<!-- /wp:group -->\n'
             '<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->\n'
             'THEMEFORGE_EOF',
-            # ── 5. plugin themeforge-mcp con WordPress MCP Adapter ───
-            "mkdir -p plugins/themeforge-mcp",
-            'cat > plugins/themeforge-mcp/themeforge-mcp.php <<\'THEMEFORGE_EOF\'\n'
-            '<?php\n'
-            '/**\n'
-            ' * Plugin Name: ThemeForge MCP\n'
-            ' * Description: Expone WordPress como servidor MCP usando wordpress/mcp-adapter.\n'
-            ' * Version: 0.1.0\n'
-            ' * Author: ThemeForge\n'
-            ' * Requires PHP: 8.0\n'
-            ' */\n'
-            '\n'
-            "if (!defined('ABSPATH')) { exit; }\n"
-            '\n'
-            "if (file_exists(__DIR__ . '/vendor/autoload.php')) {\n"
-            "    require_once __DIR__ . '/vendor/autoload.php';\n"
-            "}\n"
-            '\n'
-            "add_action('mcp_adapter_init', function ($adapter) {\n"
-            "    if (!class_exists('\\\\WP\\\\MCP\\\\Transport\\\\Http\\\\RestTransport')) return;\n"
-            "    $adapter->create_server(\n"
-            "        'mcp-adapter-default-server',\n"
-            "        'mcp',\n"
-            "        'mcp-adapter-default-server',\n"
-            "        'ThemeForge WP MCP',\n"
-            "        'WordPress abilities expuestas via MCP',\n"
-            "        'v1',\n"
-            "        [\\WP\\MCP\\Transport\\Http\\RestTransport::class]\n"
-            "    );\n"
-            "});\n"
-            'THEMEFORGE_EOF',
-            'cat > plugins/themeforge-mcp/composer.json <<\'THEMEFORGE_EOF\'\n'
-            '{\n'
-            '  "name": "themeforge/mcp-plugin",\n'
-            '  "description": "WordPress MCP Adapter cargado por ThemeForge",\n'
-            '  "require": {\n'
-            '    "wordpress/mcp-adapter": "^1.0",\n'
-            '    "wordpress/abilities-api": "^1.0",\n'
-            '    "automattic/jetpack-autoloader": "^5.0"\n'
-            '  }\n'
-            '}\n'
-            'THEMEFORGE_EOF',
-            "(cd plugins/themeforge-mcp && composer install --no-interaction --quiet 2>&1 | tail -5) "
-            '|| echo "(composer install del plugin falló — instálalo a mano antes de wp-env start)"',
-            # ── 6. .wp-env.json (define el WP local con tema y plugin) ─
-            'cat > .wp-env.json <<\'THEMEFORGE_EOF\'\n'
-            '{\n'
-            '  "core": null,\n'
-            '  "themes": ["."],\n'
-            '  "plugins": ["./plugins/themeforge-mcp"],\n'
-            '  "config": {\n'
-            '    "WP_DEBUG": true,\n'
-            '    "WP_DEBUG_LOG": true\n'
-            '  },\n'
-            '  "lifecycleScripts": {\n'
-            '    "afterStart": "wp-env run cli wp plugin activate themeforge-mcp"\n'
-            '  }\n'
-            '}\n'
-            'THEMEFORGE_EOF',
-            # ── 7. .mcp.json: registra el server MCP para Claude Code ─
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
-            '{\n'
-            '  "mcpServers": {\n'
-            '    "wordpress": {\n'
-            '      "type": "http",\n'
-            '      "url": "http://localhost:8888/wp-json/mcp/mcp-adapter-default-server"\n'
-            '    }\n'
-            '  }\n'
-            '}\n'
-            'THEMEFORGE_EOF',
-            # ── 8. README rápido del proyecto ────────────────────────
-            'cat > README-MCP.md <<\'THEMEFORGE_EOF\'\n'
-            '# WordPress MCP (themeforge-mcp)\n\n'
-            'Este tema incluye un plugin local que expone WordPress como servidor MCP\n'
-            'usando `wordpress/mcp-adapter`.\n\n'
-            '## Arrancar\n\n'
-            '```bash\n'
-            'npx wp-env start           # WordPress local en http://localhost:8888\n'
-            '```\n\n'
-            'El primer arranque descarga las imágenes Docker (~500 MB).\n\n'
-            '## Endpoint MCP\n\n'
-            '- HTTP: `http://localhost:8888/wp-json/mcp/mcp-adapter-default-server`\n'
-            '- Claude Code / Codex lo leen automáticamente desde `.mcp.json` al abrir el proyecto.\n\n'
-            '## Login al wp-admin\n\n'
-            '- URL: `http://localhost:8888/wp-admin/`\n'
-            '- Usuario: `admin` · Contraseña: `password`\n\n'
-            '## Parar\n\n'
-            '```bash\n'
-            'npx wp-env stop\n'
-            '```\n'
-            'THEMEFORGE_EOF',
         ],
-        "min_version": "WordPress 6.7+ (Abilities API en 6.9 core, 6.8 vía composer)",
+        "min_version": "WordPress 6.7+ / PHP 8.0",
         "skills": ["wordpress/skills/block-theme-development"],
-        "notes": "Block theme moderno (theme.json + FSE) + plugin local con wordpress/mcp-adapter listo. wp-env arranca todo en Docker (localhost:8888). .mcp.json registra el server MCP para Claude Code y Codex.",
+        "notes": "Block theme moderno (theme.json v3 + FSE). El entorno WordPress (Docker) lo levanta ThemeForge automáticamente al crear el proyecto (ver WORDPRESS-DEV.md). El agente opera WP con wp-cli vía ./wp.",
     },
     "wordpress-plugin": {
-        "name": "WordPress Plugin (PHP 8.2 + wp-env)",
+        "name": "WordPress Plugin (PHP 8.2)",
         "category": "CMS · WordPress",
         "language": "PHP + JS",
         "scaffold": [
@@ -259,16 +168,10 @@ STACKS = {
             '  "scripts": {\n'
             '    "dev": "vite",\n'
             '    "build": "vite build",\n'
-            '    "wp-env": "wp-env",\n'
-            '    "wp-env:start": "wp-env start",\n'
-            '    "wp-env:stop": "wp-env stop",\n'
-            '    "wp-env:clean": "wp-env clean all",\n'
-            '    "wp-env:cli": "wp-env run cli wp",\n'
             '    "test:php": "vendor/bin/pest",\n'
             '    "test:e2e": "playwright test"\n'
             '  },\n'
             '  "devDependencies": {\n'
-            '    "@wordpress/env": "^10.0",\n'
             '    "vite": "^6.0",\n'
             '    "vue": "^3.5",\n'
             '    "@vitejs/plugin-vue": "^5.0",\n'
@@ -299,31 +202,11 @@ STACKS = {
             '  },\n'
             '});\n'
             'THEMEFORGE_EOF',
-            # ── 6. .wp-env.json (monta el plugin actual) ─────────────
-            'cat > .wp-env.json <<\'THEMEFORGE_EOF\'\n'
-            '{\n'
-            '  "core": "WordPress/WordPress#6.7",\n'
-            '  "phpVersion": "8.2",\n'
-            '  "plugins": ["."],\n'
-            '  "themes": [],\n'
-            '  "port": 8888,\n'
-            '  "testsPort": 8889,\n'
-            '  "config": {\n'
-            '    "WP_DEBUG": true,\n'
-            '    "WP_DEBUG_LOG": true,\n'
-            '    "SCRIPT_DEBUG": true\n'
-            '  },\n'
-            '  "lifecycleScripts": {\n'
-            '    "afterStart": "wp-env run cli wp plugin activate __SLUG__"\n'
-            '  }\n'
-            '}\n'
-            'THEMEFORGE_EOF',
             # ── 7. .gitignore ────────────────────────────────────────
             'cat > .gitignore <<\'THEMEFORGE_EOF\'\n'
             'vendor/\n'
             'node_modules/\n'
             'build/\n'
-            '.wp-env/\n'
             '*.log\n'
             '/.env\n'
             'tests/_output/\n'
@@ -336,19 +219,19 @@ STACKS = {
             'WordPress plugin generado por ThemeForge.\n\n'
             '## Stack\n\n'
             '- PHP 8.2 + Composer (autoload PSR-4 `Themeforge\\\\__PASCAL__\\\\`)\n'
-            '- WordPress 6.7+ vía wp-env (Docker)\n'
+            '- WordPress 6.7+ (entorno Docker levantado por ThemeForge — ver WORDPRESS-DEV.md)\n'
             '- Admin UI: Vue 3.5 + Vite 6 + Tailwind 4\n'
             '- Tests: Pest + Playwright E2E\n\n'
             '## Arrancar\n\n'
             '```bash\n'
             'composer install\n'
             'npm install\n'
-            'npm run wp-env:start    # WP en http://localhost:8888\n'
+            '# WordPress lo levanta ThemeForge automáticamente (ver WORDPRESS-DEV.md)\n'
             'npm run dev             # Vite HMR para admin UI\n'
             '```\n\n'
-            '## Login wp-admin\n\n'
-            '- URL: http://localhost:8888/wp-admin/\n'
-            '- Usuario: `admin` · Contraseña: `password`\n\n'
+            '## WordPress de desarrollo\n\n'
+            'ThemeForge levanta WordPress en Docker automáticamente y monta este plugin.\n'
+            'URL, credenciales y el helper `./wp` (wp-cli): ver `WORDPRESS-DEV.md`.\n\n'
             '## Tests\n\n'
             '```bash\n'
             'npm run test:php       # Pest (unitarios + integración)\n'
@@ -359,23 +242,23 @@ STACKS = {
             'npm run build          # genera build/ con manifest\n'
             'composer install --no-dev --optimize-autoloader\n'
             '```\n\n'
-            'Luego empaqueta en zip excluyendo `node_modules/`, `tests/`, `.wp-env/`.\n'
+            'Luego empaqueta en zip excluyendo `node_modules/`, `tests/`, `build/`.\n'
             'THEMEFORGE_EOF',
             # ── 9. composer install (descarga deps, vendor/) ─────────
             'composer install --no-interaction --quiet 2>&1 | tail -5 '
             '|| echo "(composer install falló — instálalo a mano)"',
-            # ── 10. npm install (descarga wp-env + Vite + Vue + Tailwind) ──
+            # ── npm install (Vite + Vue + Tailwind) ──
             'npm install --silent 2>&1 | tail -5 '
             '|| echo "(npm install falló — instálalo a mano)"',
         ],
-        "min_version": "WordPress 6.7 / PHP 8.2 / wp-env 10.x",
+        "min_version": "WordPress 6.7 / PHP 8.2",
         "skills": [],
         "notes": (
-            "Plugin WP listo para desarrollo con preview vía wp-env (Docker). "
-            "El plugin se monta automáticamente y se activa al arrancar WP. "
+            "Plugin WP. El entorno WordPress (Docker) lo levanta ThemeForge "
+            "automáticamente al crear el proyecto y monta el plugin (ver WORDPRESS-DEV.md). "
+            "El agente opera WP con wp-cli vía ./wp. "
             "Canal de venta: CodeCanyon, Freemius, web propia. "
-            "REQUISITOS: Docker corriendo + Node 18+ + Composer 2.x. "
-            "Arranque: `npm run wp-env:start` (primera vez baja ~500MB de imágenes)."
+            "REQUISITOS: Docker corriendo + Node 18+ + Composer 2.x."
         ),
     },
     "shopify-liquid": {

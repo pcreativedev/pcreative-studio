@@ -30,7 +30,15 @@ CONFIG_PATH = app_config_dir() / "licensing.json"
 # privado no existe. URLs públicas HTTPS por defecto — el usuario
 # externo despliega como prefiera.
 PLACEHOLDERS = {
-    "license_api_url": "https://YOUR_DOMAIN/api/license/verify",
+    # Endpoint público de ACTIVACIÓN (devuelve un JWT firmado). El cliente lo
+    # llama una vez y luego verifica el JWT offline con la pubkey de abajo.
+    "license_api_url": "https://YOUR_DOMAIN/api/license/activate",
+    # Clave pública RS256 (PEM) para verificar los JWT offline, sin llamar al
+    # servidor en cada carga. NO es secreta. El usuario externo pega la SUYA
+    # (la de /api/license/pubkey de su propio backend).
+    "license_pubkey": "-----BEGIN PUBLIC KEY-----\nREPLACE_WITH_YOUR_LICENSE_PUBLIC_KEY\n-----END PUBLIC KEY-----",
+    # Issuer (claim `iss`) con el que tu backend firma los JWT.
+    "license_issuer": "YOUR_DOMAIN",
     "panel_base": "https://YOUR_DOMAIN/admin",
     "panel_proxy_url": "https://YOUR_DOMAIN/api/plesk/proxy.php",
     "panel_label": "tu panel admin",

@@ -34,6 +34,9 @@ class PreviewProfile(TypedDict, total=False):
     port_inject: str
     stop: list[str]
     note: str
+    # no_server=True → el preview NO arranca ningún proceso (p.ej. WordPress
+    # ya corre en Docker); solo se carga `url` en el webview.
+    no_server: bool
     # Lista de procesos extra lanzados en paralelo. Cada entrada:
     #   {"name": "vite", "command": [...], "optional": True}
     # optional=True → si falla al arrancar, no mata el preview principal.
@@ -392,6 +395,24 @@ def _enrich_with_extras(project_path: Path, profile: PreviewProfile, deps: dict 
 
 def detect_preview_profile(project_path: Path) -> PreviewProfile | None:
     """Heurística → devuelve cómo levantar y dónde ver el preview."""
+    # WordPress provisionado por ThemeForge en Docker → preview directo al
+    # contenedor, sin dev server (no_server). La URL/puerto vienen de
+    # ~/.config/themeforge/wp_provisions.json (keyed por slug = nombre de dir).
+    try:
+        from wp_provisioner import get_provision
+        _wp = get_provision(project_path.name)
+    except Exception:
+        _wp = None
+    if _wp and _wp.get("url"):
+        return {
+            "name": "WordPress (Docker)",
+            "command": [],
+            "url": _wp["url"],
+            "default_port": _wp.get("port", 80),
+            "port_inject": None,
+            "no_server": True,
+        }
+
     profile = _detect_base_profile(project_path)
     if profile is None:
         return None

@@ -123,13 +123,17 @@ def _render(template_name: str, *, slug: str, project_name: str) -> str:
     Placeholders soportados:
       __SLUG__              — slug del proyecto generado
       __PROJECT__           — nombre legible del proyecto
-      __LICENSE_API_URL__   — URL del endpoint verify (de licensing.json)
+      __LICENSE_API_URL__   — URL del endpoint activate (de licensing.json)
       __LICENSE_HOST__      — protocolo + host del endpoint (de licensing.json)
       __LICENSE_HOST_BARE__ — host sin protocolo (de licensing.json)
+      __LICENSE_PUBKEY__    — clave pública RS256 (PEM) para verificar JWT offline
+      __LICENSE_ISSUER__    — issuer (claim `iss`) de los JWT
     """
     from licensing_config import load as _load_licensing_config
     cfg = _load_licensing_config()
     api_url = cfg["license_api_url"]
+    pubkey = cfg.get("license_pubkey", "")
+    issuer = cfg.get("license_issuer", "")
     # Derivar host con y sin protocolo a partir del api_url
     if "://" in api_url:
         proto, rest = api_url.split("://", 1)
@@ -146,7 +150,9 @@ def _render(template_name: str, *, slug: str, project_name: str) -> str:
             .replace("__PROJECT__", project_name)
             .replace("__LICENSE_API_URL__", api_url)
             .replace("__LICENSE_HOST__", host_with_proto)
-            .replace("__LICENSE_HOST_BARE__", host))
+            .replace("__LICENSE_HOST_BARE__", host)
+            .replace("__LICENSE_PUBKEY__", pubkey)
+            .replace("__LICENSE_ISSUER__", issuer))
 
 
 def _heredoc(dest_path: str, content: str, tag: str = "PCRE_EOF") -> str:
@@ -277,10 +283,14 @@ def _scaffold_laravel(slug: str, project_name: str) -> list[str]:
 
 def _scaffold_wordpress(slug: str, project_name: str) -> list[str]:
     parts: list[str] = []
-    parts.append('echo "  · WordPress: clase License + página admin"')
+    parts.append('echo "  · WordPress: License + Updater (gateado por licencia) + página admin"')
     parts.append(_heredoc(
         "inc/class-license.php",
         _render("wordpress/class-license.php.tpl", slug=slug, project_name=project_name),
+    ))
+    parts.append(_heredoc(
+        "inc/class-updater.php",
+        _render("wordpress/class-updater.php.tpl", slug=slug, project_name=project_name),
     ))
     parts.append(_heredoc(
         "inc/admin-license-page.php",

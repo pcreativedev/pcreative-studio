@@ -617,9 +617,29 @@ URLs principales consultadas con WebSearch.
 Sé directo, técnico, en español. No formules con disclaimer.
 """
 
+    kind = facts.get("kind")
+    if kind in ("wordpress-theme", "wordpress-plugin"):
+        _wp_what = "theme" if kind == "wordpress-theme" else "plugin"
+        wp_constraint = (
+            "\n## ⚠️ La referencia es WordPress — recomienda SOLO WordPress\n\n"
+            f"ThemeForge ha detectado que la referencia es un **{_wp_what} de WordPress** "
+            "y el producto se construirá y venderá COMO WordPress. Por tanto:\n\n"
+            "- Recomienda **EXCLUSIVAMENTE** enfoques WordPress: **block theme (FSE)**, "
+            "**classic/hybrid theme**, o basado en page-builder si la referencia lo usa "
+            "(Elementor, WPBakery, etc.). Para plugins, arquitectura de plugin WP estándar.\n"
+            "- **NO** propongas Astro, Next, Nuxt, Vite, Laravel ni ningún stack que NO sea "
+            "WordPress — aquí no son una opción.\n"
+            "- El checklist Envato aplicable es el de **ThemeForest WordPress** (Theme Check, "
+            "estándares WP), no Site Template estático ni CodeCanyon script.\n"
+            "- Da 1 recomendación principal + 2 variantes, **todas dentro de WordPress** "
+            "(p.ej. FSE puro vs híbrido classic+blocks vs page-builder).\n"
+        )
+    else:
+        wp_constraint = ""
+
     return f"""Soy desarrollador y quiero usar este template como **REFERENCIA para
 estudiar funcionalidades**, NO como código a copiar.
-
+{wp_constraint}
 ## ⚠️ Pre-acuerdo — la licencia NO es objeto del análisis
 
 Estás en el modo **"recrear"** de ThemeForge. Al elegir este modo el

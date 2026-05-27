@@ -49,9 +49,9 @@ function licensing_render_admin_page(\ThemeForge\Licensing\License $license, str
         }
     }
 
-    $state = $license->get_state();
-    $active = !empty($state['valid']);
-    $current_key = $state['license_key'] ?? '';
+    $active = $license->is_active();
+    $info = $active ? $license->info() : [];
+    $current_key = $license->get_key();
     ?>
     <div class="wrap">
         <h1><?php echo esc_html($product_name); ?> — License</h1>
@@ -67,9 +67,13 @@ function licensing_render_admin_page(\ThemeForge\Licensing\License $license, str
                     <td>
                         <?php if ($active): ?>
                             <span style="color:#0a0">✓ Active</span>
-                            (<?php echo esc_html($state['type'] ?? '—'); ?>,
-                            <?php echo esc_html((string)($state['uses'] ?? 0)); ?> /
-                            <?php echo esc_html((string)($state['max'] ?? 0)); ?> domain<?php echo (int)($state['max'] ?? 0) === 1 ? '' : 's'; ?>)
+                            (<?php echo esc_html((string)($info['type'] ?? '—')); ?><?php
+                                echo !empty($info['extended'])
+                                    ? ' · all domains'
+                                    : ' · ' . esc_html((string)($info['domain'] ?? '')); ?><?php
+                                if (!empty($info['exp'])) {
+                                    echo ' · expires ' . esc_html(date_i18n(get_option('date_format'), (int)$info['exp']));
+                                } ?>)
                         <?php else: ?>
                             <span style="color:#c00">✗ Inactive</span>
                         <?php endif; ?>

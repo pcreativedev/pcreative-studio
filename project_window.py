@@ -17,9 +17,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import shutil
+import socket
 import subprocess
+import time
 from pathlib import Path
 
 from datetime import datetime
@@ -79,7 +82,7 @@ TERMINAL_DIR = Path(os.environ.get("THEMEFORGE_TERMINAL_DIR") or (BUILDER_DIR / 
 
 class ProjectWindow(QWidget):
     def __init__(self, project_path: Path, initial_cmd: str | None = None,
-                 provider_key: str | None = None):
+                 provider_key: str | None = None, auto_agent: bool = False):
         """
         initial_cmd: si se pasa, el primer tab "Setup" arranca con
         `bash -c '<initial_cmd>; exec bash -i'` para ejecutar el setup
@@ -99,6 +102,22 @@ class ProjectWindow(QWidget):
         self.project_path.mkdir(parents=True, exist_ok=True)
         self._initial_cmd = initial_cmd
         self._provider_key = provider_key
+        # Al abrir desde la galería: auto-ejecutar el agente con el contexto
+        # del proyecto (lee CLAUDE.md/AGENTS.md y propone siguientes pasos).
+        self._auto_agent = auto_agent
+        self._auto_agent_tab_index: int | None = None
+
+        # Enlazar las skills que instala autoskills (.agents/skills/) dentro de
+        # .claude/skills/ para que el agente las DESCUBRA (autoskills no siempre
+        # crea ese symlink → el agente solo veía la de UI/UX Pro). Idempotente,
+        # aplica a cualquier modo de apertura.
+        try:
+            import skills_wireup
+            _linked = skills_wireup.ensure_skills_discoverable(self.project_path)
+            if _linked:
+                print(f"[project_window] skills de autoskills enlazadas: {', '.join(_linked)}")
+        except Exception as _e:
+            print(f"[project_window] skills_wireup falló: {_e}")
 
         # ── Multi-stack / mono-repo support ──────────────────────────
         # Si la raíz contiene varios sub-proyectos (Laravel + Next +
@@ -150,6 +169,9 @@ class ProjectWindow(QWidget):
         self._start_terminal_server()
         self.setWindowTitle(f"ThemeForge — {self.project_path.name}")
         self.resize(1500, 900)
+
+        # WordPress (Docker) ya provisionado → cargar el preview de entrada.
+        self._load_no_server_preview()
 
         # Auto-re-detect: si el perfil aún no se detectó (modo "existing"
         # o setup en curso), reintentamos cada 3 segundos durante 5 min.
@@ -476,14 +498,24 @@ class ProjectWindow(QWidget):
             except Exception as e:
                 print(f"[project_window] error añadiendo tab del provider: {e}")
         else:
+            # Abrir SOLO la IA seleccionada en el provider (app_prefs), en
+            # cualquier modo — no todas las CLIs. Si auto_agent (galería /
+            # abrir otro), va alimentada con el prompt de contexto del tema.
             import ai_providers as _aip2
-            for label, binary in _AI_TABS:
-                if _sh.which(binary):
-                    # claude → ["--dangerously-skip-permissions"]
-                    # (and any future per-binary args we add to
-                    # interactive_argv_for_binary)
-                    extra_argv = _aip2.interactive_argv_for_binary(binary)[1:]
-                    self._add_term_tab(label, binary, extra_argv or None)
+            import app_prefs as _ap
+            sel_key = _ap.default_provider()
+            binary = _aip2.PROVIDERS.get(sel_key, {}).get("command")
+            if binary and _sh.which(binary):
+                short = _aip2.PROVIDERS[sel_key]["short"]
+                _cmd, _extra = _aip2.interactive_cmd_args(sel_key)
+                if self._auto_agent:
+                    prompt = self._build_open_project_prompt(sel_key)
+                    self._add_term_tab(short, _cmd, (_extra or []) + [prompt])
+                    self._auto_agent_tab_index = self.term_tabs.count() - 1
+                else:
+                    self._add_term_tab(short, _cmd, _extra or None)
+            elif binary:
+                print(f"[project_window] {binary} (provider '{sel_key}') no en PATH — no se añade tab de IA")
         # Tab 🚀 Hermes (Operator) — OPCIONAL: solo si Hermes está instalado.
         # Corre `hermes -s themeforge-operator` interactivo en el cwd del
         # proyecto → auto-carga su AGENTS.md/.hermes.md, lo modifica y aprende.
@@ -521,6 +553,10 @@ class ProjectWindow(QWidget):
                 self.term_tabs.addTab(self.pixel_view, "🎮 Office")
         except Exception as e:
             print(f"[pixel-office] tab no creada: {e}")
+
+        # Si auto-lanzamos un agente, dejarlo como pestaña activa.
+        if self._auto_agent_tab_index is not None:
+            self.term_tabs.setCurrentIndex(self._auto_agent_tab_index)
 
         # Splitter horizontal: preview | terminales
         h_split = QSplitter(Qt.Orientation.Horizontal)
@@ -568,6 +604,62 @@ class ProjectWindow(QWidget):
         self.term_tabs.addTab(view, label)
         # cmd None → shell por defecto
         self._pending_term_tabs.append((view, cmd or "bash", list(args or [])))
+
+    # ── Auto-arranque del agente al abrir desde galería ──────────────
+    def _project_has_skills(self) -> bool:
+        """¿El proyecto tiene skills instaladas por autoskills / UI-UX Pro?
+        Mira la raíz y, en mono-repos, apps/* y packages/*."""
+        roots = [self.project_path]
+        for sub in ("apps", "packages"):
+            d = self.project_path / sub
+            if d.is_dir():
+                try:
+                    roots += [p for p in d.iterdir() if p.is_dir()]
+                except OSError:
+                    pass
+        for r in roots:
+            for sk in (r / ".claude" / "skills", r / ".agents" / "skills"):
+                try:
+                    if sk.is_dir() and any(sk.iterdir()):
+                        return True
+                except OSError:
+                    continue
+        return False
+
+    def _build_open_project_prompt(self, provider_key: str) -> str:
+        """Prompt inicial al abrir un proyecto existente desde la galería:
+        leer el contexto del tema y proponer cómo continuar."""
+        import ai_providers as _aip
+        # Usar el archivo de contexto que exista en el proyecto (el del
+        # provider elegido si está; si no, cualquiera de los conocidos).
+        candidates = [
+            _aip.PROVIDERS[provider_key].get("context_file", "CLAUDE.md"),
+            "CLAUDE.md", "AGENTS.md", "GEMINI.md",
+        ]
+        ctx_file = next(
+            (c for c in candidates if (self.project_path / c).is_file()),
+            candidates[0],
+        )
+        # Si hay skills instaladas (autoskills / UI-UX Pro), decírselo
+        # explícitamente — vale para proyectos viejos sin la sección en el MD.
+        skills_line = ""
+        if self._project_has_skills():
+            skills_line = (
+                " Este proyecto tiene **skills instaladas** (autoskills / UI-UX "
+                "Pro) en `.claude/skills/` (y en mono-repos `apps/*/.claude/skills/`): "
+                "lístalas, léelas y ÚSALAS durante el trabajo."
+            )
+        name = self.project_path.name
+        return (
+            f"Acabas de abrir el proyecto «{name}» desde ThemeForge. "
+            f"Lee COMPLETAMENTE {ctx_file} y todo lo que haya en context/ para "
+            f"entender el estado actual del proyecto (qué es, stack, qué se ha "
+            f"hecho ya).{skills_line}\n\n"
+            f"Antes de tocar NADA del código:\n"
+            f"1. Resume en 4-6 líneas el estado del proyecto y lo ya hecho.\n"
+            f"2. Lista los primeros 3-5 pasos que propones para continuar.\n"
+            f"3. Espera mi OK antes de ejecutar nada."
+        )
 
     # ── Servidor Node con xterm.js ───────────────────────────────────
     def _start_terminal_server(self):
@@ -778,7 +870,8 @@ class ProjectWindow(QWidget):
             base = str(PROJECTS_DIR if Path(PROJECTS_DIR).is_dir() else Path.home())
             d = QFileDialog.getExistingDirectory(self, "Abrir otro proyecto", base)
             if d:
-                open_project_window(Path(d))
+                # Igual que la galería: auto-ejecutar el agente con el contexto.
+                open_project_window(Path(d), auto_agent=True)
         except Exception as e:
             QMessageBox.warning(self, "Abrir proyecto", f"Error: {e}")
 
@@ -1551,6 +1644,7 @@ class ProjectWindow(QWidget):
         self.btn_start.setEnabled(self.profile is not None)
         self._update_status()
         self.logs.appendPlainText("[perfil re-detectado]")
+        self._load_no_server_preview()
 
     def _auto_detect_tick(self):
         """Reintenta detectar el perfil mientras el setup clona/instala."""
@@ -1633,8 +1727,26 @@ class ProjectWindow(QWidget):
                 f"<code>{' '.join(self.profile['command'])}</code>{note}"
             )
 
+    def _load_no_server_preview(self) -> bool:
+        """Para perfiles `no_server` (p.ej. WordPress en Docker, ya corriendo):
+        carga la URL directamente en el webview sin arrancar ningún proceso."""
+        if not (self.profile and self.profile.get("no_server")):
+            return False
+        url = self.profile["url"].replace("{port}", str(self.preview_port))
+        self.url_edit.setText(url)
+        cur = self.webview.url().toString() if self.webview else ""
+        if cur in ("", "about:blank") or cur != url:
+            self.webview.setUrl(QUrl(url))
+        self.logs.appendPlainText(f"[preview] {self.profile['name']} → {url}")
+        return True
+
     def start_preview(self):
         if not self.profile: return
+        # WordPress (Docker) y otros perfiles sin servidor: no se arranca
+        # proceso, solo se (re)carga la URL del contenedor ya en marcha.
+        if self.profile.get("no_server"):
+            self._load_no_server_preview()
+            return
         if self.preview_proc and self.preview_proc.state() != QProcess.ProcessState.NotRunning:
             return
         # Inyectar puerto único en command + env
@@ -1686,7 +1798,12 @@ class ProjectWindow(QWidget):
 
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
-        QTimer.singleShot(4000, self._load_preview_url)
+        # Resetear la detección de URL real (la sacamos del stdout del server).
+        self._detected_url_done = False
+        # En vez de un wait fijo (causaba ERR_CONNECTION_REFUSED cuando el
+        # dev server tardaba más en compilar), sondeamos el puerto hasta que
+        # escuche y solo entonces cargamos la URL.
+        self._begin_preview_wait()
 
     def _read_sec_output(self, proc: QProcess, name: str):
         try:
@@ -1697,16 +1814,106 @@ class ProjectWindow(QWidget):
             for line in data.rstrip().splitlines():
                 self.logs.appendPlainText(f"[{name}] {line}")
 
+    # URL que imprime el dev server (Astro/Vite/Next/etc.): seguimos ESA,
+    # porque el puerto real puede no coincidir con el que inyectamos (flags
+    # --port duplicados, puerto ocupado, default del framework…).
+    _DEV_URL_RE = re.compile(
+        r"https?://(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d+)", re.IGNORECASE
+    )
+
     def _read_preview_output(self):
         if not self.preview_proc: return
         data = self.preview_proc.readAllStandardOutput().data().decode(errors="replace")
         if data:
             self.logs.appendPlainText(data.rstrip())
+            self._maybe_follow_server_url(data)
+
+    def _maybe_follow_server_url(self, text: str):
+        """Si el server reporta una URL con un puerto distinto al esperado,
+        actualizamos el destino del preview y reapuntamos el sondeo."""
+        if getattr(self, "_detected_url_done", False):
+            return
+        m = self._DEV_URL_RE.search(text)
+        if not m:
+            return
+        self._detected_url_done = True
+        port = int(m.group(1))
+        cur_port = QUrl(self.url_edit.text().strip()).port()
+        if port == cur_port:
+            return  # ya apuntábamos bien
+        detected = f"http://localhost:{port}/"
+        self.logs.appendPlainText(
+            f"[preview] el server escucha en {detected} (esperábamos puerto "
+            f"{cur_port}) → sigo ese."
+        )
+        self.url_edit.setText(detected)
+        # Reapuntar el sondeo al puerto real (resetea la cuenta atrás).
+        self._begin_preview_wait()
 
     def _load_preview_url(self):
         url = self.url_edit.text().strip()
         if url:
             self.webview.setUrl(QUrl(url))
+
+    # ── Espera activa a que el dev server escuche ────────────────────
+    def _preview_host_port(self) -> tuple[str, int]:
+        """Host+puerto del preview, sacados de la URL (con fallback al
+        puerto asignado al proyecto)."""
+        u = QUrl(self.url_edit.text().strip())
+        host = u.host() or "127.0.0.1"
+        port = u.port()
+        if port is None or port < 0:
+            try:
+                port = int(self.preview_port)
+            except (TypeError, ValueError):
+                port = 0
+        return host, port
+
+    @staticmethod
+    def _port_open(host: str, port: int, timeout: float = 0.4) -> bool:
+        if not port:
+            return False
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except OSError:
+            return False
+
+    def _begin_preview_wait(self, max_wait: float = 60.0):
+        """Arranca el sondeo del puerto del dev server. Carga la URL en
+        cuanto el puerto escuche; si no responde en `max_wait` s, carga
+        igualmente para que el usuario vea el estado y pueda recargar."""
+        self._preview_wait_deadline = time.monotonic() + max_wait
+        # Pequeño primer intento por si el server ya estaba caliente.
+        QTimer.singleShot(300, self._wait_for_server)
+
+    def _wait_for_server(self):
+        # Si el proceso de preview murió (y no es un perfil detached tipo
+        # docker que sale con exit 0 pero sigue vivo), no seguimos sondeando.
+        proc_dead = (
+            self.preview_proc is None
+            or self.preview_proc.state() == QProcess.ProcessState.NotRunning
+        )
+        is_detached = bool(self.profile and self.profile.get("stop"))
+        if proc_dead and not is_detached:
+            return
+
+        host, port = self._preview_host_port()
+        if self._port_open(host, port):
+            self.logs.appendPlainText(f"[preview] {host}:{port} escuchando → cargando…")
+            # Pequeña gracia: el socket abre un pelín antes de que el HTTP
+            # server sirva la primera respuesta.
+            QTimer.singleShot(400, self._load_preview_url)
+            return
+
+        if time.monotonic() < getattr(self, "_preview_wait_deadline", 0):
+            QTimer.singleShot(500, self._wait_for_server)
+        else:
+            self.logs.appendPlainText(
+                f"[preview] {host}:{port} no respondió a tiempo; cargando igualmente "
+                f"(pulsa ↻ para reintentar cuando el server termine de compilar)."
+            )
+            self._load_preview_url()
 
     def _preview_finished(self, code, _status):
         self.logs.appendPlainText(f"\n[preview terminado: exit {code}]")
