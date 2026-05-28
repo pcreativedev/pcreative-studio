@@ -1249,6 +1249,269 @@ Categoría WooCommerce/Shopify Themes. El `.zip` de `shopify theme
 package` se sube tal cual. Cumple Theme Store Guidelines aunque vendas
 en ThemeForest — es tu diferenciador competitivo.
 
+#### `layout/theme.liquid` — canónico OS 2.0
+
+```liquid
+<!DOCTYPE html>
+<html lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {%- if settings.favicon != blank -%}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32 }}">
+    {%- endif -%}
+    {{ content_for_header }}  {%- comment -%} OBLIGATORIO — Shopify inyecta scripts aquí {%- endcomment -%}
+  </head>
+  <body class="template-{{ template.name }}">
+    <a class="skip-link" href="#MainContent">{{ 'accessibility.skip_to_content' | t }}</a>
+    {% sections 'header-group' %}
+    <main id="MainContent" role="main">{{ content_for_layout }}</main>
+    {% sections 'footer-group' %}
+  </body>
+</html>
+```
+
+⚠️ `checkout.liquid` **deprecado desde 2025-08** — checkout/thank-you/order-status van por Shopify Extensions (`@shopify/ui-extensions-checkout`), no por theme.
+
+#### Locales — `locales/*.json` (i18n obligatorio)
+
+DOS tipos de archivo por idioma:
+
+- `<idioma[-región]>.json` — strings del **storefront** (visible por el cliente, editable por merchant).
+- `<idioma[-región]>.schema.json` — strings del **theme editor** (settings labels).
+
+**Naming IETF**: `es-ES.json`, `en-GB.json` o `es.json`. UN archivo por idioma debe llevar `.default` (`es.default.json` + `es.default.schema.json`) — es el fallback.
+
+**Límites**: 3.400 traducciones/archivo, 1.000 chars/valor.
+
+**Estructura**: 3 niveles `category > group > description`:
+
+```json
+{
+  "general":  { "404": { "title": "Página no encontrada", "subtext": "La página…" } },
+  "cart":     { "general": { "title": "Carrito", "empty_html": "Tu carrito está vacío" } },
+  "products": { "product": { "add_to_cart": "Añadir al carrito", "sold_out": "Agotado" } }
+}
+```
+
+**Uso en Liquid**: filtro `t` (translate):
+
+```liquid
+{{ 'general.404.title' | t }}
+{{ 'products.product.add_to_cart' | t }}
+{{ 'cart.general.empty_html' | t }}
+```
+
+**ZERO texto hardcoded** en sections, snippets, templates. Theme Store auto-rechaza si encuentra strings sin traducir.
+
+#### Markets — multi-currency + multi-language
+
+Selector país+idioma obligatorio para Theme Store:
+
+```liquid
+{%- form 'localization' -%}
+  <select name="country_code" aria-label="{{ 'general.country' | t }}">
+    {%- for country in localization.available_countries -%}
+      <option value="{{ country.iso_code }}" {% if country.iso_code == localization.country.iso_code %}selected{% endif %}>
+        {{ country.name }} ({{ country.currency.iso_code }})
+      </option>
+    {%- endfor -%}
+  </select>
+  <select name="locale_code" aria-label="{{ 'general.language' | t }}">
+    {%- for language in localization.available_languages -%}
+      <option value="{{ language.iso_code }}" {% if language.iso_code == localization.language.iso_code %}selected{% endif %}>
+        {{ language.endonym_name }}
+      </option>
+    {%- endfor -%}
+  </select>
+  <button type="submit">{{ 'general.update' | t }}</button>
+{%- endform -%}
+```
+
+**hreflang** en `<head>` (loop sobre `localization.available_languages`):
+
+```liquid
+{%- for lang in localization.available_languages -%}
+  <link rel="alternate" hreflang="{{ lang.iso_code }}" href="{{ canonical_url | replace: request.locale.iso_code, lang.iso_code }}">
+{%- endfor -%}
+```
+
+**Money con currency**: `{{ product.price | money_with_currency }}` o el objeto `localization.country.currency`. Cantidad por unidad de mercado: filtro `currency_selector`.
+
+Geolocation pre-select solo para Shopify Plus.
+
+#### LiquidDoc — anotaciones de tipos en snippets
+
+Todo snippet con parámetros DEBE llevar `{% doc %}` para autocomplete + Theme Check + Liquid VS Code:
+
+```liquid
+{% doc %}
+Product card snippet.
+
+@param {object} product - Producto Shopify.
+@param {boolean} [show_vendor] - Mostrar vendor sobre el título.
+@param {number}  [max_description_length] - Truncar a N caracteres.
+
+@example
+  {% render 'product-card', product: product, show_vendor: true %}
+{% enddoc %}
+
+<article class="product-card" itemscope itemtype="https://schema.org/Product">
+  …
+</article>
+```
+
+Render con parámetros nombrados (NO `include`, que es legacy):
+
+```liquid
+{% render 'product-card', product: product, show_vendor: true %}
+```
+
+Scoping aislado: el snippet NO ve variables del caller, solo los `@param` + objetos globales (`product`, `collection`, `cart`, `customer`, `settings`, `localization`, `request`, `template`).
+
+#### Schema settings — tipos completos (referencia rápida)
+
+| Tipo | Para qué |
+|---|---|
+| `text` · `textarea` · `richtext` · `inline_richtext` · `html` · `liquid` | strings con escalado de complejidad. `liquid` permite renderizar Liquid dentro del setting. |
+| `number` · `range` | numéricos. `range` da slider con min/max/step/unit. |
+| `select` · `radio` · `checkbox` | choice fields. |
+| `color` · `color_background` · `color_scheme` · `color_scheme_group` | **`color_scheme_group`** es el rey en OS 2.0 — define grupos de colores (bg/text/accent) que el merchant asigna a cada section. |
+| `font_picker` | tipografía Shopify fonts (incluye Google Fonts). Usar con filtro `font_face`. |
+| `image_picker` · `video` · `video_url` | media. `video_url` acepta YouTube/Vimeo. |
+| `url` · `link_list` | URLs y menús. `link_list` apunta a menús de navegación. |
+| `collection` · `collection_list` · `product` · `product_list` · `article` · `blog` · `page` | resource pickers. Limit configurable. |
+| `metaobject` · `metaobject_list` | **clave para contenido dinámico custom** — testimonios, FAQs, store locations, miembros del equipo, etc. Sin necesidad de bloques. |
+| `header` · `paragraph` | UI-only (separadores y textos en el editor, no se renderizan). |
+
+Ejemplo de `color_scheme_group`:
+
+```json
+{ "type": "color_scheme_group", "id": "color_schemes", "label": "Color schemes",
+  "definition": [
+    { "type": "color", "id": "background", "label": "Background", "default": "#FFFFFF" },
+    { "type": "color", "id": "text", "label": "Text", "default": "#1A1A1A" },
+    { "type": "color", "id": "accent", "label": "Accent", "default": "#C56A4D" }
+  ],
+  "role": { "text": "text", "background": { "solid": "background" } }
+}
+```
+
+En section o block: `"type": "color_scheme", "id": "color_scheme", "label": "Color scheme"` — el merchant elige UNO de los grupos definidos arriba.
+
+#### Customer Accounts (New, no Classic)
+
+Shopify ha sustituido el sistema **Classic** por **New customer accounts** (passwordless, OAuth con código de acceso por email). El theme NO maneja login/signup directamente: redirige al endpoint de Shopify.
+
+- Templates: `templates/customers/account.json`, `addresses.json`, `order.json`, `register.json`, `reset_password.json` siguen existiendo PERO para Classic.
+- Para New: el theme apunta a `/account` y Shopify lo redirige al portal hosted.
+- Para que el theme sea compatible con AMBOS, usa `customer` object con `customer.has_account` checks.
+
+#### SEO — JSON-LD canónico
+
+PDP (`templates/product.json` + section principal):
+
+```liquid
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": {{ product.title | json }},
+  "image": [
+    {% for media in product.media limit: 5 -%}
+      {{ media | image_url: width: 1200 | prepend: 'https:' | json }}{% unless forloop.last %},{% endunless %}
+    {%- endfor %}
+  ],
+  "description": {{ product.description | strip_html | json }},
+  "sku": {{ product.selected_or_first_available_variant.sku | json }},
+  "brand": { "@type": "Brand", "name": {{ product.vendor | json }} },
+  "offers": {
+    "@type": "Offer",
+    "url": {{ canonical_url | json }},
+    "priceCurrency": {{ cart.currency.iso_code | json }},
+    "price": {{ product.selected_or_first_available_variant.price | divided_by: 100.0 | json }},
+    "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}"
+  }
+}
+</script>
+```
+
+Article (`templates/article.json`): mismo patrón con `@type: "Article"` (`headline`, `image`, `author`, `datePublished`, `articleBody`).
+
+#### Predictive search — endpoint y patrón
+
+Shopify expone `/search/suggest.json?q=…&resources[type]=product,collection,page,article,query&resources[limit]=10`:
+
+```html
+<predictive-search class="predictive-search">
+  <input type="search" name="q" aria-label="Search" autocomplete="off">
+  <div id="predictive-results" role="status" aria-live="polite"></div>
+</predictive-search>
+```
+
+JS (custom element, sin frameworks):
+
+```js
+class PredictiveSearch extends HTMLElement {
+  constructor() {
+    super();
+    this.input = this.querySelector('input[name="q"]');
+    this.results = this.querySelector('#predictive-results');
+    this.input?.addEventListener('input', this._debounce(this._search.bind(this), 250));
+  }
+  async _search() {
+    const q = this.input.value.trim();
+    if (q.length < 2) return this.results.innerHTML = '';
+    const r = await fetch(`/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product,collection,page,query&resources[limit]=8`);
+    const json = await r.json();
+    this.results.innerHTML = this._render(json.resources.results);
+  }
+  _render(d) { /* ... markup ... */ }
+  _debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+}
+customElements.define('predictive-search', PredictiveSearch);
+```
+
+#### Web components nativos de Shopify (úsalos directamente)
+
+- `<shopify-payment-terms>` — banner de Shop Pay Installments. Mandatory para Theme Store. Va en PDP cerca del botón comprar.
+- `<pickup-availability-preview>` + `<pickup-availability-drawer>` — pickup availability widget. Mandatory.
+- `<product-form>`, `<variant-radios>`, `<variant-selects>` — formularios de producto.
+- `<cart-drawer>`, `<cart-notification>` — UI de carrito.
+
+Cada uno se hidrata automáticamente — solo añadir el tag HTML.
+
+#### Theme Inspector for Chrome — setup
+
+1. Instala la extensión desde [Chrome Web Store](https://chrome.google.com/webstore) buscando "Shopify Theme Inspector".
+2. Abre tu storefront en preview (`shopify theme dev`).
+3. Chrome DevTools → tab "Shopify".
+4. Click "Profile" → la extensión muestra tiempo de render por section/snippet/filter Liquid.
+5. Iterar en lo más lento (típicamente: loops sobre `all_products`, llamadas a metafields sin cache).
+
+#### Theme Store — checklist de submission (auto-iterable)
+
+Antes de subir a Theme Store o pasar QA, ir marcando uno a uno:
+
+- [ ] `shopify theme check` 0 errors, 0 critical warnings.
+- [ ] Lighthouse mobile **60+** en home / collection / product (media de 3 runs).
+- [ ] Lighthouse **accessibility 90+** en TODAS las páginas.
+- [ ] JS bundle final **< 16 KB minified**. Sin React/Vue/Angular/jQuery.
+- [ ] Templates JSON completos: 404, article, blog, cart, collection, customers/* (account, addresses, login, order, register, reset_password), gift_card.liquid, index, list-collections, page, password, product, search.
+- [ ] **18 features mandatorias** implementadas: Sections Everywhere · discounts display · accelerated checkout (Shop Pay/Apple/Google) · faceted search · gift cards · image focal points · country/language selector · multi-level menus · newsletter forms · pickup availability · product recommendations · rich media (3D/video) · predictive search · selling plans · Shop Pay Installments · unit pricing · variant images · Follow on Shop.
+- [ ] App blocks: TODAS las sections principales con `{"type": "@app"}` en `blocks`.
+- [ ] WCAG 2.1 AA: contraste 4.5:1 (texto) / 3:1 (large+UI), focus visible, skip link, alt en todas las imágenes, `aria-live` para cart/search updates, touch targets ≥ 44×44 px.
+- [ ] i18n: `locales/*.default.json` + `locales/*.default.schema.json` completos. ZERO hardcoded strings (grep).
+- [ ] Demo data realista (productos plausibles, fotos auténticas, NO Lorem Ipsum, NO onboarding text).
+- [ ] Documentation publicada (HTML estático con install + customization + FAQ).
+- [ ] Contact form público + FAQ + commitment to respond ≤ 2 business days.
+- [ ] Theme Store exclusivity verificada (no vendido en otros marketplaces si es esta route).
+- [ ] Sin créditos de designer ni affiliate links embebidos en archivos del theme.
+- [ ] Sin Sass/SCSS — solo CSS plano.
+- [ ] Scripts Shopify-hosted o de librerías aprobadas.
+- [ ] Browsers testados: Safari (2 últimas), Chrome (3), Firefox (3), Edge (2) en desktop + Mobile Safari + Chrome Mobile + Samsung Internet + webviews IG/FB/Pinterest.
+
 #### Ejemplos canónicos (copy-paste base)
 
 **`templates/index.json`** — template basado en sections:
