@@ -985,6 +985,7 @@ _FORMAT_WORDPRESS = {
 # Cualquiera de estas tiene un child theme distinto y un ux_pack distinto:
 # si el usuario eligió una a mano, NO la pisamos al detectar "wordpress-theme".
 _WORDPRESS_THEME_STACKS = _FORMAT_WORDPRESS - {"wordpress-plugin"}
+_FORMAT_SHOPIFY = {"shopify-liquid", "shopify-hydrogen"}
 _FORMAT_SCRIPT_APP = {
     "laravel-inertia", "nestjs-prisma", "fastapi", "django-tailwind", "t3-stack",
     "hono-bun", "hono-cloudflare", "phoenix-liveview", "rails-tailwind", "go-fiber",
@@ -1088,16 +1089,170 @@ def _wp_builder_context(stack_key: str) -> str:
 
 
 def product_format_for(stack_key: str) -> str:
-    """stack_key → 'site-template' | 'script-app' | 'mobile' | 'wordpress' | 'unknown'."""
+    """stack_key → 'site-template' | 'script-app' | 'mobile' | 'wordpress' | 'shopify' | 'unknown'."""
     if stack_key == "none":
         return "unknown"
     if stack_key in _FORMAT_MOBILE:
         return "mobile"
     if stack_key in _FORMAT_WORDPRESS:
         return "wordpress"
+    if stack_key in _FORMAT_SHOPIFY:
+        return "shopify"
     if stack_key in _FORMAT_SCRIPT_APP:
         return "script-app"
     return "site-template"
+
+
+_SHOPIFY_BUILDER_CONTEXT = {
+    "shopify-liquid": """### Stack: **Shopify Liquid — Online Store 2.0** (Dawn como base)
+
+El proyecto se ha clonado de **Dawn** (theme oficial Shopify, MIT). NO lo
+copies tal cual — el agente debe **personalizar profundamente** y ampliar
+para que el resultado sea diferenciado y vendible.
+
+#### Arquitectura OS 2.0 (la que importa)
+
+- `config/settings_schema.json` — settings del theme customizer (paleta,
+  tipografía, layout). Es el equivalente a `theme.json` de WP FSE: aquí
+  viven los DESIGN TOKENS globales. Decláralos en sentido **opinionado**
+  (no inundes con 300 settings — los themes que venden tienen settings
+  curados).
+- `config/settings_data.json` — valores por defecto. Edita esto, no el
+  schema, cuando cambies presets.
+- `sections/*.liquid` con su schema JSON — bloques de UI con `{% schema %}`
+  al final. Usa `presets` para que aparezcan en el theme editor.
+- `sections/*.json` — **Section Groups** (OS 2.0): `header.json` y
+  `footer.json` permiten al merchant mover y combinar sections. Cuanto
+  más uses Section Groups, más libertad das al cliente final.
+- `templates/*.json` — templates basados en sections (vs el viejo .liquid).
+  Cada template referencia secciones y bloques con sus settings persistidos.
+- `snippets/*.liquid` — fragmentos reutilizables (chip-precio, card-product,
+  rating, etc.). Aquí va la lógica compartida.
+- `locales/*.json` — i18n (`es.default.json`, `en.json`…). **Obligatorio**
+  para Theme Store: nada de texto hardcoded en plantillas.
+- `assets/*` — CSS, JS, imágenes. JS modular **sin jQuery** (penaliza en
+  Theme Store en 2026); usa `<script defer>` o `<script type="module">`.
+
+#### Performance — el gate más importante en 2026
+
+- **Theme Store mínimo**: Lighthouse mobile **70+** en home/collection/product.
+  En la práctica, themes top pasan **90+**. Es tu diferenciador.
+- **JS**: `defer` siempre; chunks pequeños por ruta; `IntersectionObserver`
+  para lazy load (carrito drawer, predictive search). NO library bundle global.
+- **CSS**: critical CSS inline en `<head>` (snippet `critical-css.liquid`),
+  resto async. Sin frameworks pesados.
+- **Imágenes**: `image_url: width: ...` + `srcset` + `loading="lazy"` +
+  `fetchpriority="high"` solo en LCP.
+- **Fonts**: `font_url` filter + `font_face` con `swap`.
+- **Liquid render**: minimiza `for` en `all_products` (paginar siempre).
+
+#### Conversion patterns que vende cada theme top
+
+- **Cart drawer** (modal lateral) en vez de página /cart. Hot reload sin recarga.
+- **Quick add** desde collection (no abre PDP — añade y muestra mini-confirm).
+- **Predictive search** custom (no la default) con thumbnails + categorías.
+- **Sticky add-to-cart bar** en PDP cuando se scrollea por debajo del fold.
+- **Recently viewed** (cookie/localStorage).
+- **Trust badges** sobre el botón comprar.
+- **Reviews** (placeholder para Loox/Judge.me — no hardcodees uno).
+- **Upsells & cross-sells** en cart drawer.
+- **Color/variant swatches** con metafields, no con name strings.
+
+#### MCPs activos (los tres en `.mcp.json`)
+
+- `shopify-dev` — schemas GraphQL Admin/Storefront/Checkout, tipos Liquid,
+  esquemas de section/block, y **Polaris** (para apps embebidas más adelante).
+- `shopify-storefront` — cart/policies/FAQ del store por URL. Sustituye
+  `YOUR-SHOP` en `.mcp.json` por tu subdominio.
+- `shopify-storefront-catalog` — UCP catalog con búsqueda natural.
+
+#### Comandos clave (`./` y `shopify`)
+
+`shopify theme dev` (preview en localhost:9292) · `shopify theme check`
+(linter, **resuelve todos los errores antes de subir**) ·
+`shopify theme push --unpublished --json` (subir como borrador) ·
+`shopify theme package` (zip para ThemeForest / Theme Store).
+
+#### Para venta en ThemeForest
+
+ThemeForest categoría WooCommerce/Shopify Themes. El zip que generas con
+`shopify theme package` es el que se sube. Cumple Theme Store Quality
+Guidelines aunque vendas en ThemeForest — eso es el bar mínimo.""",
+    "shopify-hydrogen": """### Stack: **Shopify Hydrogen — Remix v3 + React 19 + Oxygen**
+
+Storefront headless de Shopify. Estructura del proyecto vía
+`@shopify/create-hydrogen` (template skeleton).
+
+#### Arquitectura Hydrogen (importante)
+
+- **Remix v3 / React Router v7** — convención de rutas en `app/routes/`.
+  Cada ruta exporta `loader` (server) y/o `action` (mutaciones) + el
+  componente React. **Server-driven UI**: el state real vive en el server.
+- **Cache hints en loaders** — `context.storefront.CacheLong()` para
+  catálogos, `CacheShort()` para carts, `CacheNone()` para usuario.
+- **GraphQL fragments** en `app/lib/fragments.ts` — definir UNA vez,
+  reutilizar en queries. Patrón crítico para mantener tipos.
+- **Optimistic UI** con `useOptimisticCart` + `<CartForm>` — el cart
+  responde instantáneo, server se sincroniza después.
+- **Hydrogen primitives** que ahorran trabajo: `<Money>` (formato +
+  multilocale), `<Image>` (auto srcset Shopify CDN), `<CartProvider>`,
+  `<ShopifyAnalytics>`, `<PaymentTokens>` (Shop Pay native).
+
+#### Customer Account API (la nueva, no Classic)
+
+- OAuth-based, no cookie. `app/routes/account.tsx` con loader que llama
+  `context.customerAccount.query`.
+- Tracking de pedidos, returns, addresses, wishlist (con metafields).
+- Reemplaza al Customer Accounts legacy y a las `/account/*` de Liquid.
+
+#### Deployment: Oxygen (gratis, edge global de Shopify)
+
+```
+npx shopify hydrogen link            # vincula a la tienda
+npx shopify hydrogen deploy          # deploy a Oxygen workers (edge)
+```
+
+Alternativas: Cloudflare Workers, Vercel, Netlify, fly.io.
+
+#### Performance — bar más alto que Liquid
+
+- **Lighthouse objetivo**: **95+** en mobile (Hydrogen te lo permite,
+  Liquid es más difícil).
+- **Hydrating mínimo**: el server hace la mayoría del trabajo. RSC patterns.
+- **Edge caching**: `Cache-Control` por loader; TTL dinámico vía
+  `context.storefront.CacheCustom()`.
+- **Streaming SSR** con `defer` + `<Suspense>` para datos no-críticos.
+
+#### Tailwind v4 (recomendado)
+
+- `app/styles/app.css` con `@import 'tailwindcss';`.
+- Design tokens en CSS custom properties → `theme.json` equivalente.
+- Mismo patrón que en los stacks WP/FSE para portabilidad de tokens.
+
+#### MCPs activos
+
+Mismos tres que Liquid (`shopify-dev`, `shopify-storefront`, `-catalog`).
+Útiles aquí para resolver schemas GraphQL en tiempo real mientras
+construyes loaders y queries.
+
+#### Cuándo Hydrogen vs Liquid
+
+- Catálogo > 500 SKU con filtros pesados → Hydrogen gana.
+- Multi-mercado/multi-currency/multi-locale fuerte → Hydrogen.
+- Build con presupuesto ajustado y < 200 SKU → Liquid es más rentable.
+
+#### Para venta
+
+- **ThemeForest** acepta Hydrogen como categoría separada (menos
+  competencia, ticket más alto: $99-249).
+- **Shopify Theme Store** todavía es solo Liquid; Hydrogen va por el
+  partner channel (custom builds para merchants enterprise).""",
+}
+
+
+def _shopify_builder_context(stack_key: str) -> str:
+    """Bloque de contexto específico del stack Shopify para CLAUDE.md."""
+    return _SHOPIFY_BUILDER_CONTEXT.get(stack_key, "")
 
 
 def _render_analysis_block(ai_analysis: str | None, kind: str) -> str:
@@ -1249,6 +1404,32 @@ ya está corriendo y servido en el preview. Trabaja directamente sobre tu {wp_ki
 """
         # Spec del plugin instalador de demos — OBLIGATORIO en themes WP.
         wp_installer_block = ("\n---\n\n" + _read_context("WP-DEMO-INSTALLER.md")) if wp_kind == "theme" else ""
+    elif product_format == "shopify":
+        builder_block = _shopify_builder_context(stack_key)
+        wp_dev_block = f"""
+## Entorno Shopify — provisión y herramientas
+
+ThemeForge ha scaffoldeado este proyecto invocando los tooling oficiales
+de Shopify (no se bundlea nada en el repo). Tienes:
+
+- **Shopify CLI** (`@shopify/cli`, MIT) — comandos `shopify theme dev`,
+  `shopify theme check`, `shopify theme push`, `shopify theme package`.
+- **3 MCPs activos** en `.mcp.json` (ver `README-MCP.md` o
+  `README-HYDROGEN.md`):
+  - `shopify-dev` (oficial, STDIO) — admin/storefront/checkout API docs,
+    GraphQL schema introspection, tipos Liquid, esquemas section/block,
+    componentes Polaris.
+  - `shopify-storefront` (oficial, HTTP zero-auth) — cart, policies, FAQ.
+    Sustituye `YOUR-SHOP` por tu dominio.
+  - `shopify-storefront-catalog` (oficial, HTTP, UCP) — catálogo con
+    búsqueda en lenguaje natural.
+
+Para probar de verdad necesitas: cuenta Shopify Partners (gratis) y una
+tienda de desarrollo (Partners → Stores → Add development store).
+
+{builder_block}
+"""
+        wp_installer_block = ""
     else:
         wp_dev_block = ""
         wp_installer_block = ""
@@ -1289,6 +1470,36 @@ ya está corriendo y servido en el preview. Trabaja directamente sobre tu {wp_ki
 - Sin secretos hardcodeados; configuración por `.env` si el stack tiene backend.
 - WCAG AA y `prefers-reduced-motion` respetado en la UI.
 - Assets libres de derechos (ver sección §C abajo)."""
+    elif product_format == "shopify":
+        objetivos_block = """## Objetivos finales — Shopify theme
+
+1. Cumplir las **Shopify Theme Store Quality Guidelines** (es el bar más
+   alto de la industria — aunque vendas en ThemeForest, cumplir esto te
+   posiciona en la cima):
+   - Lighthouse mobile: **70+** mínimo en home/collection/product
+     (los top venden con **90+**).
+   - Sin `console.error` ni warnings; sin jQuery; sin librerías obsoletas.
+   - `theme check` pasa sin errores ni warnings críticos.
+   - Accesible (WCAG 2.1 AA): contraste, ARIA, focus rings, navegación
+     teclado.
+   - Multilocale completo (i18n en `locales/*.json`, sin texto hardcoded).
+2. Patrones de conversión que vende cada theme top:
+   - Cart drawer + quick add + predictive search custom + sticky ATC
+     + variant swatches + recently viewed + recommendations.
+3. **Demo data realista** desde el primer commit — colecciones, productos,
+   metaobjects, multimedia. No maqueta vacía.
+4. Documentación HTML estática en `documentation/` con guía de
+   instalación + customización + lista de sections.
+5. Variantes (style presets / color schemes / niches) que diferencien.
+
+## Restricciones
+
+- **Performance budget**: JS bundle < 50 KB inicial, CSS critical < 14 KB.
+- Sin secretos hardcodeados; settings sensibles en `config/settings_schema.json`.
+- Compatibilidad con Shopify Apps top (Klaviyo, Loox/Judge.me, Bold
+  Subscriptions, etc.) — placeholders, no integraciones hardcoded.
+- Assets libres de derechos (ver sección §C abajo).
+- Theme aprueba `shopify theme check` en CI."""
     else:  # site-template / wordpress
         objetivos_block = """## Objetivos finales
 
