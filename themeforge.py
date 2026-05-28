@@ -1106,45 +1106,80 @@ def product_format_for(stack_key: str) -> str:
 _SHOPIFY_BUILDER_CONTEXT = {
     "shopify-liquid": """### Stack: **Shopify Liquid — Online Store 2.0** (Dawn como base)
 
-El proyecto se ha clonado de **Dawn** (theme oficial Shopify, MIT). NO lo
-copies tal cual — el agente debe **personalizar profundamente** y ampliar
-para que el resultado sea diferenciado y vendible.
+El proyecto se ha clonado de **Dawn** (theme oficial Shopify, MIT).
+
+#### ⚠️ Crítico — decide MARKET antes de empezar
+
+- **ThemeForest (Envato)** → Dawn como base ESTÁ PERMITIDO. Tu trabajo es
+  personalizar profundamente (diseño + secciones premium + nichos).
+- **Shopify Theme Store** → **INELEGIBLE** si se deriva de Dawn o Horizon.
+  Si vendes ahí, **borra todo el código de Dawn** y construye desde cero
+  con la estructura OS 2.0 mínima (`config/`, `layout/theme.liquid`,
+  `templates/*.json`, `sections/`, `blocks/`, `snippets/`, `assets/`,
+  `locales/`). La identidad visual y las capacidades deben ser
+  **no reproducibles fácilmente** (no basta cambiar paleta o spacing).
+- **Shopify Partner / custom build** → cualquier base sirve.
+
+Confirma el market con el user ANTES de tocar código.
 
 #### Arquitectura OS 2.0 (la que importa)
 
 - `config/settings_schema.json` — settings del theme customizer (paleta,
-  tipografía, layout). Es el equivalente a `theme.json` de WP FSE: aquí
-  viven los DESIGN TOKENS globales. Decláralos en sentido **opinionado**
-  (no inundes con 300 settings — los themes que venden tienen settings
-  curados).
-- `config/settings_data.json` — valores por defecto. Edita esto, no el
-  schema, cuando cambies presets.
-- `sections/*.liquid` con su schema JSON — bloques de UI con `{% schema %}`
-  al final. Usa `presets` para que aparezcan en el theme editor.
-- `sections/*.json` — **Section Groups** (OS 2.0): `header.json` y
-  `footer.json` permiten al merchant mover y combinar sections. Cuanto
-  más uses Section Groups, más libertad das al cliente final.
-- `templates/*.json` — templates basados en sections (vs el viejo .liquid).
-  Cada template referencia secciones y bloques con sus settings persistidos.
+  tipografía, layout). Aquí viven los **DESIGN TOKENS globales**.
+  Decláralos en sentido **opinionado** (no inundes con 300 settings — los
+  themes top venden con settings curados).
+- `config/settings_data.json` — valores por defecto (presets).
+- `layout/theme.liquid` — el layout maestro. Contiene `{% sections 'header-group' %}`
+  y `{% sections 'footer-group' %}`.
+- `sections/*.liquid` con `{% schema %}` al final. Atributos clave:
+  `name`, `tag`, `class`, `limit`, `settings`, `blocks` (con `{"type":"@theme"}`
+  y **`{"type":"@app"}` obligatorio** para que apps de terceros funcionen),
+  `max_blocks` (hasta 50), `presets`, `enabled_on`/`disabled_on`.
+  Hasta 25 sections por template/section group.
+- `sections/*.json` — **Section Groups** (`header.json`, `footer.json`,
+  `aside.json`). El merchant añade/quita/reordena sections desde el
+  editor sin tocar código. Estructura: `{type, name, sections{}, order[]}`.
+- `blocks/*.liquid` — **Theme blocks** reutilizables entre sections
+  (separado de `sections/blocks` inline). Permite anidamiento + presets.
+- `templates/*.json` — templates basados en sections.
+  **OBLIGATORIOS para Theme Store**: 404, article, blog, cart, collection,
+  customers/*, gift_card, index, page, password, product, search.
 - `snippets/*.liquid` — fragmentos reutilizables (chip-precio, card-product,
-  rating, etc.). Aquí va la lógica compartida.
-- `locales/*.json` — i18n (`es.default.json`, `en.json`…). **Obligatorio**
-  para Theme Store: nada de texto hardcoded en plantillas.
-- `assets/*` — CSS, JS, imágenes. JS modular **sin jQuery** (penaliza en
-  Theme Store en 2026); usa `<script defer>` o `<script type="module">`.
+  rating, etc.).
+- `locales/*.json` — i18n (`es.default.json`, `en.json`…). **Obligatorio**.
+- `assets/*` — CSS, JS, imágenes. **NO Sass/SCSS** (rechazado por Theme
+  Store), CSS plano. JS modular **sin jQuery, sin React/Vue/Angular**.
 
-#### Performance — el gate más importante en 2026
+#### Performance — el bar OFICIAL del Theme Store
 
-- **Theme Store mínimo**: Lighthouse mobile **70+** en home/collection/product.
-  En la práctica, themes top pasan **90+**. Es tu diferenciador.
-- **JS**: `defer` siempre; chunks pequeños por ruta; `IntersectionObserver`
-  para lazy load (carrito drawer, predictive search). NO library bundle global.
-- **CSS**: critical CSS inline en `<head>` (snippet `critical-css.liquid`),
-  resto async. Sin frameworks pesados.
-- **Imágenes**: `image_url: width: ...` + `srcset` + `loading="lazy"` +
-  `fetchpriority="high"` solo en LCP.
-- **Fonts**: `font_url` filter + `font_face` con `swap`.
-- **Liquid render**: minimiza `for` en `all_products` (paginar siempre).
+- **Lighthouse mobile**: **60+ mínimo** (home/collection/product, average).
+  Themes top venden con 90+ → es tu diferenciador.
+- **Accessibility**: **90+ obligatorio**.
+- **JS bundle**: **16 KB minified MAX**. Shopify minifica automáticamente.
+  Sin frameworks (React/Vue/Angular/jQuery prohibidos). IIFE para evitar
+  colisiones de scope global.
+- **CSS**: critical inline + el resto subseteado por Shopify automáticamente.
+- **Imágenes**: filtro `image_tag` con `loading: 'lazy'` (off-fold) y
+  `srcset` inteligente. `fetchpriority="high"` SOLO en LCP.
+- **Fonts**: usa `font_url` + `system-ui` como fallback. System fonts
+  preferidos para evitar download.
+- **Preload hints**: máximo **2** resource hints por template.
+- **Scripts**: `defer` o `async` siempre — nada parser-blocking.
+- **Liquid**: nunca itera `all_products` sin paginar; ops costosas FUERA
+  de loops; usa Theme Inspector Chrome para profilear.
+
+#### Features OBLIGATORIAS para Theme Store (auto-rechaza si faltan)
+
+Sections Everywhere, discounts display, accelerated checkout buttons,
+**faceted search** filtering, gift cards, **image focal points**,
+country/language selection, **multi-level menus**, newsletter forms,
+**pickup availability**, product recommendations, **rich media** (3D,
+video), **predictive search**, **selling plans** (subscriptions),
+**Shop Pay Installments**, **unit pricing**, **variant images**,
+**Follow on Shop** button.
+
+Para ThemeForest el bar es similar pero más laxo — implementa todas
+igualmente como diferenciador competitivo.
 
 #### Conversion patterns que vende cada theme top
 
@@ -1161,23 +1196,58 @@ para que el resultado sea diferenciado y vendible.
 #### MCPs activos (los tres en `.mcp.json`)
 
 - `shopify-dev` — schemas GraphQL Admin/Storefront/Checkout, tipos Liquid,
-  esquemas de section/block, y **Polaris** (para apps embebidas más adelante).
+  esquemas de section/block, y **Polaris** (para apps embebidas).
 - `shopify-storefront` — cart/policies/FAQ del store por URL. Sustituye
   `YOUR-SHOP` en `.mcp.json` por tu subdominio.
 - `shopify-storefront-catalog` — UCP catalog con búsqueda natural.
 
-#### Comandos clave (`./` y `shopify`)
+#### Developer Tools oficiales (úsalas todas)
 
-`shopify theme dev` (preview en localhost:9292) · `shopify theme check`
-(linter, **resuelve todos los errores antes de subir**) ·
-`shopify theme push --unpublished --json` (subir como borrador) ·
-`shopify theme package` (zip para ThemeForest / Theme Store).
+- **Shopify CLI** — `shopify theme dev / check / push / pull / package /
+  publish / list / info / share / open / rename / delete / console`.
+  Hot reload de CSS y sections; multi-tienda vía environments.
+- **Theme Check** — linter Liquid+JSON. Detecta sintaxis, templates
+  perdidos, vars no usadas, tags deprecated, performance issues
+  (parser-blocking JS, asset-size-css). Corre via CLI o VS Code extension.
+  Config en `.theme-check.yml`. **Resuelve todo antes de subir** —
+  warnings críticos son auto-reject.
+- **Shopify Liquid VS Code Extension** — autocomplete, hover docs,
+  navigation, integra Theme Check. Imprescindible.
+- **Liquid Prettier Plugin** (`@shopify/prettier-plugin-liquid`) —
+  formatter automático. Añádelo a `package.json` + `.prettierrc.json`.
+- **Shopify Theme Inspector** (Chrome extension) — profila tiempos de
+  render de cada section/snippet Liquid. Identifica el bottleneck real.
+- **Lighthouse CI GitHub Action** (de Shopify) — corre Lighthouse en cada
+  PR/push y bloquea merges que rompan el budget. Añade workflow YAML.
+- **Shopify GitHub Integration** — sync bidireccional GitHub ↔ Shopify
+  admin (branches mapean a themes). Hace deploy automático en cada push.
+- **Theme Access App** — para CI/CD que necesita push sin login Partner.
+  Genera password de theme access en la tienda y úsala en GitHub Actions.
+- **Development Stores** (Partners) — gratis, para testing. NO uses
+  tienda real para dev.
+- **LiquidDoc** — anotaciones de tipo para snippets (`{% doc %}` tag).
+  Mejora autocomplete y Theme Check.
+- **Admin Theme Editor** — preview en vivo con merchant interactions.
+  Test del WYSIWYG después de cada push.
+
+#### Comandos clave
+
+```bash
+shopify theme dev                        # http://127.0.0.1:9292, hot reload
+shopify theme check                      # linter — sin errores antes de subir
+shopify theme push --unpublished --json  # subir como borrador
+shopify theme package                    # genera .zip para ThemeForest / Theme Store
+shopify theme publish <id>               # publicar tema
+shopify theme console                    # REPL de Liquid en vivo
+shopify theme share                      # crear preview URL pública
+npx prettier --write '**/*.liquid'       # formatear todo el código Liquid
+```
 
 #### Para venta en ThemeForest
 
-ThemeForest categoría WooCommerce/Shopify Themes. El zip que generas con
-`shopify theme package` es el que se sube. Cumple Theme Store Quality
-Guidelines aunque vendas en ThemeForest — eso es el bar mínimo.""",
+Categoría WooCommerce/Shopify Themes. El `.zip` de `shopify theme
+package` se sube tal cual. Cumple Theme Store Guidelines aunque vendas
+en ThemeForest — es tu diferenciador competitivo.""",
     "shopify-hydrogen": """### Stack: **Shopify Hydrogen — Remix v3 + React 19 + Oxygen**
 
 Storefront headless de Shopify. Estructura del proyecto vía
@@ -1473,33 +1543,45 @@ tienda de desarrollo (Partners → Stores → Add development store).
     elif product_format == "shopify":
         objetivos_block = """## Objetivos finales — Shopify theme
 
-1. Cumplir las **Shopify Theme Store Quality Guidelines** (es el bar más
-   alto de la industria — aunque vendas en ThemeForest, cumplir esto te
-   posiciona en la cima):
-   - Lighthouse mobile: **70+** mínimo en home/collection/product
-     (los top venden con **90+**).
-   - Sin `console.error` ni warnings; sin jQuery; sin librerías obsoletas.
-   - `theme check` pasa sin errores ni warnings críticos.
-   - Accesible (WCAG 2.1 AA): contraste, ARIA, focus rings, navegación
-     teclado.
-   - Multilocale completo (i18n en `locales/*.json`, sin texto hardcoded).
-2. Patrones de conversión que vende cada theme top:
-   - Cart drawer + quick add + predictive search custom + sticky ATC
-     + variant swatches + recently viewed + recommendations.
-3. **Demo data realista** desde el primer commit — colecciones, productos,
-   metaobjects, multimedia. No maqueta vacía.
-4. Documentación HTML estática en `documentation/` con guía de
-   instalación + customización + lista de sections.
-5. Variantes (style presets / color schemes / niches) que diferencien.
+1. Cumplir las **Shopify Theme Store Quality Guidelines** OFICIALES — bar
+   más alto de la industria. Aunque vendas en ThemeForest, esto te
+   posiciona en la cima:
+   - Lighthouse mobile **60+ mínimo** (home/collection/product, avg).
+     Top themes pasan **90+**.
+   - **Accessibility 90+ OBLIGATORIO**.
+   - `shopify theme check` SIN errores ni warnings críticos.
+   - WCAG 2.1 AA: contraste 4.5:1 texto regular, 3:1 large/UI, focus
+     visible, navegación teclado, skip link, alt en todas las imágenes,
+     `aria-live` para cambios dinámicos (cart, search), touch targets
+     ≥ 44×44 px.
+   - Multilocale (i18n en `locales/*.json`, ZERO texto hardcoded).
+   - Soporte browsers: Safari 2 últimas, Chrome 3 últimas, Firefox 3
+     últimas, Edge 2 últimas (desktop) + Mobile Safari, Chrome Mobile,
+     Samsung Internet + webviews Instagram/Facebook/Pinterest.
+2. **18 features mandatorias** Theme Store (faceted search, gift cards,
+   predictive search, selling plans, Shop Pay Installments, unit
+   pricing, variant images, Follow on Shop, etc.) — ver detalle arriba.
+3. Templates JSON completos: 404, article, blog, cart, collection,
+   customers/*, gift_card, index, page, password, product, search.
+4. Patrones de conversión: cart drawer, quick add, predictive search
+   custom, sticky ATC, variant swatches, recently viewed, upsells.
+5. Demo data realista (NO Lorem Ipsum, NO onboarding text). Productos
+   plausibles con multimedia auténtica.
+6. Documentación pública + FAQ + contact form + respuesta ≤ 2 días.
 
-## Restricciones
+## Restricciones (auto-rechazo si fallan)
 
-- **Performance budget**: JS bundle < 50 KB inicial, CSS critical < 14 KB.
-- Sin secretos hardcodeados; settings sensibles en `config/settings_schema.json`.
-- Compatibilidad con Shopify Apps top (Klaviyo, Loox/Judge.me, Bold
-  Subscriptions, etc.) — placeholders, no integraciones hardcoded.
-- Assets libres de derechos (ver sección §C abajo).
-- Theme aprueba `shopify theme check` en CI."""
+- **JS bundle < 16 KB minified**. NO React/Vue/Angular/jQuery.
+- **NO Sass/SCSS** — CSS plano.
+- **NO** dependencia de apps para features core.
+- **NO** Lorem Ipsum ni texto onboarding en demo.
+- **NO** crédito de designer ni affiliate links embebidos.
+- **NO** distribución en otros marketplaces si vas a Theme Store
+  (exclusividad obligatoria — Theme Store route).
+- Scripts hospedados en Shopify (excepto librerías de terceros aprobadas).
+- Sin secretos hardcodeados; settings en `config/settings_schema.json`.
+- Compatibilidad con apps top (Klaviyo, Loox/Judge.me, Bold) — placeholders.
+- Assets libres de derechos (ver §C)."""
     else:  # site-template / wordpress
         objetivos_block = """## Objetivos finales
 
