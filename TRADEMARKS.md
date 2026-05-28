@@ -72,8 +72,10 @@ neither by us of them nor by them of us.
 | Dawn | Shopify Inc. | Official reference theme (MIT) used as the starting point of `shopify-liquid` via `shopify theme init --clone-url`. |
 | Hydrogen™ | Shopify Inc. | Headless storefront framework (MIT) used as the starting point of `shopify-hydrogen` via `npm create @shopify/hydrogen`. |
 | Oxygen | Shopify Inc. | Hosting/edge platform for Hydrogen, referenced in scaffold notes. |
-| Polaris® | Shopify Inc. | Design system for Shopify Admin embedded apps, accessible via `@shopify/dev-mcp`. |
-| Shopify CLI | Shopify Inc. | Developer CLI invoked by ThemeForge to scaffold themes. |
+| Polaris® | Shopify Inc. | Design system for Shopify Admin embedded apps, used by the `shopify-polaris-app` stack and accessible via `@shopify/dev-mcp`. |
+| App Bridge | Shopify Inc. | Embedded-app runtime (`@shopify/app-bridge-react`) used by the `shopify-polaris-app` stack. |
+| Shopify CLI | Shopify Inc. | Developer CLI invoked by ThemeForge to scaffold themes and apps. |
+| Shopify App Store | Shopify Inc. | Marketplace for public Shopify apps, mentioned descriptively in scaffold notes for `shopify-polaris-app`. |
 
 ### Marketplaces & ecosystems referenced in market-analysis prompts
 

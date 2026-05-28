@@ -985,7 +985,7 @@ _FORMAT_WORDPRESS = {
 # Cualquiera de estas tiene un child theme distinto y un ux_pack distinto:
 # si el usuario eligió una a mano, NO la pisamos al detectar "wordpress-theme".
 _WORDPRESS_THEME_STACKS = _FORMAT_WORDPRESS - {"wordpress-plugin"}
-_FORMAT_SHOPIFY = {"shopify-liquid", "shopify-hydrogen"}
+_FORMAT_SHOPIFY = {"shopify-liquid", "shopify-hydrogen", "shopify-polaris-app"}
 _FORMAT_SCRIPT_APP = {
     "laravel-inertia", "nestjs-prisma", "fastapi", "django-tailwind", "t3-stack",
     "hono-bun", "hono-cloudflare", "phoenix-liveview", "rails-tailwind", "go-fiber",
@@ -1247,7 +1247,92 @@ npx prettier --write '**/*.liquid'       # formatear todo el código Liquid
 
 Categoría WooCommerce/Shopify Themes. El `.zip` de `shopify theme
 package` se sube tal cual. Cumple Theme Store Guidelines aunque vendas
-en ThemeForest — es tu diferenciador competitivo.""",
+en ThemeForest — es tu diferenciador competitivo.
+
+#### Ejemplos canónicos (copy-paste base)
+
+**`templates/index.json`** — template basado en sections:
+
+```json
+{
+  "layout": "theme",
+  "wrapper": "main#main",
+  "sections": {
+    "hero":      { "type": "hero-banner", "settings": { "heading": "Bienvenida", "image_focal_point": "center center" } },
+    "featured":  { "type": "featured-collection", "settings": { "title": "Más vendidos", "limit": 8 },
+                   "blocks": { "b1": { "type": "title" }, "b2": { "type": "products" }, "b3": { "type": "view_all" } },
+                   "block_order": ["b1", "b2", "b3"] },
+    "image_with_text": { "type": "image-with-text", "settings": { "title": "Nuestra historia" } },
+    "newsletter": { "type": "newsletter", "settings": { "heading": "Suscríbete" } }
+  },
+  "order": ["hero", "featured", "image_with_text", "newsletter"]
+}
+```
+
+**`sections/hero-banner.liquid`** — schema mínimo serio:
+
+```liquid
+<section class="hero" data-section-id="{{ section.id }}">
+  <h1>{{ section.settings.heading }}</h1>
+  {% if section.settings.image %}
+    {{ section.settings.image | image_url: width: 2200 | image_tag:
+       loading: 'eager', fetchpriority: 'high',
+       widths: '375, 768, 1280, 1920, 2200',
+       sizes: '100vw',
+       class: 'hero__img' }}
+  {% endif %}
+</section>
+
+{% schema %}
+{
+  "name": "Hero banner",
+  "tag": "section",
+  "class": "section section--hero",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Bienvenida" },
+    { "type": "image_picker", "id": "image", "label": "Imagen de fondo" },
+    { "type": "select", "id": "alignment", "label": "Alineación",
+      "options": [
+        { "value": "left", "label": "Izquierda" },
+        { "value": "center", "label": "Centro" }
+      ], "default": "center" }
+  ],
+  "blocks": [
+    { "type": "@app" },
+    { "type": "button", "name": "Botón",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Etiqueta" },
+        { "type": "url",  "id": "link",  "label": "Enlace" }
+      ]
+    }
+  ],
+  "max_blocks": 3,
+  "presets": [ { "name": "Hero banner", "category": "Home page" } ],
+  "enabled_on": { "templates": ["index", "page"] }
+}
+{% endschema %}
+```
+
+**`config/settings_schema.json`** — design tokens curados (extracto):
+
+```json
+[
+  { "name": "theme_info", "theme_name": "__PROJECT__", "theme_version": "0.1.0", "theme_author": "you", "theme_documentation_url": "https://your-docs" },
+  { "name": "Colors", "settings": [
+    { "type": "color_scheme_group", "id": "color_schemes", "label": "Esquemas de color",
+      "definition": [
+        { "type": "color", "id": "background", "label": "Background", "default": "#FFFFFF" },
+        { "type": "color", "id": "text", "label": "Text", "default": "#1A1A1A" },
+        { "type": "color", "id": "accent", "label": "Accent", "default": "#C56A4D" }
+      ] }
+  ]},
+  { "name": "Typography", "settings": [
+    { "type": "font_picker", "id": "type_heading_font", "label": "Heading", "default": "fraunces_n4" },
+    { "type": "font_picker", "id": "type_body_font", "label": "Body", "default": "inter_n4" },
+    { "type": "range", "id": "type_heading_scale", "label": "Heading scale", "min": 100, "max": 150, "step": 5, "unit": "%", "default": 130 }
+  ]}
+]
+```""",
     "shopify-hydrogen": """### Stack: **Shopify Hydrogen — Remix v3 + React 19 + Oxygen**
 
 Storefront headless de Shopify. Estructura del proyecto vía
@@ -1317,6 +1402,61 @@ construyes loaders y queries.
   competencia, ticket más alto: $99-249).
 - **Shopify Theme Store** todavía es solo Liquid; Hydrogen va por el
   partner channel (custom builds para merchants enterprise).""",
+    "shopify-polaris-app": """### Stack: **Shopify App (Polaris + App Bridge + Remix)**
+
+NO es un theme — es una **app embebida** en el Admin de Shopify. Para
+clientes que quieren extender funcionalidad del Admin o de checkout/POS,
+o para distribuir en el **Shopify App Store**.
+
+#### Stack confirmado
+
+- **Remix v3** — routing + loaders (server) + actions (mutaciones).
+- **`@shopify/polaris`** (design system MIT) — Cards, IndexTable,
+  ResourcePicker, Form, Modal, Toast, Banner, etc. Componentes que el
+  merchant ya conoce.
+- **`@shopify/polaris-icons`** — iconografía consistente.
+- **`@shopify/app-bridge-react`** v4 — puente nativo app↔Admin: navegación,
+  contextual save bar, resource picker, scopes API, billing UI.
+- **Shopify CLI 3** — `shopify app dev` arranca con **tunnel automático**
+  (cloudflared) — el Admin de Shopify puede acceder a tu localhost.
+- **Prisma + SQLite** (dev) / PostgreSQL (prod) — sesiones OAuth + tu data.
+- **OAuth + sesiones** — `@shopify/shopify-app-remix` configura todo.
+
+#### Tipos de extensiones a generar (`shopify app generate extension`)
+
+- **Theme app extension** — bloques que aparecen en el theme editor del
+  merchant. Sin tocar el código del theme. Reviews/sticky-bar/etc.
+- **Checkout UI extension** — UI custom en checkout (solo Shopify Plus).
+- **Customer account UI extension** — UI en la nueva customer account.
+- **Admin block / Admin action** — extiende paneles del Admin con bloques
+  reutilizables o acciones contextuales.
+- **Shopify Functions** — lógica server-side embebida (discount, payment,
+  delivery, validation). Rust o JavaScript-Wasm. Pre-compilado.
+- **Flow action / trigger** — integraciones para Shopify Flow.
+- **POS UI extension** — UI custom en Shopify POS.
+
+#### MCP activo
+
+- `shopify-dev` (STDIO, oficial) — incluye TODO: schemas GraphQL Admin
+  API, Storefront API, Checkout API, tipos Liquid y **propiedades de
+  cada componente Polaris**. El agente puede preguntar "qué props tiene
+  IndexTable v13" en vivo.
+
+#### Distribución
+
+- **Shopify App Store** (público, requiere revisión de Shopify, ~$99-499
+  margen mensual promedio según categoría).
+- **Custom app** (privada, instalada solo en una tienda concreta).
+- **Partner Manage Tier** (apps para clientes managed por agencia).
+
+#### Performance / calidad (Shopify App Store gates)
+
+- App Store rejection criteria: requirements OAuth completos, GDPR
+  webhooks (`customers/data_request`, `customers/redact`, `shop/redact`),
+  billing implementado, listing optimizado.
+- **Embedded apps**: <100 ms TTI en el iframe del Admin.
+- Polaris obligatorio (rechazo si usas Material/Chakra/etc. en Admin).
+- Tema light + dark automático (Polaris lo maneja).""",
 }
 
 

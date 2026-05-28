@@ -482,6 +482,102 @@ STACKS = {
             # ya cumple Theme Store Quality Guidelines de salida. El agente lo
             # personaliza/extiende; NO se copia tal cual.
             "npx --yes @shopify/cli@latest theme init . --clone-url https://github.com/Shopify/dawn",
+            # ── package.json: prettier + liquid plugin + scripts útiles
+            'cat > package.json <<\'THEMEFORGE_EOF\'\n'
+            '{\n'
+            '  "name": "__SLUG__",\n'
+            '  "version": "0.1.0",\n'
+            '  "private": true,\n'
+            '  "type": "module",\n'
+            '  "scripts": {\n'
+            '    "dev": "shopify theme dev",\n'
+            '    "check": "shopify theme check",\n'
+            '    "format": "prettier --write \\"**/*.{liquid,json,js,css}\\"",\n'
+            '    "format:check": "prettier --check \\"**/*.{liquid,json,js,css}\\"",\n'
+            '    "package": "shopify theme package"\n'
+            '  },\n'
+            '  "devDependencies": {\n'
+            '    "@shopify/prettier-plugin-liquid": "^1.7.0",\n'
+            '    "prettier": "^3.4.0"\n'
+            '  }\n'
+            '}\n'
+            'THEMEFORGE_EOF',
+            # ── .prettierrc.json con el plugin de Liquid
+            'cat > .prettierrc.json <<\'THEMEFORGE_EOF\'\n'
+            '{\n'
+            '  "plugins": ["@shopify/prettier-plugin-liquid"],\n'
+            '  "printWidth": 100,\n'
+            '  "singleQuote": false,\n'
+            '  "overrides": [\n'
+            '    {\n'
+            '      "files": "*.liquid",\n'
+            '      "options": { "liquidSingleQuote": false, "embeddedSingleQuote": false }\n'
+            '    }\n'
+            '  ]\n'
+            '}\n'
+            'THEMEFORGE_EOF',
+            # ── .theme-check.yml estricto para Theme Store
+            'cat > .theme-check.yml <<\'THEMEFORGE_EOF\'\n'
+            '# Theme Check config — recomendado + estricto para Theme Store.\n'
+            '# Cambia thresholds o desactiva checks individuales si tu caso lo justifica.\n'
+            'extends: theme-check:recommended\n'
+            '\n'
+            'AssetSizeJavaScript:\n'
+            '  enabled: true\n'
+            '  threshold_in_bytes: 16384  # 16 KB cap oficial del Theme Store\n'
+            'AssetSizeCSS:\n'
+            '  enabled: true\n'
+            '  threshold_in_bytes: 100000\n'
+            'ParserBlockingJavaScript:\n'
+            '  enabled: true\n'
+            'RemoteAsset:\n'
+            '  enabled: true\n'
+            'UnknownFilter:\n'
+            '  enabled: true\n'
+            'UnusedAssign:\n'
+            '  enabled: true\n'
+            'MissingTemplate:\n'
+            '  enabled: true\n'
+            'ContentForHeaderModification:\n'
+            '  enabled: true\n'
+            'ContentForIndexModification:\n'
+            '  enabled: true\n'
+            'LiquidTag:\n'
+            '  enabled: true\n'
+            'DeprecatedFilter:\n'
+            '  enabled: true\n'
+            'TemplateLength:\n'
+            '  enabled: true\n'
+            '  max_length: 600\n'
+            'THEMEFORGE_EOF',
+            # ── GitHub Actions Lighthouse CI (action oficial de Shopify)
+            "mkdir -p .github/workflows",
+            'cat > .github/workflows/lighthouse-ci.yml <<\'THEMEFORGE_EOF\'\n'
+            '# Lighthouse CI con la action oficial de Shopify.\n'
+            '# Necesitas estos secrets en el repo GitHub para que funcione:\n'
+            '#   SHOPIFY_AUTH_TOKEN  — Theme Access App password (genérala en la tienda dev)\n'
+            '#   SHOPIFY_STORE       — tu-tienda.myshopify.com\n'
+            '#   SHOPIFY_STORE_PWD   — password del storefront si la tienda está protegida\n'
+            'name: Lighthouse CI\n'
+            '\n'
+            'on:\n'
+            '  push:\n'
+            '    branches: [main]\n'
+            '  pull_request:\n'
+            '    branches: [main]\n'
+            '\n'
+            'jobs:\n'
+            '  lighthouse:\n'
+            '    runs-on: ubuntu-latest\n'
+            '    steps:\n'
+            '      - uses: actions/checkout@v4\n'
+            '      - name: Shopify Lighthouse CI\n'
+            '        uses: shopify/lighthouse-ci-action@v1\n'
+            '        with:\n'
+            '          access_token: ${{ secrets.SHOPIFY_AUTH_TOKEN }}\n'
+            '          store: ${{ secrets.SHOPIFY_STORE }}\n'
+            '          password: ${{ secrets.SHOPIFY_STORE_PWD }}\n'
+            'THEMEFORGE_EOF',
             # ── .mcp.json: Shopify Dev MCP (admin/storefront/checkout APIs
             #    + Polaris) + Storefront MCP (placeholder con tu shop).
             #    Polaris ya viene integrado en @shopify/dev-mcp — sin flag.
@@ -633,6 +729,74 @@ STACKS = {
         "skills": ["shopify/skills/theme-development"],
         "ux_pack": "shopify-hydrogen",
         "notes": "Storefront headless con Remix + React + Oxygen. Para catálogos grandes, multi-mercado y diseños premium. Mismo set de MCPs que Liquid. Requiere Node 22+. Deploy a Oxygen (edge gratuito de Shopify) o cualquier provider Node.",
+    },
+    "shopify-polaris-app": {
+        "name": "Shopify App (Polaris + App Bridge + Remix)",
+        "category": "CMS · Shopify",
+        "language": "TypeScript + React",
+        "scaffold": [
+            # Scaffold oficial de apps Shopify (Remix template).
+            # Si no se puede no-interactivo, el agente lo corre a mano.
+            "npx --yes @shopify/create-app@latest --template remix --name __SLUG__ --no-install || "
+            "(echo 'Fallback: ejecuta a mano `npm init @shopify/app@latest` y elige template Remix.' && exit 0)",
+            # .mcp.json — Shopify Dev MCP (incluye Polaris) + storefront opcionales
+            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            '{\n'
+            '  "mcpServers": {\n'
+            '    "shopify-dev": {\n'
+            '      "command": "npx",\n'
+            '      "args": ["-y", "@shopify/dev-mcp@latest"],\n'
+            '      "_doc": "Admin/Storefront/Checkout API + Polaris components."\n'
+            '    }\n'
+            '  }\n'
+            '}\n'
+            'THEMEFORGE_EOF',
+            'cat > README-APP.md <<\'THEMEFORGE_EOF\'\n'
+            '# Shopify App (Polaris + App Bridge)\n\n'
+            'App embebida en el Admin de Shopify, construida con el template\n'
+            'oficial **Remix** de Shopify CLI. Incluye Polaris (design system),\n'
+            'App Bridge (puente nativo entre app y Admin), OAuth, sesiones,\n'
+            'webhooks y GraphQL contra Admin API.\n\n'
+            '## Stack\n\n'
+            '- **Remix v3** — routing + loaders/actions.\n'
+            '- **Polaris** (`@shopify/polaris` + `@shopify/polaris-icons`) — Cards, DataTable,\n'
+            '  IndexTable, ResourcePicker, Modal, Toast, Banner, Form, etc.\n'
+            '- **App Bridge 4** (`@shopify/app-bridge-react`) — navegación, contextual\n'
+            '  save bar, resource picker, scopes API, billing UI.\n'
+            '- **Shopify CLI 3** — `shopify app dev` con tunnel automático (cloudflared).\n'
+            '- **Prisma + SQLite** (dev) / PostgreSQL (prod) — sesiones y datos.\n'
+            '- **Shopify Functions** (opcional) — extensiones de checkout / pricing /\n'
+            '  delivery / discount con Rust o Wasm-JS.\n\n'
+            '## Comandos\n\n'
+            '```bash\n'
+            'npm install                          # primera vez\n'
+            'npm run dev                          # shopify app dev con tunnel\n'
+            'npm run build                        # build de la app\n'
+            'npm run deploy                       # publica versión nueva\n'
+            'shopify app generate extension       # añadir extensiones (theme, checkout, discount...)\n'
+            'shopify app function build           # build de Shopify Function\n'
+            '```\n\n'
+            '## Tipos de extensiones que puedes generar\n\n'
+            '- **Theme app extension** — bloques que el merchant añade a su theme.\n'
+            '- **Checkout UI extension** — UI custom en checkout (Plus).\n'
+            '- **Customer account UI extension** — UI custom en cuenta cliente nueva.\n'
+            '- **Admin block / Admin action** — extiende el Admin con bloques o acciones.\n'
+            '- **Shopify Functions** — discount, payment, delivery, validation logic.\n'
+            '- **Flow action / trigger** — integraciones para Shopify Flow.\n'
+            '- **POS UI extension** — UI custom en Shopify POS.\n\n'
+            '## Distribución\n\n'
+            '- **Shopify App Store** (público, revisión Shopify, ~$99-499/mes promedios).\n'
+            '- **Custom** (privada, una tienda concreta, sin store).\n'
+            '- **Partner Manage Tier** (apps para clientes managed).\n\n'
+            '## MCP activo\n\n'
+            '`shopify-dev` incluye Polaris — el agente puede preguntar por props,\n'
+            'variantes y patterns de cada componente Polaris en tiempo real.\n'
+            'THEMEFORGE_EOF',
+        ],
+        "min_version": "Shopify CLI 3.x / Remix v3 / Polaris 13+ / Node 22+",
+        "skills": ["shopify/skills/theme-development"],
+        "ux_pack": "shopify-polaris-app",
+        "notes": "App embebida en el Admin de Shopify con Polaris + App Bridge + Remix + Prisma. Para apps públicas en Shopify App Store, custom apps de una sola tienda, o extensiones (theme/checkout/customer-account/admin/POS/Flow/Functions). Incluye `shopify-dev` MCP con conocimiento nativo de Polaris.",
     },
     "html-tailwind": {
         "name": "HTML + Tailwind + Vite",

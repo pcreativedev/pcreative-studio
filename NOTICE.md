@@ -172,7 +172,11 @@ repository.
 | Shopify Dev MCP server (`@shopify/dev-mcp`) | <https://github.com/Shopify/dev-mcp> | MIT | both Shopify stacks (Liquid + Hydrogen). Includes Polaris design system. |
 | Storefront MCP (hosted) | <https://shopify.dev/docs/apps/build/storefront-mcp> | Hosted by Shopify on every store, free, zero-auth | both Shopify stacks (the `.mcp.json` points to the user's store URL via HTTP) |
 | Storefront UCP MCP (hosted) | <https://shopify.dev/docs/apps/build/storefront-mcp> | Hosted by Shopify on every store, free, zero-auth | both Shopify stacks |
-| Polaris design system | <https://github.com/Shopify/polaris> | MIT | Available through `@shopify/dev-mcp` (not a separate dependency) |
+| Polaris design system | <https://github.com/Shopify/polaris> | MIT | Available through `@shopify/dev-mcp`. Also referenced by name in the `shopify-polaris-app` scaffold (the user's app installs `@shopify/polaris` / `@shopify/polaris-icons` / `@shopify/app-bridge-react` / `@shopify/shopify-app-remix` directly at `npm install` time). |
+| Shopify create-app template (`@shopify/create-app`) | <https://github.com/Shopify/shopify-app-template-remix> | MIT | `shopify-polaris-app` (scaffold) |
+| Liquid Prettier plugin (`@shopify/prettier-plugin-liquid`) | <https://github.com/Shopify/theme-tools/tree/main/packages/prettier-plugin-liquid> | MIT | `shopify-liquid` (added to `package.json` at scaffold time; npm installs it from npmjs.com when the user runs `npm install`) |
+| Prettier | <https://github.com/prettier/prettier> | MIT | `shopify-liquid` (added to `package.json`) |
+| Shopify Lighthouse CI action | <https://github.com/Shopify/lighthouse-ci-action> | MIT | `shopify-liquid` (referenced in `.github/workflows/lighthouse-ci.yml`; only run if the user opts in by setting `SHOPIFY_AUTH_TOKEN` / `SHOPIFY_STORE` / `SHOPIFY_STORE_PWD` secrets) |
 
 ### About Dawn as a starting point
 
