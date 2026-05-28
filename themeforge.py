@@ -5660,14 +5660,14 @@ class GalleryPanel(QWidget):
         self.btn_project = QPushButton("📺 Abrir proyecto (preview)")
         self.btn_project.setStyleSheet("font-weight:bold;")
         self.btn_project.clicked.connect(self._open_project_window)
-        # Operator (Hermes) — OPCIONAL: solo visible si Hermes está instalado.
-        self.btn_operator = QPushButton("🚀 Operator")
-        self.btn_operator.setToolTip("Automatizar este proyecto con el Operator "
-                                     "(Hermes) — opcional")
+        # Hermes — OPCIONAL: solo visible si Hermes está instalado.
+        self.btn_operator = QPushButton("🤖 Hermes")
+        self.btn_operator.setToolTip("Automatizar este proyecto con Hermes "
+                                     "— opcional")
         self.btn_operator.clicked.connect(self._automate_with_operator)
         try:
-            from operator_panel import operator_available
-            self.btn_operator.setVisible(operator_available())
+            from hermes_panel import hermes_available
+            self.btn_operator.setVisible(hermes_available())
         except Exception:
             self.btn_operator.setVisible(False)
         self.btn_delete = QPushButton("🗑️ Eliminar")
@@ -5852,22 +5852,22 @@ class GalleryPanel(QWidget):
         open_project_window(p, auto_agent=True)
 
     def _automate_with_operator(self):
-        """Lanza el Operator (Hermes) sobre el proyecto seleccionado."""
+        """Lanza Hermes sobre el proyecto seleccionado."""
         p = self._selected_path()
         if not p:
             QMessageBox.warning(self, "Galería", "Selecciona primero un template.")
             return
         try:
-            from operator_panel import OperatorMissionDialog, operator_available
-            if not operator_available():
+            from hermes_panel import HermesMissionDialog, hermes_available
+            if not hermes_available():
                 QMessageBox.information(
-                    self, "Operator",
+                    self, "Hermes",
                     "Instala Hermes Agent (opcional) para automatizar proyectos "
-                    "con el Operator. Settings → 🔧 Setup dependencies → Hermes.")
+                    "con Hermes. Settings → 🔧 Setup dependencies → Hermes.")
                 return
-            OperatorMissionDialog(p.name, p, self).exec()
+            HermesMissionDialog(p.name, p, self).exec()
         except Exception as e:
-            QMessageBox.warning(self, "Operator", f"Error: {e}")
+            QMessageBox.warning(self, "Hermes", f"Error: {e}")
 
     def _toggle_favorite(self):
         p = self._selected_path()
@@ -7018,16 +7018,16 @@ class ThemeForgeApp(QWidget):
         self.settings = SettingsPanel()
         self.cost = _CostTrackerPanel()
         self.multi_agent = _MultiAgentPanel()
-        # Operator (Hermes Mission Control) — TOTALMENTE OPCIONAL. El tab solo
-        # aparece si Hermes está instalado. Sin Hermes, ThemeForge funciona
+        # Hermes (centro de control de agentes) — TOTALMENTE OPCIONAL. El tab
+        # solo aparece si Hermes está instalado. Sin Hermes, ThemeForge funciona
         # exactamente igual y NO muestra el tab: nunca se fuerza la dependencia.
         self.operator = None
         try:
-            from operator_panel import OperatorPanel, find_hermes
+            from hermes_panel import HermesPanel, find_hermes
             if find_hermes():
-                self.operator = OperatorPanel()
+                self.operator = HermesPanel()
         except Exception as e:
-            print(f"[operator] panel no disponible: {e}")
+            print(f"[hermes] panel no disponible: {e}")
             self.operator = None
 
         # Market analysis tab (carga lazy — si falla, no rompe la app).
@@ -7060,8 +7060,8 @@ class ThemeForgeApp(QWidget):
             (self.settings,    "settings", "Settings"),
         ]
         if getattr(self, "operator", None) is not None:
-            # Tras "Compare": New project · Gallery · AI cost · Compare · Operator · …
-            self._tab_specs.insert(4, (self.operator, "rocket", "Operator"))
+            # Tras "Compare": New project · Gallery · AI cost · Compare · Hermes · …
+            self._tab_specs.insert(4, (self.operator, "sparkles", "Hermes"))
         if getattr(self, "market", None) is not None:
             # Tras "Compare" (idx 3): New project · Gallery · AI cost · Compare · Market · …
             self._tab_specs.insert(4, (self.market, "globe", "Market"))

@@ -250,6 +250,28 @@ class HermesTerminal(QWidget):
         self._web.setUrl(url)
         self.lbl.setText(f"💬 Chat con Hermes · {Path(self._cwd).name}")
 
+    def shutdown(self):
+        """Mata el servidor de terminal y limpia la vista. Lo usa el botón
+        maestro de encendido/apagado de Hermes."""
+        from PyQt6.QtCore import QUrl
+        if self._server and self._server.state() != QProcess.ProcessState.NotRunning:
+            self._server.kill()
+        self._server = None
+        self._port = None
+        if self._web:
+            self._web.setHtml("<body style='background:#0c0c0d;color:#888;"
+                              "font:13px monospace;padding:1em'>chat detenido — "
+                              "enciende Hermes para reanudar.</body>")
+
+    def relaunch(self):
+        """Reinicia el servidor de terminal si estaba apagado."""
+        if not self._hermes or not self._web:
+            return
+        if self._server and self._server.state() != QProcess.ProcessState.NotRunning:
+            self._load()
+            return
+        self._start_server()
+
 
 class OperatorPanel(QWidget):
     """Mission Control: launch Hermes-orchestrated ThemeForge missions."""
