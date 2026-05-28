@@ -125,6 +125,18 @@ class OnboardingWizard(QWizard):
         lay = QVBoxLayout(page)
         self._creds = CredentialsWidget()
         lay.addWidget(self._creds)
+        from PyQt6.QtWidgets import QLabel as _QLabel
+        market_hint = _QLabel(
+            "<div style='padding:10px 12px; background:#1e3a4f; "
+            "border:1px solid #3b82f6; border-radius:6px; color:#bfdbfe;'>"
+            "💡 <b>Pestaña «Market»</b> — análisis de mercado con IA (Gemini 2.5 Pro por defecto).<br>"
+            "Requiere <b>OPENROUTER_API_KEY</b> (gratis crearla en "
+            "<a href='https://openrouter.ai/keys' style='color:#93c5fd;'>openrouter.ai/keys</a>). "
+            "Sin esa key la pestaña queda inactiva — el resto de ThemeForge funciona igual.</div>"
+        )
+        market_hint.setOpenExternalLinks(True)
+        market_hint.setWordWrap(True)
+        lay.addWidget(market_hint)
         return page
 
     # ── Página 4: defaults ──────────────────────────────────────────────

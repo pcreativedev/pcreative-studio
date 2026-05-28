@@ -5466,6 +5466,9 @@ class ThemeForgeApp(QWidget):
         try:
             from market_tab import MarketTab
             self.market = MarketTab()
+            # El banner «sin key» del Market emite esta señal cuando el user
+            # pulsa «Configurar OpenRouter»: saltamos a la pestaña Settings.
+            self.market.request_open_credentials.connect(self._open_settings_tab)
         except Exception as e:
             print(f"[market] tab no disponible: {e}")
             self.market = None
@@ -5590,6 +5593,15 @@ class ThemeForgeApp(QWidget):
     def _open_command_palette(self):
         dlg = _CommandPalette(self, self._build_palette_actions())
         dlg.exec()
+
+    def _open_settings_tab(self):
+        """Switches the main QTabWidget to the Settings tab. Invoked when
+        a sub-component (e.g. the Market tab's «Configure OpenRouter»
+        button) wants to redirect the user to credential setup."""
+        for i, (w, _icon, _label) in enumerate(self._tab_specs):
+            if w is self.settings:
+                self.tabs.setCurrentIndex(i)
+                return
 
     def _apply_tab_icons(self):
         """Renders tab icons in the current theme's accent color and

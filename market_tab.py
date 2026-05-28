@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGridLayout,
     QHBoxLayout,
     QInputDialog,
@@ -31,6 +32,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QSplitter,
     QTextBrowser,
     QVBoxLayout,
@@ -107,6 +109,10 @@ class _CompareDialog(QDialog):
 
 
 class MarketTab(QWidget):
+    # Emitida cuando el usuario pulsa «Configurar OpenRouter» del banner.
+    # El main window la conecta para saltar a la pestaña Settings.
+    request_open_credentials = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._thread: QThread | None = None
@@ -117,6 +123,10 @@ class MarketTab(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(12, 12, 12, 12)
         root.setSpacing(10)
+
+        # ─ Banner sin key (visible solo si no hay OPENROUTER_API_KEY) ─
+        self._build_no_key_banner()
+        root.addWidget(self._no_key_banner)
 
         # ─ Header: modelo + status ─
         header = QHBoxLayout()
@@ -199,6 +209,47 @@ class MarketTab(QWidget):
         root.addWidget(splitter, 1)
 
         self._refresh_history()
+        self._refresh_key_state()
+
+    # ─ Banner sin key ─
+
+    def _build_no_key_banner(self):
+        self._no_key_banner = QFrame()
+        self._no_key_banner.setObjectName("market_no_key_banner")
+        self._no_key_banner.setStyleSheet(
+            "#market_no_key_banner { background:#3a2e1e; border:1px solid #f59e0b; "
+            "border-radius:8px; padding:10px 14px; }"
+        )
+        self._no_key_banner.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        lay = QHBoxLayout(self._no_key_banner)
+        lay.setContentsMargins(12, 10, 12, 10)
+        txt = QLabel(
+            "<b style='color:#fbbf24;'>⚠️ Necesitas una API key de OpenRouter</b>"
+            "<br><span style='color:#fde68a; font-size:10pt;'>"
+            "Crea una gratis en <a href='https://openrouter.ai/keys' style='color:#fcd34d;'>openrouter.ai/keys</a> "
+            "y pégala en Settings → Credentials → OpenRouter. "
+            "Coste típico por análisis con Gemini 2.5 Pro: ~$0.05-0.15."
+            "</span>"
+        )
+        txt.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+        txt.setOpenExternalLinks(True)
+        txt.setWordWrap(True)
+        lay.addWidget(txt, 1)
+        btn = QPushButton("⚙️  Configurar OpenRouter")
+        btn.setMinimumHeight(36)
+        btn.clicked.connect(self.request_open_credentials)
+        lay.addWidget(btn)
+
+    def _refresh_key_state(self):
+        """Muestra/oculta el banner según haya o no key de OpenRouter."""
+        has_key = bool(get_openrouter_key())
+        self._no_key_banner.setVisible(not has_key)
+
+    def showEvent(self, e):
+        # Cada vez que el usuario entra en la pestaña, re-comprobamos por si
+        # añadió la key en Settings mientras tanto.
+        self._refresh_key_state()
+        super().showEvent(e)
 
     # ─ Helpers ─
 
