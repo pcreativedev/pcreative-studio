@@ -977,7 +977,7 @@ def _read_context(name: str) -> str:
 # un PHP Script/SaaS caía en el checklist de Site Template estático y el agente
 # se bloqueaba ante la contradicción.
 _FORMAT_MOBILE = {"expo-rn-nativewind", "expo-rn-router", "flutter", "ionic-capacitor", "kotlin-compose"}
-_FORMAT_WORDPRESS = {"wordpress-block", "wordpress-plugin"}
+_FORMAT_WORDPRESS = {"wordpress-block", "wordpress-bricks", "wordpress-plugin"}
 _FORMAT_SCRIPT_APP = {
     "laravel-inertia", "nestjs-prisma", "fastapi", "django-tailwind", "t3-stack",
     "hono-bun", "hono-cloudflare", "phoenix-liveview", "rails-tailwind", "go-fiber",
@@ -1066,7 +1066,7 @@ def render_context(
     # Contexto para el agente: si es WordPress, ThemeForge ya levantó WP en
     # Docker (ver bloque WP del setup) y el preview apunta ahí.
     if product_format == "wordpress":
-        wp_kind = "theme" if stack_key == "wordpress-block" else "plugin"
+        wp_kind = "plugin" if stack_key == "wordpress-plugin" else "theme"
         wp_dir = "themes" if wp_kind == "theme" else "plugins"
         wp_dev_block = f"""
 ## Entorno WordPress (Docker) — YA INSTALADO Y FUNCIONAL
@@ -1857,8 +1857,11 @@ def write_setup_script(
     # ── WordPress dev env (Docker) — SOLO stacks WordPress, ANTES de todo lo
     #    demás. Levanta WP + MariaDB, instala WP (admin/admin) y monta el
     #    proyecto en wp-content. No-fatal: si docker falla, el setup sigue.
-    if stack_key in ("wordpress-block", "wordpress-plugin"):
-        wp_kind = "theme" if stack_key == "wordpress-block" else "plugin"
+    if stack_key in ("wordpress-block", "wordpress-bricks", "wordpress-plugin"):
+        wp_kind = "plugin" if stack_key == "wordpress-plugin" else "theme"
+        # ux_pack viene del stack (fse | bricks). Si no, "-" para que la CLI
+        # del provisioner lo interprete como None.
+        _ux_pack = stack.get("ux_pack") or "-"
         _wp_builder = Path(__file__).resolve().parent
         _wp_slug = project_dir.name
         parts.append('echo ""')
@@ -1867,7 +1870,7 @@ def write_setup_script(
         parts.append('  echo "→ Provisionando WordPress + MariaDB en Docker (el primer pull puede tardar)…"')
         parts.append(
             f'  if WP_OUT=$(PYTHONPATH={shell_quote(str(_wp_builder))} python3 -m wp_provisioner '
-            f'provision {shell_quote(_wp_slug)} "$(pwd)" {wp_kind} 2>&1); then'
+            f'provision {shell_quote(_wp_slug)} "$(pwd)" {wp_kind} {shell_quote(_ux_pack)} 2>&1); then'
         )
         parts.append('    WP_URL=$(echo "$WP_OUT" | python3 -c "import json,sys; print(json.load(sys.stdin)[\\"url\\"])" 2>/dev/null)')
         parts.append('    echo "✓ WordPress listo en ${WP_URL:-localhost} (admin/admin) — ver WORDPRESS-DEV.md"')
@@ -2066,7 +2069,7 @@ def write_setup_script(
     parts.append('DB_KIND=$(python3 -m db_provisioner detect "$(pwd)" 2>/dev/null || true)')
     # WordPress trae su propia MariaDB (en el contenedor de wp_provisioner),
     # así que NO forzamos Postgres aunque el checkbox esté marcado.
-    if force_postgres and stack_key not in ("wordpress-block", "wordpress-plugin"):
+    if force_postgres and stack_key not in ("wordpress-block", "wordpress-bricks", "wordpress-plugin"):
         parts.append('# Override: el usuario marcó "Provisionar Postgres" en la UI')
         parts.append('if [ -z "$DB_KIND" ]; then')
         parts.append('  echo "  (No detectada en archivos, pero forzada por checkbox UI)"')
@@ -3722,7 +3725,7 @@ class ThemeForge(QWidget):
         # WP en Docker funciona aunque no se haya analizado con IA.
         if (mode == "recreate" and not self._stack_manually_set
                 and ref_kind in ("folder", "zip") and ref_val
-                and stack_key not in ("wordpress-block", "wordpress-plugin")):
+                and stack_key not in ("wordpress-block", "wordpress-bricks", "wordpress-plugin")):
             try:
                 from reference_analyzer import detect_wordpress_stack
                 _wp = detect_wordpress_stack(Path(ref_val))

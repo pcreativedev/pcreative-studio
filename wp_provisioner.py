@@ -233,9 +233,11 @@ def _wpcli(wp_container: str, net: str, db_pw: str, *args: str, timeout: int = 3
     )
 
 
-def _configure_wp(wp: str, net: str, db_pw: str, port: int, slug: str, admin_pw: str) -> dict:
+def _configure_wp(wp: str, net: str, db_pw: str, port: int, slug: str, admin_pw: str, ux_pack: str | None = None) -> dict:
     """Idempotente: instala WP core + permalinks + plugin MCP (activado) + crea un
-    application password para el bridge MCP. Devuelve {installed, mcp_enabled, app_password}."""
+    application password para el bridge MCP + instala el UX pack (free desde wp.org
+    + premium desde ~/.config/themeforge/wp_packs.json si está). Devuelve
+    {installed, mcp_enabled, app_password, ux_pack}."""
     url = f"http://localhost:{port}"
     _wpcli(wp, net, db_pw, "core", "install", f"--url={url}", f"--title={slug}",
            "--admin_user=admin", f"--admin_password={admin_pw}",
@@ -273,7 +275,166 @@ def _configure_wp(wp: str, net: str, db_pw: str, port: int, slug: str, admin_pw:
     except Exception:
         pass
 
-    return {"installed": True, "mcp_enabled": mcp_enabled, "app_password": app_password}
+    # UX pack: plugins free desde wp.org + premium desde wp_packs.json.
+    ux_pack_result = {}
+    if ux_pack:
+        try:
+            ux_pack_result = _install_ux_pack(wp, net, db_pw, ux_pack, slug)
+        except Exception:
+            ux_pack_result = {"pack": ux_pack, "error": True}
+
+    return {
+        "installed": True,
+        "mcp_enabled": mcp_enabled,
+        "app_password": app_password,
+        "ux_pack": ux_pack_result,
+    }
+
+
+# ─── UX packs: plugins/temas que diferencian wordpress-block vs -bricks ──
+#
+# Plugins del repo oficial (gratis) — wp-cli los baja por slug. Los
+# premium (Bricks parent, Bricksforge, JetEngine, ACF Pro, Novamira Pro,
+# Motion.page) requieren licencia y los declara el usuario en
+# ~/.config/themeforge/wp_packs.json (gitignored, NUNCA al repo público).
+
+FREE_PLUGINS_BY_PACK: dict[str, list[tuple[str, str]]] = {
+    # Pack A — FSE (block theme nativo, sin builder).
+    "fse": [
+        ("generateblocks", "GenerateBlocks"),
+        ("ultimate-addons-for-gutenberg", "Spectra"),
+        ("advanced-custom-fields", "ACF (free)"),
+        ("pods", "Pods"),
+        ("royal-mcp", "Royal MCP"),
+    ],
+    # Pack B — Bricks Builder (child theme + Bricks como parent).
+    # GreenShift complementa con animaciones/dynamic data sin builder propio.
+    "bricks": [
+        ("greenshift-animation-and-page-builder-blocks", "GreenShift"),
+        ("advanced-custom-fields", "ACF (free)"),
+        ("pods", "Pods"),
+        ("royal-mcp", "Royal MCP"),
+    ],
+}
+
+WP_PACKS_CONFIG_FILE = CONFIG_DIR / "wp_packs.json"
+
+
+def _load_wp_packs_config() -> dict:
+    """Lee ~/.config/themeforge/wp_packs.json (gitignored, local-only).
+
+    Esquema esperado::
+
+        {
+          "bricks": {
+            "theme": {"name": "bricks", "zip": "/path/o/url/bricks.zip", "activate": true},
+            "plugins": [
+              {"name": "bricksforge", "zip": "..."},
+              {"name": "jetengine",   "zip": "..."},
+              {"name": "novamira-pro","zip": "..."}
+            ]
+          },
+          "fse": {
+            "plugins": [
+              {"name": "acf-pro",            "zip": "..."},
+              {"name": "generateblocks-pro", "zip": "..."},
+              {"name": "motion-page",        "zip": "..."}
+            ]
+          }
+        }
+    """
+    if not WP_PACKS_CONFIG_FILE.is_file():
+        return {}
+    try:
+        return json.loads(WP_PACKS_CONFIG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _wp_cp_into_container(wp_container: str, local_path: Path) -> str | None:
+    """Copia un ZIP local al contenedor WP y devuelve la ruta interna.
+    Si falla, devuelve None."""
+    inner = f"/tmp/{local_path.name}"
+    r = _docker("cp", str(local_path), f"{wp_container}:{inner}", timeout=120)
+    return inner if r.returncode == 0 else None
+
+
+def _install_ux_pack(
+    wp_container: str, net: str, db_pw: str, pack: str | None, slug: str
+) -> dict:
+    """Instala el set de plugins/tema del UX pack en el WP del contenedor.
+    Devuelve un dict con lo que se ha instalado y lo que faltaba.
+    No-fatal: cualquier fallo de plugin individual se ignora."""
+    out: dict = {"pack": pack, "free": [], "premium": [], "missing": [], "theme": None}
+    if not pack or pack not in FREE_PLUGINS_BY_PACK:
+        return out
+
+    # 1) Plugins gratis del repo oficial.
+    for plugin_slug, label in FREE_PLUGINS_BY_PACK[pack]:
+        try:
+            r = _wpcli(wp_container, net, db_pw, "plugin", "install", plugin_slug, "--activate", timeout=300)
+            if r.returncode == 0:
+                out["free"].append(label)
+        except Exception:
+            pass
+
+    # 2) Premium (theme + plugins) del config local del usuario.
+    cfg = _load_wp_packs_config().get(pack, {})
+
+    # 2a) Premium THEME (Bricks parent, etc.). Solo aplica al pack «bricks».
+    theme_entry = cfg.get("theme") if isinstance(cfg, dict) else None
+    if theme_entry:
+        zip_src = theme_entry.get("zip", "")
+        theme_name = theme_entry.get("name") or ""
+        activate = bool(theme_entry.get("activate", True))
+        installed = _install_zip(wp_container, net, db_pw, zip_src, kind="theme", activate=activate)
+        if installed:
+            out["theme"] = theme_name or "premium-theme"
+            # Si el theme padre está, activamos el child del usuario para
+            # que el preview ya muestre el sitio con el child encima.
+            if pack == "bricks":
+                try:
+                    _wpcli(wp_container, net, db_pw, "theme", "activate", slug)
+                except Exception:
+                    pass
+        else:
+            out["missing"].append(theme_name or "premium theme")
+
+    # 2b) Premium PLUGINS.
+    for entry in (cfg.get("plugins") or []):
+        zip_src = entry.get("zip", "")
+        name = entry.get("name") or "premium-plugin"
+        if _install_zip(wp_container, net, db_pw, zip_src, kind="plugin", activate=True):
+            out["premium"].append(name)
+        else:
+            out["missing"].append(name)
+
+    return out
+
+
+def _install_zip(
+    wp_container: str, net: str, db_pw: str, src: str, *, kind: str, activate: bool
+) -> bool:
+    """Instala un theme o plugin desde un ZIP (URL HTTPS o path local).
+    Devuelve True si wp-cli reportó éxito."""
+    if not src:
+        return False
+    target = src
+    # Si es ruta local: copiar el archivo al contenedor antes de instalar.
+    p = Path(src).expanduser()
+    if p.is_file():
+        inner = _wp_cp_into_container(wp_container, p)
+        if not inner:
+            return False
+        target = inner
+    try:
+        args = [kind, "install", target]
+        if activate:
+            args.append("--activate")
+        r = _wpcli(wp_container, net, db_pw, *args, timeout=600)
+        return r.returncode == 0
+    except Exception:
+        return False
 
 
 _AUTOLOGIN_MU_PLUGIN = r"""<?php
@@ -355,8 +516,9 @@ def stop_containers(slug: str) -> bool:
     return not is_running(slug)
 
 
-def provision_wordpress_for(slug: str, project_dir: str, kind: str = "theme") -> dict:
-    """Idempotente. kind ∈ {'theme','plugin'}. Devuelve la provisión completa."""
+def provision_wordpress_for(slug: str, project_dir: str, kind: str = "theme", ux_pack: str | None = None) -> dict:
+    """Idempotente. kind ∈ {'theme','plugin'}. ux_pack ∈ {'fse','bricks',None}.
+    Devuelve la provisión completa."""
     ok, msg = docker_available()
     if not ok:
         raise RuntimeError(f"docker no disponible: {msg}")
@@ -385,7 +547,7 @@ def provision_wordpress_for(slug: str, project_dir: str, kind: str = "theme") ->
             _docker("start", db)
             _docker("start", wp)
         _wait_http(port)
-        cfg = _configure_wp(wp, net, db_pw, port, slug, existing.get("admin_password", "admin"))
+        cfg = _configure_wp(wp, net, db_pw, port, slug, existing.get("admin_password", "admin"), ux_pack=ux_pack or existing.get("ux_pack_name"))
         existing.update(installed=cfg["installed"], mcp_enabled=cfg["mcp_enabled"], app_password=cfg["app_password"])
         provs[slug] = existing
         _save(provs)
@@ -440,9 +602,9 @@ def provision_wordpress_for(slug: str, project_dir: str, kind: str = "theme") ->
         raise RuntimeError(f"docker run wordpress falló: {r.stderr.strip()[:400]}")
     _wait_http(port)
 
-    # Configurar WP: core install + permalinks + plugin MCP + app-password.
+    # Configurar WP: core install + permalinks + plugin MCP + app-password + UX pack.
     url = f"http://localhost:{port}"
-    cfg = _configure_wp(wp, net, db_pw, port, slug, admin_pw)
+    cfg = _configure_wp(wp, net, db_pw, port, slug, admin_pw, ux_pack=ux_pack)
 
     prov = {
         "kind": "wordpress",
@@ -463,6 +625,8 @@ def provision_wordpress_for(slug: str, project_dir: str, kind: str = "theme") ->
         "installed": cfg["installed"],
         "mcp_enabled": cfg["mcp_enabled"],
         "app_password": cfg["app_password"],
+        "ux_pack_name": ux_pack,
+        "ux_pack": cfg.get("ux_pack", {}),
     }
     provs[slug] = prov
     _save(provs)
@@ -497,11 +661,12 @@ def _main() -> int:
     cmd = args[0]
     if cmd == "provision":
         if len(args) < 3:
-            print("uso: provision <slug> <project_dir> [theme|plugin]", file=sys.stderr)
+            print("uso: provision <slug> <project_dir> [theme|plugin] [ux_pack]", file=sys.stderr)
             return 2
         slug, project_dir = args[1], args[2]
         kind = args[3] if len(args) > 3 else "theme"
-        prov = provision_wordpress_for(slug, project_dir, kind)
+        ux_pack = args[4] if len(args) > 4 and args[4] not in ("-", "") else None
+        prov = provision_wordpress_for(slug, project_dir, kind, ux_pack=ux_pack)
         print(json.dumps(prov))
         return 0
     if cmd == "down":

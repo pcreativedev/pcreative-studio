@@ -92,7 +92,72 @@ STACKS = {
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0",
         "skills": ["wordpress/skills/block-theme-development"],
-        "notes": "Block theme moderno (theme.json v3 + FSE). El entorno WordPress (Docker) lo levanta ThemeForge automáticamente al crear el proyecto (ver WORDPRESS-DEV.md). El agente opera WP con wp-cli vía ./wp.",
+        "ux_pack": "fse",
+        "notes": "Block theme moderno (theme.json v3 + FSE). Pack UX «FSE Pro»: ThemeForge auto-instala GenerateBlocks, Spectra, ACF, Pods y Royal MCP (todos gratis). Premium opcionales (GenerateBlocks Pro, ACF Pro, Motion.page) si los declaras en ~/.config/themeforge/wp_packs.json (gitignored). El agente opera WP con wp-cli vía ./wp.",
+    },
+    "wordpress-bricks": {
+        "name": "WordPress (Bricks Child Theme)",
+        "category": "CMS · WordPress",
+        "language": "PHP",
+        "scaffold": [
+            # ── 1. style.css del child theme (declara Template: bricks) ──
+            'cat > style.css <<\'THEMEFORGE_EOF\'\n'
+            '/*\n'
+            'Theme Name: __PROJECT__ (Bricks child)\n'
+            'Template: bricks\n'
+            'Description: Child theme de Bricks Builder generado por ThemeForge.\n'
+            'Version: 0.1.0\n'
+            'Text Domain: __SLUG__\n'
+            'License: GPLv2 or later\n'
+            'Requires at least: 6.7\n'
+            'Requires PHP: 8.0\n'
+            '*/\n'
+            'THEMEFORGE_EOF',
+            # ── 2. functions.php (enqueue del child + hook bootstrap) ─
+            'cat > functions.php <<\'THEMEFORGE_EOF\'\n'
+            '<?php\n'
+            "if (!defined('ABSPATH')) { exit; }\n"
+            '\n'
+            "add_action('wp_enqueue_scripts', function () {\n"
+            "    wp_enqueue_style('__SLUG___parent', get_template_directory_uri() . '/style.css');\n"
+            "    wp_enqueue_style('__SLUG___child', get_stylesheet_uri(), ['__SLUG___parent'], '0.1.0');\n"
+            "});\n"
+            '\n'
+            "// Hooks del child theme: añadir aquí filtros/acciones específicos del proyecto.\n"
+            'THEMEFORGE_EOF',
+            # ── 3. estructura de carpetas ────────────────────────────
+            "mkdir -p assets/css assets/js assets/images "
+            "bricks-templates/{header,footer,single,archive,page,patterns} "
+            "includes",
+            # ── 4. README con el flujo Bricks ─────────────────────────
+            'cat > README.md <<\'THEMEFORGE_EOF\'\n'
+            '# __PROJECT__ — Child theme de Bricks\n'
+            '\n'
+            'Stack: **Bricks Builder + Bricksforge + JetEngine + Motion.page** + Royal MCP.\n'
+            '\n'
+            '## Flujo de trabajo\n'
+            '1. **Bricks (parent theme)** se instala automáticamente si declaras\n'
+            '   `wp_packs.json` con `bricks_theme.zip`; si no, súbelo a mano a\n'
+            '   Apariencia → Temas → Subir.\n'
+            '2. **Este child theme** se activa solo cuando el parent está presente.\n'
+            '3. Diseña con Bricks en `/wp-admin/` (autologueado). Cada template\n'
+            '   (header / footer / single / archive / page) se **exporta como JSON**\n'
+            '   vía *Bricks → Templates → Export* y se commitea en `bricks-templates/`.\n'
+            '4. CSS / JS customizado va en `assets/` y se enqueue desde `functions.php`.\n'
+            '5. Patrones reutilizables / Global Classes se exportan también a JSON\n'
+            '   y entran en `bricks-templates/patterns/`.\n'
+            '\n'
+            '## Por qué child theme y no theme suelto\n'
+            'Los templates de Bricks viven en BD (no en archivos), así que el\n'
+            'deliverable son los **JSON exportados** + el child theme con tu CSS/PHP.\n'
+            'El comprador instala Bricks, importa los JSON, activa el child y queda\n'
+            'idéntico a la demo.\n'
+            'THEMEFORGE_EOF',
+        ],
+        "min_version": "WordPress 6.7+ / PHP 8.0 / Bricks Builder (licencia aparte)",
+        "skills": ["wordpress/skills/block-theme-development"],
+        "ux_pack": "bricks",
+        "notes": "Child theme de Bricks Builder. Pack UX «Bricks»: ThemeForge auto-instala los gratis (GreenShift, ACF, Pods, Royal MCP). Premium (Bricks parent theme, Bricksforge, JetEngine, Novamira Pro, Motion.page) requieren licencia y se autoinstalan si los declaras en ~/.config/themeforge/wp_packs.json (gitignored, NUNCA al repo). Sin la licencia de Bricks, sube bricks.zip a mano y activa el child theme luego.",
     },
     "wordpress-plugin": {
         "name": "WordPress Plugin (PHP 8.2)",
