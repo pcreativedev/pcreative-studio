@@ -1,0 +1,20 @@
+{
+  "name": "Kawaii",
+  "jp": "カワイイ",
+  "vars": {
+    "--bg-void": "#fff5fa",
+    "--bg-deep": "#ffeaf4",
+    "--bg-panel": "#ffffff",
+    "--bg-panel-2": "#fff0f7",
+    "--bg-raise": "#ffeaf4",
+    "--tx": "#6b4a5e",
+    "--tx-dim": "#b98fa8",
+    "--tx-faint": "#d0aec0",
+    "--line": "#ffd9ec",
+    "--line-bright": "#ffc2e0",
+    "--accent": "#ff8fc7",
+    "--accent-2": "#b9a3ff",
+    "--accent-rgb": "255, 143, 199",
+    "--accent2-rgb": "185, 163, 255"
+  }
+}

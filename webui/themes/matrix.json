@@ -1,0 +1,20 @@
+{
+  "name": "Matrix",
+  "jp": "マトリックス",
+  "vars": {
+    "--bg-void": "#040804",
+    "--bg-deep": "#060d07",
+    "--bg-panel": "#0a130c",
+    "--bg-panel-2": "#0e1a11",
+    "--bg-raise": "#122818",
+    "--tx": "#9bffb0",
+    "--tx-dim": "#3f7d54",
+    "--tx-faint": "#2a5639",
+    "--line": "#15452a",
+    "--line-bright": "#1f6b40",
+    "--accent": "#00ff41",
+    "--accent-2": "#00b894",
+    "--accent-rgb": "0, 255, 65",
+    "--accent2-rgb": "0, 184, 148"
+  }
+}
