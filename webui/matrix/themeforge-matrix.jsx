@@ -176,7 +176,7 @@ function MToggle({ on, onClick }) {
 function MCheck({ label, sub, on, onToggle }) {
   return <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}><div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontFamily: 'var(--term)' }}>{label}</div>{sub && <div style={{ fontSize: 11.5, marginTop: 3, color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>{sub}</div>}</div><MToggle on={on} onClick={onToggle} /></div>;
 }
-function NewProject({ onAnalyze }) {
+function NewProject({ onAnalyze, onLaunch }) {
   const [vibe, setVibe] = useState('');
   const [pname, setPname] = useState('');
   const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].k : 'next');
@@ -214,18 +214,15 @@ function NewProject({ onAnalyze }) {
       if (window.tfBridge.detect_ref_stack) window.tfBridge.detect_ref_stack(r.path).then(dj => { let d = {}; try { d = JSON.parse(dj); } catch (e) {} if (d.stack && STACKS.find(s => s.k === d.stack)) setStack(d.stack); }); });
   };
   const forge = () => {
-    if (!(window.tfBridge && window.tfBridge.create_project)) return;
     if (mode === 'repo') {
       const rid = (repoId || '').trim();
       if (!rid || rid.indexOf('/') < 0) { alert('Indica el repo como owner/repo o una URL de GitHub.'); return; }
       const repoName = rid.replace(/\.git$/, '').replace(/\/$/, '').split('/').pop();
-      window.tfBridge.create_project(JSON.stringify({ name: repoName, stack: 'none', agent, type, mode: 'existing', niche: vibe, existing_repo: rid, opts }));
-      alert('⚙ Continuando repo «' + repoName + '» — clonando y preparando en segundo plano.'); return;
+      onLaunch && onLaunch({ name: repoName, stack: 'none', agent, type, mode: 'existing', niche: vibe, existing_repo: rid, opts }); return;
     }
     const name = (pname || '').trim() || (vibe || '').trim().slice(0, 42) || type || 'Untitled Forge';
     if (!(pname || '').trim() && !confirm('Sin nombre — se usará «' + name + '». ¿Continuar?')) return;
-    window.tfBridge.create_project(JSON.stringify({ name, stack, agent, type, mode, niche: vibe, reference: refVal, reference_kind: refKind, opts }));
-    alert('⚙ Creando «' + name + '» — el setup corre en segundo plano y aparecerá en la galería.');
+    onLaunch && onLaunch({ name, stack, agent, type, mode, niche: vibe, reference: refVal, reference_kind: refKind, opts });
   };
   const groups = {}; STACKS.forEach(s => { const c = s.cat || 'Otros'; (groups[c] = groups[c] || []).push(s); });
   const selCat = (STACKS.find(s => s.k === stack) || {}).cat;
@@ -959,6 +956,23 @@ function App() {
   const nav = (id) => { setProject(null); setRoute(id); };
   window.tfNav = nav;
   const openProject = (p) => { setProject(p); setRoute('project'); };
+  // Crear proyecto REAL: al terminar el scaffold (build_done) abre su ventana.
+  const launch = (cfg) => {
+    if (!(window.tfBridge && window.tfBridge.create_project)) {
+      setProject({ ...cfg, id: cfg.name, status: 'building', jp: '制作' }); setRoute('project'); return;
+    }
+    if (window.tfBridge.build_done && window.tfBridge.build_done.connect && !window.__tfBuildWired) {
+      window.__tfBuildWired = true;
+      window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+        if (r.path) { setProject({ id: r.slug, name: r.name, path: r.path, agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', jp: '制作' }); setRoute('project'); } });
+    }
+    window.__tfLastAgent = cfg.agent;
+    window.tfBridge.create_project(JSON.stringify(cfg)).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r && r.ok === false) alert('Error al crear: ' + (r.error || '')); });
+    const b = document.createElement('div');
+    b.textContent = '⚙ Creando «' + (cfg.name || 'proyecto') + '» — se abrirá su ventana al terminar el scaffold…';
+    b.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#040804;color:var(--accent,#00ff41);border:1px solid var(--accent,#00ff41);border-radius:6px;padding:10px 18px;font:13px monospace;box-shadow:0 0 18px rgba(0,255,65,.4)';
+    document.body.appendChild(b); setTimeout(() => b.remove(), 7000);
+  };
   const titles = { gallery: '▤ Galería', new: '+ Nuevo proyecto', cost: '$ Coste de IA', compare: '⇄ Comparar agentes', operator: '⌬ Mission Control', market: '⊞ Market Analyzer', licensing: '⚿ Licencias', settings: '⚙ Ajustes', project: '▸ ' + (project ? project.name : '') };
 
   return (
@@ -988,7 +1002,7 @@ function App() {
           <button className="btn pri" onClick={() => nav('new')}>+ Nuevo</button>
         </div>
         {route === 'gallery' && <Gallery onOpen={openProject} />}
-        {route === 'new' && <NewProject onAnalyze={() => setModal('ref')} />}
+        {route === 'new' && <NewProject onAnalyze={() => setModal('ref')} onLaunch={launch} />}
         {route === 'cost' && <Cost />}
         {route === 'compare' && <Compare />}
         {route === 'operator' && <Operator />}
