@@ -604,43 +604,94 @@ function MatrixTerminal({ run }) {
     </div>
   );
 }
-function RealPreview({ path }) {
+// Preview REAL con controles (Start / Stop / Reload / abrir en navegador), igual
+// que la barra de preview de la ProjectWindow nativa.
+function RealPreview({ path, narrow }) {
+  const B = window.tfBridge;
   const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
+  const [status, setStatus] = useState('idle'); const [k, setK] = useState(0);
   useEffect(() => {
-    if (!window.tfBridge || !window.tfBridge.start_preview || !path) return;
-    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path) { if (r.url) setUrl(r.url); else setErr(r.error || 'error'); } };
-    if (window.tfBridge.preview_ready && window.tfBridge.preview_ready.connect) window.tfBridge.preview_ready.connect(onReady);
-    window.tfBridge.start_preview(path);
-    return () => { try { window.tfBridge.preview_ready.disconnect(onReady); } catch (e) {} };
+    if (!B || !B.preview_ready || !B.preview_ready.connect) return;
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== path) return;
+      if (r.stopped) { setUrl(null); setStatus('stopped'); return; }
+      if (r.url) { setUrl(r.url); setErr(null); setStatus('up'); } else if (r.error) { setErr(r.error); setStatus('error'); } };
+    B.preview_ready.connect(onReady);
+    return () => { try { B.preview_ready.disconnect(onReady); } catch (e) {} };
   }, [path]);
-  if (!window.tfBridge || !path) return <Slot id={'pw'} cls="" radius={4} ph="// preview" />;
-  if (err) return <div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// preview: {err}</div>;
-  if (!url) return <div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// arrancando dev server real…</div>;
-  return <iframe src={url} style={{ width: '100%', height: '100%', minHeight: 300, border: 'none', borderRadius: 4, background: '#fff' }} />;
+  const start = () => { if (B && B.start_preview && path) { setErr(null); setStatus('starting'); B.start_preview(path); } };
+  const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
+  const reload = () => setK(x => x + 1);
+  const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
+  const redetect = () => { if (B && B.refresh_profile && path) B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert(r.detected ? ('✓ preview detectable: ' + r.profile) : 'aún sin preview (instala deps o corre setup)'); }); };
+  useEffect(() => { if (B && path && status === 'idle') start(); }, [path]);
+  const ctl = { fontFamily: 'var(--term)', fontSize: 11.5, padding: '5px 9px' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 0 10px', flexWrap: 'wrap' }}>
+        <button className="btn" style={ctl} onClick={start} disabled={status === 'up' || status === 'starting'}>▶ Start</button>
+        <button className="btn" style={ctl} onClick={stop} disabled={status !== 'up'}>■ Stop</button>
+        <button className="btn" style={ctl} onClick={reload} disabled={status !== 'up'}>↻ Reload</button>
+        <button className="btn" style={ctl} onClick={openExt} disabled={status !== 'up'}>🗗 Navegador</button>
+        <button className="btn" style={ctl} onClick={redetect}>🔄 Re-detectar</button>
+        <input className="ta" readOnly value={url || ''} placeholder="URL del preview…" style={{ minHeight: 0, padding: '5px 9px', flex: 1, fontSize: 11.5, minWidth: 120 }} />
+      </div>
+      <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', minHeight: 0, overflow: 'auto' }}>
+        {!B || !path ? <div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)', placeSelf: 'center' }}>// sin preview</div>
+          : err ? <div style={{ color: 'var(--p3)', fontFamily: 'var(--term)', placeSelf: 'center' }}>// preview: {err}</div>
+          : status === 'stopped' ? <div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)', placeSelf: 'center' }}>■ preview detenido — pulsa ▶ Start</div>
+          : !url ? <div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)', placeSelf: 'center' }}>// arrancando dev server real…</div>
+          : <iframe key={k} src={url} style={{ width: narrow ? 320 : '100%', maxWidth: '100%', height: '100%', minHeight: 280, border: 'none', borderRadius: 4, background: '#fff', justifySelf: 'center' }} />}
+      </div>
+    </div>
+  );
 }
 
-function ProjectWindow({ p, onBack, onDeploy, onBuild }) {
+// Log del setup/scaffold en vivo (señal progress) mientras se construye.
+function BuildLog({ lines }) {
+  const box = useRef(null);
+  useEffect(() => { if (box.current) box.current.scrollTop = box.current.scrollHeight; }, [lines]);
+  return (
+    <div ref={box} style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4, padding: 14, fontFamily: 'var(--term)', fontSize: 12.5, lineHeight: 1.7, overflowY: 'auto', minHeight: 0, whiteSpace: 'pre-wrap', color: 'var(--tx-dim)' }}>
+      {(lines && lines.length) ? lines.join('') : '> esperando salida del scaffold…'}
+      <div style={{ color: 'var(--accent)' }}>▊ instalando (scaffold · autoskills · UI/UX Pro · MCP)…</div>
+    </div>
+  );
+}
+function ProjectWindow({ p, onBack, onDeploy, onBuild, buildLog }) {
   const [tab, setTab] = useState('desktop');
-  const [run, setRun] = useState(false);
   const [pushed, setPushed] = useState(false);
+  const building = p.status === 'building';
   const ag = AGENTS[p.agent] || { color: 'var(--accent)', em: '◆', label: p.agent || 'agent' };
   const st = STATUS[p.status] || { color: 'var(--tx-dim)', em: '○', label: p.status || '' };
-  useEffect(() => { const t = setTimeout(() => setRun(true), 500); return () => clearTimeout(t); }, []);
   const tabs = [['desktop', '▭ Desktop'], ['mobile', '▯ Mobile'], ['code', '⌗ Code']];
   const B = window.tfBridge;
   const preflight = () => { if (B && B.run_preflight) { alert('⟳ Pre-flight…'); B.run_preflight(p.path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert('Pre-flight: ' + (r.verdict || r.status || (r.ok ? 'PASS' : JSON.stringify(r).slice(0, 200)))); }); } else onBuild && onBuild(); };
   const buildzip = () => { if (B && B.build_zip) { alert('⟳ Empaquetando ZIP…'); B.build_zip(p.path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert('ZIP: ' + (r.zip_path || r.zip || r.error || 'hecho')); }); } };
   const push = () => { if (B && B.git_push) { B.git_push(p.path); setPushed(true); } else setPushed(true); };
   const deploy = () => { if (B && B.deploy_demo) { const pv = prompt('Deploy a (netlify/vercel/cloudflare/surge):', 'surge'); if (pv) B.deploy_demo(p.path, pv); } else onDeploy && onDeploy(); };
+  const folder = () => { if (B && B.open_folder) B.open_folder(p.path); };
+  const vscode = () => { if (B && B.open_vscode) B.open_vscode(p.path); };
+  const extterm = () => { if (B && B.open_external_terminal) B.open_external_terminal(p.path); };
+  const github = () => { if (B && B.github_create) { alert('⎇ GitHub: creando/empujando repo… mira la terminal de setup'); B.github_create(p.path); } };
+  const operator = () => { window.tfNav && window.tfNav('operator'); };
+  const newp = () => { window.tfNav && window.tfNav('new'); };
+  const other = () => { window.tfNav && window.tfNav('gallery'); };
   return (
     <div className="page fade" style={{ height: '100%', display: 'flex', flexDirection: 'column', paddingBottom: 26 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn" onClick={onBack}>← Galería</button>
         <b style={{ fontSize: 18, fontFamily: 'var(--display)' }}>{p.name}</b><span style={{ fontFamily: 'var(--term)', color: 'var(--tx-dim)' }}>{p.jp}</span>
         <span className="pstatus" style={{ position: 'static', color: st.color }}>{st.em} {st.label}</span>
         <div style={{ flex: 1 }} />
+        <button className="btn" onClick={newp}>＋ Nuevo</button>
+        <button className="btn" onClick={other}>📂 Abrir otro</button>
+        <button className="btn" onClick={folder}>🗀 Folder</button>
+        <button className="btn" onClick={vscode}>⌨ VSCode</button>
+        <button className="btn" onClick={extterm}>▮ Terminal ext.</button>
+        <button className="btn" onClick={operator}>⌬ Operator</button>
         <button className="btn" onClick={preflight}>✓ Pre-flight</button>
         <button className="btn" onClick={buildzip}>⊞ ZIP</button>
+        <button className="btn" onClick={github}>⎇ GitHub</button>
         <button className={'btn' + (pushed ? '' : ' pri')} onClick={push}>{pushed ? '✓ Pushed' : '⎇ Push'}</button>
         <button className="btn pri" onClick={deploy}>▶ Deploy</button>
       </div>
@@ -655,22 +706,17 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild }) {
             <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--tx-dim)', fontFamily: 'var(--term)', alignSelf: 'center' }}>localhost:5173</span>
           </div>
           <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4, padding: 0, minHeight: 0, overflow: 'auto' }}>
-            <RealPreview path={p.path} />
+            {building ? <div style={{ display: 'grid', placeItems: 'center', color: 'var(--tx-dim)', fontFamily: 'var(--term)', padding: 20 }}>⟳ preview disponible cuando termine el scaffold…</div> : <RealPreview path={p.path} narrow={tab === 'mobile'} />}
           </div>
         </div>
         <div className="panelc" style={{ display: 'flex', flexDirection: 'column', padding: 14, minHeight: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontFamily: 'var(--term)' }}>
-            <b>⌗ Terminal del agente</b>
+            <b>{building ? '⚙ Setup inicial' : '⌗ Terminal del agente'}</b>
             <span className="tag" style={{ marginLeft: 'auto', color: ag.color, borderColor: ag.color }}>{ag.em} {ag.label}</span>
           </div>
-          <RealTerm path={p.path} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <input className="ta" style={{ minHeight: 0, padding: '9px 14px', flex: 1 }} placeholder="responder al agente…" />
-            <button className="btn pri" onClick={() => { setRun(false); setTimeout(() => setRun(true), 60); }}>▶</button>
-          </div>
+          {building ? <BuildLog lines={buildLog} /> : <RealTerm path={p.path} />}
         </div>
       </div>
-      <style>{`#pw-${p.id}{width:100%;height:${tab === 'mobile' ? '320px' : '300px'};max-width:${tab === 'mobile' ? '280px' : 'none'};}`}</style>
     </div>
   );
 }
@@ -939,6 +985,7 @@ function App() {
   const [project, setProject] = useState(null);
   const [modal, setModal] = useState(null);
   const [palette, setPalette] = useState(false);
+  const [buildLog, setBuildLog] = useState([]);
   useEffect(() => {
     const r = document.documentElement.style;
     const [a, b] = Array.isArray(t.palette) ? t.palette : ['#00ff41', '#00b894'];
@@ -956,22 +1003,26 @@ function App() {
   const nav = (id) => { setProject(null); setRoute(id); };
   window.tfNav = nav;
   const openProject = (p) => { setProject(p); setRoute('project'); };
-  // Crear proyecto REAL: al terminar el scaffold (build_done) abre su ventana.
+  // Crear proyecto REAL: abre YA la ventana mostrando el SETUP (scaffold +
+  // autoskills + UI/UX Pro + MCP) en vivo; al terminar (build_done) pasa a la IA.
   const launch = (cfg) => {
+    window.__tfLastAgent = cfg.agent;
+    setBuildLog([]);
     if (!(window.tfBridge && window.tfBridge.create_project)) {
       setProject({ ...cfg, id: cfg.name, status: 'building', jp: '制作' }); setRoute('project'); return;
     }
-    if (window.tfBridge.build_done && window.tfBridge.build_done.connect && !window.__tfBuildWired) {
-      window.__tfBuildWired = true;
-      window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-        if (r.path) { setProject({ id: r.slug, name: r.name, path: r.path, agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', jp: '制作' }); setRoute('project'); } });
+    if (!window.__tfWired) {
+      window.__tfWired = true;
+      if (window.tfBridge.progress && window.tfBridge.progress.connect)
+        window.tfBridge.progress.connect((line) => setBuildLog(l => (l.length > 1200 ? l.slice(-1200) : l).concat(line)));
+      if (window.tfBridge.build_done && window.tfBridge.build_done.connect)
+        window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', jp: '制作' }));
+          setRoute('project'); });
     }
-    window.__tfLastAgent = cfg.agent;
-    window.tfBridge.create_project(JSON.stringify(cfg)).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r && r.ok === false) alert('Error al crear: ' + (r.error || '')); });
-    const b = document.createElement('div');
-    b.textContent = '⚙ Creando «' + (cfg.name || 'proyecto') + '» — se abrirá su ventana al terminar el scaffold…';
-    b.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#040804;color:var(--accent,#00ff41);border:1px solid var(--accent,#00ff41);border-radius:6px;padding:10px 18px;font:13px monospace;box-shadow:0 0 18px rgba(0,255,65,.4)';
-    document.body.appendChild(b); setTimeout(() => b.remove(), 7000);
+    window.tfBridge.create_project(JSON.stringify(cfg)).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'building', jp: '制作' }); setRoute('project'); }
+      else if (r && r.ok === false) alert('Error al crear: ' + (r.error || '')); });
   };
   const titles = { gallery: '▤ Galería', new: '+ Nuevo proyecto', cost: '$ Coste de IA', compare: '⇄ Comparar agentes', operator: '⌬ Mission Control', market: '⊞ Market Analyzer', licensing: '⚿ Licencias', settings: '⚙ Ajustes', project: '▸ ' + (project ? project.name : '') };
 
@@ -1009,7 +1060,7 @@ function App() {
         {route === 'market' && <Market />}
         {route === 'licensing' && <Licensing />}
         {route === 'settings' && <Settings />}
-        {route === 'project' && <ProjectWindow p={project || PROJECTS[0]} onBack={() => nav('gallery')} onDeploy={() => setModal('deploy')} onBuild={() => setModal('build')} />}
+        {route === 'project' && <ProjectWindow p={project || PROJECTS[0]} onBack={() => nav('gallery')} onDeploy={() => setModal('deploy')} onBuild={() => setModal('build')} buildLog={buildLog} />}
       </div>
 
       {modal === 'deploy' && <DeployModal onClose={() => setModal(null)} />}

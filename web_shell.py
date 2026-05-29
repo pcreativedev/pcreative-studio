@@ -585,6 +585,7 @@ class ThemeForgeBridge(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._procs = []  # mantener vivas las QProcess en vuelo
+        self._preview_procs = {}  # path -> (QProcess, url) del dev server de preview
         self._last_reference_analysis = None  # (value, texto) del último análisis IA
 
     def _agent_launch_for(self, path: str):
@@ -693,11 +694,74 @@ class ThemeForgeBridge(QObject):
             sh, args = pc.shell_program_and_args(cmd_str)
             proc.start(sh, args)
             self._procs.append(proc)
+            self._preview_procs[path] = (proc, url)
             QTimer.singleShot(4800, lambda: self.preview_ready.emit(
                 json.dumps({"path": path, "url": url})))
             return json.dumps({"ok": True, "starting": True, "url": url})
         except Exception as e:
             self.preview_ready.emit(json.dumps({"path": path, "error": str(e)}))
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def stop_preview(self, path: str) -> str:
+        """Para el dev server de preview de un proyecto (sin borrar datos)."""
+        try:
+            entry = self._preview_procs.pop(path, None)
+            if not entry:
+                return json.dumps({"ok": True, "already": True})
+            proc, _url = entry
+            if proc and proc.state() != QProcess.ProcessState.NotRunning:
+                proc.terminate()
+                if not proc.waitForFinished(3000):
+                    proc.kill()
+            self.preview_ready.emit(json.dumps({"path": path, "stopped": True}))
+            return json.dumps({"ok": True, "stopped": True})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def refresh_profile(self, path: str) -> str:
+        """Re-detecta el perfil de preview (tras instalar deps / correr setup).
+        Devuelve {ok, profile} para que la UI sepa si ya hay preview."""
+        try:
+            from preview import detect_preview_profile
+            from pathlib import Path
+            prof = detect_preview_profile(Path(path))
+            return json.dumps({"ok": True, "profile": (prof or {}).get("name", ""),
+                               "detected": bool(prof)})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def open_preview_external(self, path: str) -> str:
+        """Abre la URL del preview en el navegador externo (modo app)."""
+        try:
+            entry = self._preview_procs.get(path)
+            url = entry[1] if entry else None
+            if not url:
+                return json.dumps({"ok": False, "error": "preview no arrancado"})
+            import webbrowser
+            webbrowser.open(url)
+            return json.dumps({"ok": True, "url": url})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def open_external_terminal(self, path: str) -> str:
+        """Abre una terminal externa del sistema con cwd en el proyecto."""
+        try:
+            import shutil
+            import subprocess
+            for term, args in (("konsole", ["--workdir", path]),
+                               ("gnome-terminal", ["--working-directory=" + path]),
+                               ("xterm", ["-e", "cd " + path + " && bash"]),
+                               ("kitty", ["--directory", path]),
+                               ("alacritty", ["--working-directory", path])):
+                if shutil.which(term):
+                    subprocess.Popen([term] + args)
+                    return json.dumps({"ok": True, "terminal": term})
+            return json.dumps({"ok": False, "error": "no se encontró terminal"})
+        except Exception as e:
             return json.dumps({"ok": False, "error": str(e)})
 
     @pyqtSlot(str, result=str)
@@ -1197,6 +1261,34 @@ class ThemeForgeBridge(QObject):
         proc.readyReadStandardOutput.connect(
             lambda: self.progress.emit(bytes(proc.readAllStandardOutput()).decode(errors="replace")))
         proc.finished.connect(lambda c, _s: self.progress.emit(f"\n■ git (exit {c}).\n"))
+        proc.start("bash", ["-lc", cmd])
+        self._procs.append(proc)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, result=str)
+    def github_create(self, path: str) -> str:
+        """Crea el repo en GitHub (gh repo create) si no hay remote, y empuja.
+        Async; progreso por la señal `progress`. Igual que el botón GitHub nativo."""
+        from pathlib import Path
+        import shutil
+        proj = Path(path)
+        if not shutil.which("gh"):
+            self.progress.emit("[github] falta gh CLI (instala github-cli y haz gh auth login)\n")
+            return json.dumps({"ok": False, "error": "gh CLI no encontrado"})
+        name = proj.name
+        cmd = (
+            'git rev-parse --git-dir >/dev/null 2>&1 || git init; '
+            'git add -A && git commit -m "ThemeForge: publish" || true; '
+            'if git remote get-url origin >/dev/null 2>&1; then '
+            '  git push -u origin HEAD 2>&1; '
+            f'else gh repo create "{name}" --private --source=. --remote=origin --push 2>&1; fi'
+        )
+        proc = QProcess(self)
+        proc.setWorkingDirectory(str(proj))
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.readyReadStandardOutput.connect(
+            lambda: self.progress.emit(bytes(proc.readAllStandardOutput()).decode(errors="replace")))
+        proc.finished.connect(lambda c, _s: self.progress.emit(f"\n■ github (exit {c}).\n"))
         proc.start("bash", ["-lc", cmd])
         self._procs.append(proc)
         return json.dumps({"ok": True, "running": True})
