@@ -317,8 +317,18 @@ function LicensingScreen() {
   const real = !!(window.tfBridge && window.tfBridge.licensing_status);
   const [st, setSt] = useState(null);
   const [np, setNp] = useState(''); const [ne, setNe] = useState(''); const [nt, setNt] = useState('regular');
+  const [lsub, setLsub] = useState('lic');   // sub-pestaña (como la app normal)
+  const [prods, setProds] = useState(null);
+  const [gum, setGum] = useState(null);
+  const [tools, setTools] = useState('');
+  const [pingUrl, setPingUrl] = useState('');
+  const api = (path, method, body) => window.tfBridge.licensing_api(path, method || 'GET', body ? JSON.stringify(body) : '').then(j => { try { return JSON.parse(j); } catch (e) { return {}; } });
   const refresh = () => { if (real) window.tfBridge.licensing_status().then(j => { try { setSt(JSON.parse(j)); } catch (e) {} }); };
   useEffect(() => { refresh(); }, []);
+  const loadProds = () => api('/api/products/versions').then(r => setProds(r.data));
+  const loadGum = () => api('/api/gumroad').then(r => setGum(r.data));
+  const checkIntegrations = () => api('/api/integrations/status').then(r => setTools(JSON.stringify(r.data, null, 2)));
+  const doPing = () => { if (!pingUrl.trim()) return; api('/api/tools/ping', 'POST', { url: pingUrl }).then(r => setTools('POST /api/tools/ping → ' + r.code + '\n' + JSON.stringify(r.data, null, 2))); };
   const create = () => {
     if (!real || !np.trim()) return;
     window.tfBridge.licensing_create(np, ne, nt).then(j => {
@@ -343,7 +353,47 @@ function LicensingScreen() {
           <div style={{ flex: 1 }} />
           <Btn icon="refresh" variant="ghost" onClick={refresh}>Refrescar</Btn>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20 }}>
+
+        {/* Sub-pestañas (igual que la LicensingPanel nativa). */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          {[['lic', 'Licencias', '認可'], ['prod', 'Productos / Versiones', '版'], ['gum', 'Ventas (Gumroad)', '販売'], ['tools', 'Tools', '道具']].map(([k, l, jp]) => (
+            <button key={k} onClick={() => { setLsub(k); if (k === 'prod' && !prods) loadProds(); if (k === 'gum' && !gum) loadGum(); }}
+              style={{ cursor: 'pointer', padding: '8px 14px', borderRadius: 9, fontSize: 12.5, fontFamily: 'var(--font-display)',
+                background: lsub === k ? 'rgba(var(--accent-rgb),0.12)' : 'transparent', border: '1px solid ' + (lsub === k ? 'rgba(var(--accent-rgb),0.45)' : 'var(--line)'),
+                color: lsub === k ? 'var(--accent)' : 'var(--tx-dim)' }}>{l} <span className="jp faint" style={{ fontSize: 10 }}>{jp}</span></button>
+          ))}
+        </div>
+
+        {/* ---- PRODUCTOS / VERSIONES ---- */}
+        {lsub === 'prod' && (
+          <div className="panel" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', marginBottom: 12 }}><div className="eyebrow" style={{ flex: 1 }}>VERSIONES · 版</div><Btn icon="refresh" variant="ghost" onClick={loadProds}>Cargar versiones</Btn></div>
+            <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: 12, color: 'var(--tx-dim)', margin: 0 }}>{prods ? JSON.stringify(prods, null, 2) : '// pulsa «Cargar versiones»'}</pre>
+          </div>
+        )}
+
+        {/* ---- VENTAS GUMROAD ---- */}
+        {lsub === 'gum' && (
+          <div className="panel" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', marginBottom: 12 }}><div className="eyebrow" style={{ flex: 1 }}>ÚLTIMAS VENTAS · 販売</div><Btn icon="refresh" variant="ghost" onClick={loadGum}>Cargar ventas</Btn></div>
+            <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: 12, color: 'var(--tx-dim)', margin: 0 }}>{gum ? JSON.stringify(gum, null, 2) : '// pulsa «Cargar ventas»'}</pre>
+          </div>
+        )}
+
+        {/* ---- TOOLS (integraciones + ping) ---- */}
+        {lsub === 'tools' && (
+          <div className="panel" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+              <Btn icon="check" variant="ghost" onClick={checkIntegrations}>Estado de integraciones</Btn>
+              <input value={pingUrl} onChange={e => setPingUrl(e.target.value)} placeholder="https://… (ping a una URL)"
+                style={{ flex: 1, minWidth: 200, background: 'var(--bg-void)', border: '1px solid var(--line-bright)', borderRadius: 7, padding: '8px 12px', color: 'var(--tx)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
+              <Btn icon="globe" variant="ghost" onClick={doPing}>📡 Ping</Btn>
+            </div>
+            <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: 12, color: 'var(--tx-dim)', margin: 0, minHeight: 60 }}>{tools || '// resultado de integraciones / ping'}</pre>
+          </div>
+        )}
+
+        {lsub === 'lic' && <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20 }}>
           <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead><tr style={{ background: 'rgba(255,255,255,0.03)' }}>
@@ -378,7 +428,7 @@ function LicensingScreen() {
             </div>
             <Btn variant="primary" icon="key" onClick={create}>Crear licencia</Btn>
           </div>
-        </div>
+        </div>}
       </div>
     );
   }

@@ -878,6 +878,20 @@ class ThemeForgeBridge(QObject):
         return json.dumps(out)
 
     @pyqtSlot(str, str, str, result=str)
+    def licensing_api(self, path: str, method: str, body_json: str) -> str:
+        """Passthrough al panel de licencias local (mismos endpoints que la
+        LicensingPanel nativa): /api/products/versions, /api/gumroad,
+        /api/integrations/status, /api/tools/ping, /api/products/versions/release,
+        /api/tools/notify-update… PANEL_BASE viene de config local (gitignored)."""
+        try:
+            from licensing_panel import _api
+            body = json.loads(body_json) if (body_json or "").strip() else None
+            code, data = _api(path, method or "GET", body)
+            return json.dumps({"code": code, "data": data})
+        except Exception as e:
+            return json.dumps({"code": 0, "data": {"error": str(e)}})
+
+    @pyqtSlot(str, str, str, result=str)
     def licensing_create(self, product: str, email: str, lic_type: str) -> str:
         """Crea una licencia real en el panel (POST /api/licenses)."""
         try:
