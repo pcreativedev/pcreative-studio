@@ -238,6 +238,24 @@ def _mcp_data() -> list:
     return out
 
 
+def _operator_data() -> dict:
+    """Estado real del Operator (Hermes): disponible + versión."""
+    try:
+        from operator_panel import find_hermes
+        hermes = find_hermes()
+        if not hermes:
+            return {"available": False, "missions": []}
+        ver = ""
+        try:
+            from hermes_panel import hermes_version
+            ver = hermes_version() or ""
+        except Exception:
+            pass
+        return {"available": True, "version": ver, "missions": []}
+    except Exception:
+        return {"available": False, "missions": []}
+
+
 def bootstrap_data() -> dict:
     """Todos los datos reales que el prototipo necesita, en su forma exacta."""
     td = _themes_data()
@@ -249,6 +267,7 @@ def bootstrap_data() -> dict:
         "current_theme": td["current"],
         "cost": _cost_data(),
         "mcp": _mcp_data(),
+        "operator": _operator_data(),
     }
 
 
@@ -537,6 +556,35 @@ class ThemeForgeBridge(QObject):
         proc.start("bash", [str(script)])
         return json.dumps({"ok": True, "slug": slug, "path": str(project_dir),
                            "started": True})
+
+    @pyqtSlot(str, result=str)
+    def launch_mission(self, brief: str) -> str:
+        """Lanza una misión REAL del Operator (Hermes) async; stream por
+        `progress`. Igual que el OperatorPanel nativo."""
+        try:
+            from operator_panel import find_hermes, _mission_env
+        except Exception as e:
+            return json.dumps({"ok": False, "error": f"import: {e}"})
+        hermes = find_hermes()
+        if not hermes:
+            return json.dumps({"ok": False, "error": "Hermes no instalado"})
+        if not (brief or "").strip():
+            return json.dumps({"ok": False, "error": "brief vacío"})
+        proc = QProcess(self)
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        try:
+            proc.setProcessEnvironment(_mission_env())
+        except Exception:
+            pass
+        proc.readyReadStandardOutput.connect(
+            lambda: self.progress.emit(
+                bytes(proc.readAllStandardOutput()).decode(errors="replace")))
+        proc.finished.connect(
+            lambda code, _s: self.progress.emit(f"\n■ Misión terminada (exit {code}).\n"))
+        self.progress.emit(f"▶ Lanzando misión: {brief[:80]}…\n")
+        proc.start(hermes, ["chat", "-q", brief, "-s", "themeforge-operator"])
+        self._procs.append(proc)
+        return json.dumps({"ok": True, "running": True})
 
     @pyqtSlot(str, result=str)
     def suggest_stack(self, description: str) -> str:

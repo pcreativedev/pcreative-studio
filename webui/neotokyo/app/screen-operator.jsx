@@ -26,8 +26,20 @@ function MissionRow({ m }) {
 }
 
 function OperatorScreen() {
-  const running = MISSIONS.filter(m => m.status === 'running').length;
-  const queued = MISSIONS.filter(m => m.status === 'queued').length;
+  const _op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
+  const real = !!(window.tfBridge && window.tfBridge.launch_mission);
+  // Misiones reales (vacío hasta lanzar una); mock solo sin puente.
+  const [missions, setMissions] = useState(real ? (_op.missions || []) : MISSIONS);
+  const running = missions.filter(m => m.status === 'running').length;
+  const queued = missions.filter(m => m.status === 'queued').length;
+  const launchMission = () => {
+    if (!real) return;
+    if (!_op.available) { alert('Instala Hermes Agent para usar el Operator.'); return; }
+    const brief = prompt('Describe la misión (ej: «2 variantes Envato de landing para clínica dental, stack Astro»):');
+    if (!brief) return;
+    window.tfBridge.launch_mission(brief);
+    setMissions(ms => [{ id: 'm' + Date.now(), name: brief.slice(0, 60), agent: 'claude', status: 'running', progress: 0, eta: '—', step: 'Hermes orquestando…' }, ...ms]);
+  };
   return (
     <div style={{ padding: '34px 40px 60px', position: 'relative', zIndex: 2 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
@@ -38,12 +50,12 @@ function OperatorScreen() {
           </h1>
           <div className="dim" style={{ fontSize: 13.5 }}>Orquesta builds autónomos en paralelo · {running} activos · {queued} en cola</div>
         </div>
-        <Btn variant="primary" icon="rocket">Lanzar misión</Btn>
+        <Btn variant="primary" icon="rocket" onClick={launchMission}>Lanzar misión</Btn>
       </div>
 
       {/* live stats strip */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 22 }}>
-        {[['ACTIVAS', running, 'var(--accent)'], ['EN COLA', queued, 'var(--gemini)'], ['HOY', '12', 'var(--codex)'], ['COSTE HOY', '$8.40', 'var(--accent-2)']].map(([l, v, c]) => (
+        {[['ACTIVAS', running, 'var(--accent)'], ['EN COLA', queued, 'var(--gemini)'], ['TOTAL', missions.length, 'var(--codex)'], ['HERMES', _op.available ? (_op.version || 'on') : 'off', 'var(--accent-2)']].map(([l, v, c]) => (
           <div key={l} className="panel" style={{ flex: 1, padding: '14px 18px' }}>
             <div className="eyebrow" style={{ fontSize: 9.5 }}>{l}</div>
             <div style={{ fontFamily: 'var(--font-mega)', fontSize: 24, marginTop: 6, color: c }}>{v}</div>
@@ -54,14 +66,15 @@ function OperatorScreen() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="eyebrow" style={{ marginBottom: 2 }}>MISIONES · 任務</div>
-          {MISSIONS.map(m => <MissionRow key={m.id} m={m} />)}
+          {missions.length ? missions.map(m => <MissionRow key={m.id} m={m} />)
+            : <div className="faint mono" style={{ padding: 24, textAlign: 'center' }}>// sin misiones — pulsa «Lanzar misión» 待機中</div>}
         </div>
 
         {/* agent pool */}
         <div className="panel card-corner" style={{ padding: 20 }}>
           <div className="eyebrow" style={{ marginBottom: 14 }}>POOL DE AGENTES · 代理</div>
           {Object.entries(AGENTS).map(([k, a]) => {
-            const busy = MISSIONS.some(m => m.agent === k && m.status === 'running');
+            const busy = missions.some(m => m.agent === k && m.status === 'running');
             return (
               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
                 <span style={{ color: a.color, fontSize: 15 }}>{a.glyph}</span>
