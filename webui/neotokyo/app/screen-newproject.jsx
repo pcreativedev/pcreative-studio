@@ -80,15 +80,19 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
     const desc = preset ? preset.vibe : vibe;
     if (preset) setVibe(preset.vibe);
     setThinking(true); setFilled(false);
-    // Pre-fill REAL con IA vía el motor de ThemeForge (suggest_stack).
+    // Pre-fill REAL con IA (suggest_stack) — async vía señal suggest_result.
     if (window.tfBridge && window.tfBridge.suggest_stack && (desc || '').trim()) {
-      window.tfBridge.suggest_stack(desc).then((jsonStr) => {
+      const onRes = (jsonStr) => {
         let r = {}; try { r = JSON.parse(jsonStr); } catch (e) {}
         if (r && r.stack && (STACKS.find(s => s.key === r.stack))) setStack(r.stack);
         if (r && r.template_type) setType(r.template_type);
         setGenPrompt(r.prompt || r.dev_prompt || ('Build: ' + desc));
         setThinking(false); setFilled(true);
-      }).catch(() => { setThinking(false); setFilled(true); });
+        try { window.tfBridge.suggest_result.disconnect(onRes); } catch (e) {}
+      };
+      if (window.tfBridge.suggest_result && window.tfBridge.suggest_result.connect)
+        window.tfBridge.suggest_result.connect(onRes);
+      window.tfBridge.suggest_stack(desc);
       return;
     }
     // Fallback (prototipo suelto sin puente).
@@ -233,7 +237,12 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
               <div style={{ display: 'flex', gap: 10 }}>
                 <input value={refVal} onChange={e => setRefVal(e.target.value)} placeholder={refKind === 'url' ? 'https://demo-template.com' : refKind === 'figma' ? 'figma.com/file/…?node-id=' : 'Ruta o examinar…'}
                   style={{ flex: 1, background: 'var(--bg-void)', border: '1px solid var(--line-bright)', borderRadius: 8, padding: '9px 12px', color: 'var(--tx)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
-                <Btn icon="folderOpen" variant="ghost">Examinar</Btn>
+                <Btn icon="folderOpen" variant="ghost" onClick={() => {
+                  if (!window.tfBridge) return;
+                  const picker = refKind === 'zip' ? window.tfBridge.pick_file : window.tfBridge.pick_folder;
+                  if (!picker) return;
+                  picker().then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path) setRefVal(r.path); });
+                }}>Examinar</Btn>
               </div>
               <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
                 <Btn variant="primary" icon="search" onClick={() => { window.__tfRef = { value: refVal, kind: refKind }; onAnalyze(); }}>🔍 Analizar con IA</Btn>

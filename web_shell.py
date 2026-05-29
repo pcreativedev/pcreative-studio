@@ -347,6 +347,8 @@ class ThemeForgeBridge(QObject):
     reference_progress = pyqtSignal(str)
     # Terminal de Compare lista por provider: JSON {provider, url}.
     compare_ready = pyqtSignal(str)
+    # Resultado de suggest_stack (Vibe pre-fill): JSON {stack, template_type, prompt} o {error}.
+    suggest_result = pyqtSignal(str)
 
     @pyqtSlot(str, result=str)
     def compare(self, prompt: str) -> str:
@@ -564,6 +566,26 @@ class ThemeForgeBridge(QObject):
             except Exception as e:
                 return json.dumps({"ok": False, "error": str(e)})
 
+    @pyqtSlot(result=str)
+    def pick_folder(self) -> str:
+        """Selector de carpeta nativo (para New→recreate/adopt). Devuelve la ruta."""
+        try:
+            from PyQt6.QtWidgets import QFileDialog
+            d = QFileDialog.getExistingDirectory(None, "Elegir carpeta de referencia")
+            return json.dumps({"path": d or ""})
+        except Exception as e:
+            return json.dumps({"path": "", "error": str(e)})
+
+    @pyqtSlot(result=str)
+    def pick_file(self) -> str:
+        """Selector de archivo nativo (p.ej. .zip de referencia)."""
+        try:
+            from PyQt6.QtWidgets import QFileDialog
+            f, _ = QFileDialog.getOpenFileName(None, "Elegir archivo (.zip)")
+            return json.dumps({"path": f or ""})
+        except Exception as e:
+            return json.dumps({"path": "", "error": str(e)})
+
     @pyqtSlot(str, result=str)
     def open_vscode(self, path: str) -> str:
         """Abre el proyecto en VS Code (o el editor disponible)."""
@@ -703,13 +725,19 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, result=str)
     def suggest_stack(self, description: str) -> str:
-        """Pre-fill Vibe real: usa el motor de sugerencia de ThemeForge
-        (mismo que la GUI) para recomendar stack/tipo/prompt desde texto."""
-        try:
-            from mcp_server import suggest_stack as _ss
-            return json.dumps(_ss(description))
-        except Exception as e:
-            return json.dumps({"error": str(e)})
+        """Pre-fill Vibe real (motor de sugerencia de ThemeForge) — ASÍNCRONO en
+        un hilo para no congelar la UI; emite `suggest_result` con el resultado."""
+        import threading
+
+        def _work():
+            try:
+                from mcp_server import suggest_stack as _ss
+                self.suggest_result.emit(json.dumps(_ss(description)))
+            except Exception as e:
+                self.suggest_result.emit(json.dumps({"error": str(e)}))
+
+        threading.Thread(target=_work, daemon=True).start()
+        return json.dumps({"ok": True, "running": True})
 
     @pyqtSlot(result=str)
     def list_stacks(self) -> str:
