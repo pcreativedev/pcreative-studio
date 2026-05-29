@@ -586,6 +586,7 @@ class ThemeForgeBridge(QObject):
         super().__init__(parent)
         self._procs = []  # mantener vivas las QProcess en vuelo
         self._preview_procs = {}  # path -> (QProcess, url) del dev server de preview
+        self._setup_scripts = {}  # path -> ruta del setup script pendiente (pestaña Setup)
         self._last_reference_analysis = None  # (value, texto) del último análisis IA
 
     def _agent_launch_for(self, path: str):
@@ -646,6 +647,21 @@ class ThemeForgeBridge(QObject):
             self.terminal_ready.emit(json.dumps({"path": path, "kind": "hermes", "error": "Hermes no instalado"}))
             return json.dumps({"ok": False, "error": "Hermes no instalado"})
         return self._start_terminal(path, hermes, ["-s", "themeforge-operator"], "hermes")
+
+    @pyqtSlot(str, result=str)
+    def start_setup(self, path: str) -> str:
+        """Pestaña «Setup»: ejecuta el setup REAL (scaffold + npm install +
+        autoskills + UI/UX Pro) en un terminal con PTY (node-pty) y deja una
+        shell interactiva al terminar — idéntico al tab «Setup» de la app nativa."""
+        import shlex
+        script = self._setup_scripts.get(path)
+        if not script:
+            self.terminal_ready.emit(json.dumps({"path": path, "kind": "setup", "error": "sin setup pendiente (proyecto ya creado)"}))
+            return json.dumps({"ok": False, "error": "sin setup"})
+        wrapper = (f"clear; echo '─── ThemeForge: ejecutando setup ───'; "
+                   f"bash {shlex.quote(script)}; "
+                   f"echo ''; echo '─── setup terminado. Shell lista. ───'; exec bash -i")
+        return self._start_terminal(path, "bash", ["-lc", wrapper], "setup")
 
     def _start_terminal(self, path: str, cmd: str, args, kind: str) -> str:
         import shutil
@@ -976,29 +992,17 @@ class ThemeForgeBridge(QObject):
             pass
 
         PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
-        proc = QProcess(self)
-        proc.setWorkingDirectory(str(PROJECTS_DIR))
-        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
-        proc.readyReadStandardOutput.connect(
-            lambda: self.progress.emit(
-                bytes(proc.readAllStandardOutput()).decode(errors="replace")))
-
-        def _done(code, _status):
-            self.progress.emit(f"\n■ Scaffold terminado (exit {code}).\n")
-            # La UI web navega a su project screen (terminal real embebida) al
-            # recibir build_done — no abrimos ventana nativa: todo en Neo-Tokyo web.
-            self.build_done.emit(json.dumps(
-                {"ok": code == 0, "slug": slug, "name": name,
-                 "path": str(project_dir), "exit": code}))
-            if proc in self._procs:
-                self._procs.remove(proc)
-
-        proc.finished.connect(_done)
-        self._procs.append(proc)
-        self.progress.emit(f"▶ Creando '{name}' ({stack}, {provider})…\n")
-        proc.start("bash", [str(script)])
+        # El setup PESADO (scaffold + npm install + autoskills + UI/UX Pro) se
+        # ejecuta en un TERMINAL REAL con PTY (node-pty) en la pestaña «Setup»,
+        # igual que la app nativa — NO headless: los scaffolders interactivos
+        # (create-next-app, composer, etc.) necesitan TTY o fallan al instante.
+        self._setup_scripts[str(project_dir)] = str(script)
+        # Abrimos la ventana del proyecto ya; la pestaña Setup arrancará el script.
+        self.build_done.emit(json.dumps(
+            {"ok": True, "slug": slug, "name": name,
+             "path": str(project_dir), "fresh": True}))
         return json.dumps({"ok": True, "slug": slug, "path": str(project_dir),
-                           "started": True})
+                           "name": name, "fresh": True})
 
     @pyqtSlot(str, result=str)
     def launch_mission(self, brief: str) -> str:

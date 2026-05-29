@@ -97,7 +97,7 @@ function TermFrame({ path, kind, running }) {
     if (!B || !path) return;
     const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path && r.kind === kind) { if (r.url) setUrl(r.url); else if (r.error) setErr(r.error); } };
     if (B.terminal_ready && B.terminal_ready.connect) B.terminal_ready.connect(onReady);
-    const fn = kind === 'agent' ? B.start_terminal : kind === 'shell' ? B.start_shell : kind === 'hermes' ? B.start_hermes : null;
+    const fn = kind === 'agent' ? B.start_terminal : kind === 'shell' ? B.start_shell : kind === 'hermes' ? B.start_hermes : kind === 'setup' ? B.start_setup : null;
     if (fn) fn.call(B, path);
     return () => { try { B.terminal_ready.disconnect(onReady); } catch (e) {} };
   }, [path, kind]);
@@ -119,13 +119,16 @@ function OfficeFrame() {
   return <iframe src={url} style={{ flex: 1, width: '100%', height: '100%', border: 'none', background: '#0c0c0d' }} />;
 }
 // Pestañas encima del terminal (como en la app normal): Agent · Shell · Hermes · Office.
-function TermTabs({ path, running }) {
+function TermTabs({ path, running, fresh }) {
   const op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
-  const tabs = [['agent', '◈ Agent'], ['shell', '▮ Shell']];
+  const tabs = [];
+  if (fresh) tabs.push(['setup', '⚙ Setup']);
+  tabs.push(['agent', '◈ Agent'], ['shell', '▮ Shell']);
   if (op.available) tabs.push(['hermes', '🚀 Hermes']);
   tabs.push(['office', '🎮 Office']);
-  const [active, setActive] = useState('agent');
-  const [seen, setSeen] = useState({ agent: true });
+  const first = fresh ? 'setup' : 'agent';
+  const [active, setActive] = useState(first);
+  const [seen, setSeen] = useState({ [first]: true });
   const open = (k) => { setActive(k); setSeen(s => ({ ...s, [k]: true })); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -324,9 +327,7 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild, buildLog }) {
             <span className="mono faint" style={{ fontSize: 10.5 }}>preview real · controles abajo</span>
           </div>
           <div style={{ flex: 1, overflow: 'hidden', background: 'radial-gradient(circle at 50% 0%, #0a1020, #04060c)', display: 'grid', placeItems: 'stretch', minHeight: 0 }}>
-            {building
-              ? <div className="mono faint" style={{ placeSelf: 'center', padding: 24 }}>⟳ preview disponible cuando termine el scaffold…</div>
-              : tab === 'code'
+            {tab === 'code'
               ? <div style={{ overflow: 'auto', placeSelf: 'center' }}><CodePeek /></div>
               : <RealPreview path={p.path} accent={p.accent || 'var(--accent)'} narrow={tab === 'mobile'} />}
           </div>
@@ -336,11 +337,11 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild, buildLog }) {
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Icon name="terminal" size={15} style={{ color: 'var(--accent)' }} />
-            <span style={{ fontSize: 12.5, fontWeight: 600 }}>{building ? 'Setup inicial' : 'Terminales'}</span>
-            <span className="chip" style={{ marginLeft: 'auto', fontSize: 9.5 }}>{building ? 'scaffold · skills · UI Pro' : 'xterm · node-pty'}</span>
-            {(running || building) && <span style={{ width: 7, height: 7, borderRadius: 99, background: 'var(--codex)', boxShadow: '0 0 8px var(--codex)', animation: 'blink 1.1s infinite' }} />}
+            <span style={{ fontSize: 12.5, fontWeight: 600 }}>Terminales</span>
+            <span className="chip" style={{ marginLeft: 'auto', fontSize: 9.5 }}>xterm · node-pty</span>
+            {running && <span style={{ width: 7, height: 7, borderRadius: 99, background: 'var(--codex)', boxShadow: '0 0 8px var(--codex)', animation: 'blink 1.1s infinite' }} />}
           </div>
-          {building ? <BuildLog lines={buildLog} /> : <TermTabs path={p.path} running={running} />}
+          <TermTabs path={p.path} running={running} fresh={p.fresh} />
         </div>
       </div>
     </div>

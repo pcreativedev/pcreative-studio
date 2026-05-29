@@ -580,7 +580,7 @@ function TermFrame({ path, kind }) {
     if (!B || !path) return;
     const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path && r.kind === kind) { if (r.url) setUrl(r.url); else if (r.error) setErr(r.error); } };
     if (B.terminal_ready && B.terminal_ready.connect) B.terminal_ready.connect(onReady);
-    const fn = kind === 'agent' ? B.start_terminal : kind === 'shell' ? B.start_shell : kind === 'hermes' ? B.start_hermes : null;
+    const fn = kind === 'agent' ? B.start_terminal : kind === 'shell' ? B.start_shell : kind === 'hermes' ? B.start_hermes : kind === 'setup' ? B.start_setup : null;
     if (fn) fn.call(B, path);
     return () => { try { B.terminal_ready.disconnect(onReady); } catch (e) {} };
   }, [path, kind]);
@@ -600,14 +600,17 @@ function OfficeFrame() {
   if (!url) return <div style={{ flex: 1, padding: 14, fontFamily: 'var(--term)', color: 'var(--tx-dim)' }}>{msg}</div>;
   return <iframe src={url} style={{ flex: 1, width: '100%', border: '1px solid var(--line)', borderRadius: 4, background: '#040804', minHeight: 0 }} />;
 }
-// Pestañas encima del terminal (como en la app normal): Agente · Shell · Hermes · Office.
-function RealTerm({ path }) {
+// Pestañas encima del terminal (como en la app normal): Setup · Agente · Shell · Hermes · Office.
+function RealTerm({ path, fresh }) {
   const op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
-  const tabs = [['agent', '◈ Agente'], ['shell', '▮ Shell']];
+  const tabs = [];
+  if (fresh) tabs.push(['setup', '⚙ Setup']);
+  tabs.push(['agent', '◈ Agente'], ['shell', '▮ Shell']);
   if (op.available) tabs.push(['hermes', '🚀 Hermes']);
   tabs.push(['office', '🎮 Office']);
-  const [active, setActive] = useState('agent');
-  const [seen, setSeen] = useState({ agent: true });
+  const first = fresh ? 'setup' : 'agent';
+  const [active, setActive] = useState(first);
+  const [seen, setSeen] = useState({ [first]: true });
   const open = (k) => { setActive(k); setSeen(s => ({ ...s, [k]: true })); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -743,15 +746,15 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild, buildLog }) {
             <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--tx-dim)', fontFamily: 'var(--term)', alignSelf: 'center' }}>localhost:5173</span>
           </div>
           <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4, padding: 0, minHeight: 0, overflow: 'auto' }}>
-            {building ? <div style={{ display: 'grid', placeItems: 'center', color: 'var(--tx-dim)', fontFamily: 'var(--term)', padding: 20 }}>⟳ preview disponible cuando termine el scaffold…</div> : <RealPreview path={p.path} narrow={tab === 'mobile'} />}
+            <RealPreview path={p.path} narrow={tab === 'mobile'} />
           </div>
         </div>
         <div className="panelc" style={{ display: 'flex', flexDirection: 'column', padding: 14, minHeight: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontFamily: 'var(--term)' }}>
-            <b>{building ? '⚙ Setup inicial' : '⌗ Terminal del agente'}</b>
+            <b>⌗ Terminales</b>
             <span className="tag" style={{ marginLeft: 'auto', color: ag.color, borderColor: ag.color }}>{ag.em} {ag.label}</span>
           </div>
-          {building ? <BuildLog lines={buildLog} /> : <RealTerm path={p.path} />}
+          <RealTerm path={p.path} fresh={p.fresh} />
         </div>
       </div>
     </div>
@@ -1044,21 +1047,18 @@ function App() {
   // autoskills + UI/UX Pro + MCP) en vivo; al terminar (build_done) pasa a la IA.
   const launch = (cfg) => {
     window.__tfLastAgent = cfg.agent;
-    setBuildLog([]);
     if (!(window.tfBridge && window.tfBridge.create_project)) {
-      setProject({ ...cfg, id: cfg.name, status: 'building', jp: '制作' }); setRoute('project'); return;
+      setProject({ ...cfg, id: cfg.name, status: 'live', fresh: true, jp: '制作' }); setRoute('project'); return;
     }
     if (!window.__tfWired) {
       window.__tfWired = true;
-      if (window.tfBridge.progress && window.tfBridge.progress.connect)
-        window.tfBridge.progress.connect((line) => setBuildLog(l => (l.length > 1200 ? l.slice(-1200) : l).concat(line)));
       if (window.tfBridge.build_done && window.tfBridge.build_done.connect)
         window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', jp: '制作' }));
+          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', fresh: r.fresh || (prev && prev.fresh), jp: '制作' }));
           setRoute('project'); });
     }
     window.tfBridge.create_project(JSON.stringify(cfg)).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-      if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'building', jp: '制作' }); setRoute('project'); }
+      if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'live', fresh: true, jp: '制作' }); setRoute('project'); }
       else if (r && r.ok === false) alert('Error al crear: ' + (r.error || '')); });
   };
   const titles = { gallery: '▤ Galería', new: '+ Nuevo proyecto', cost: '$ Coste de IA', compare: '⇄ Comparar agentes', operator: '⌬ Mission Control', market: '⊞ Market Analyzer', licensing: '⚿ Licencias', settings: '⚙ Ajustes', project: '▸ ' + (project ? project.name : '') };

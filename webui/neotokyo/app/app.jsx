@@ -157,22 +157,19 @@ function App() {
     // SETUP en vivo (scaffold + autoskills + UI/UX Pro + MCP); al terminar
     // (build_done) pasa a la IA (terminal real) + preview.
     window.__tfLastAgent = cfg.agent;
-    setBuildLog([]);
     if (!(window.tfBridge && window.tfBridge.create_project)) {
-      setProject({ ...cfg, id: cfg.name, status: 'building', jp: '制作', accent: 'var(--accent)' }); setRoute('project'); return;
+      setProject({ ...cfg, id: cfg.name, status: 'live', fresh: true, jp: '制作', accent: 'var(--accent)' }); setRoute('project'); return;
     }
     if (!window.__tfProgWired) {
       window.__tfProgWired = true;
-      if (window.tfBridge.progress && window.tfBridge.progress.connect)
-        window.tfBridge.progress.connect((line) => setBuildLog(l => (l.length > 1200 ? l.slice(-1200) : l).concat(line)));
       if (window.tfBridge.build_done && window.tfBridge.build_done.connect)
         window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', jp: '制作', accent: 'var(--accent)' }));
+          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', fresh: r.fresh || (prev && prev.fresh), jp: '制作', accent: 'var(--accent)' }));
           setRoute('project'); });
     }
     try {
       window.tfBridge.create_project(JSON.stringify(cfg)).then((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-        if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'building', jp: '制作', accent: 'var(--accent)' }); setRoute('project'); }
+        if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'live', fresh: true, jp: '制作', accent: 'var(--accent)' }); setRoute('project'); }
         else if (r && r.ok === false) tfToast('Error al crear: ' + (r.error || ''), '#ff2e88'); });
     } catch (e) { console.error('create_project', e); }
   };
