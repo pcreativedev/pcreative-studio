@@ -30,12 +30,15 @@ function CompareScreen() {
     window.tfBridge.compare_ready.connect(onReady);
     return () => { try { window.tfBridge.compare_ready.disconnect(onReady); } catch (e) {} };
   }, []);
+  const [sel, setSel] = useState(Object.keys(AGENTS));
+  const toggle = (k) => setSel(s => s.includes(k) ? s.filter(x => x !== k) : [...s, k]);
   const run = () => {
     if (!real || !prompt.trim()) return;
     setUrls({}); setProviders([]);
     window.tfBridge.compare(prompt).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} setProviders(r.providers || []); });
   };
-  const shownKeys = providers.length ? providers : Object.keys(AGENTS);
+  const clear = () => { setUrls({}); setProviders([]); };
+  const shownKeys = (providers.length ? providers : Object.keys(AGENTS)).filter(k => sel.includes(k));
   return (
     <div style={{ padding: '34px 40px 60px', position: 'relative', zIndex: 2 }}>
       <Eyebrow jp="比較">COMPARE · 代理比較</Eyebrow>
@@ -44,10 +47,14 @@ function CompareScreen() {
       </h1>
       <div className="dim" style={{ fontSize: 13.5, marginBottom: 22 }}>Mismo prompt · cada IA en su terminal real · lado a lado.</div>
 
-      <div className="panel" style={{ padding: 14, display: 'flex', gap: 10, marginBottom: 20 }}>
+      <div className="panel" style={{ padding: 14, display: 'flex', gap: 10, marginBottom: 12 }}>
         <input value={prompt} onChange={e => setPrompt(e.target.value)}
           style={{ flex: 1, background: 'var(--bg-void)', border: '1px solid var(--line-bright)', borderRadius: 8, padding: '10px 14px', color: 'var(--tx)', fontFamily: 'var(--font-mono)', fontSize: 12.5, outline: 'none' }} />
         <Btn variant="primary" icon="play" onClick={run}>{providers.length ? 'Re-run' : 'Run'}</Btn>
+        <Btn variant="ghost" icon="trash" onClick={clear}>Limpiar</Btn>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {Object.entries(AGENTS).map(([k, a]) => <button key={k} onClick={() => toggle(k)} style={{ cursor: 'pointer', padding: '6px 12px', borderRadius: 99, fontSize: 11.5, fontFamily: 'var(--font-mono)', background: sel.includes(k) ? 'rgba(var(--accent-rgb),0.14)' : 'transparent', border: '1px solid ' + (sel.includes(k) ? a.color + '88' : 'var(--line)'), color: sel.includes(k) ? a.color : 'var(--tx-dim)' }}>{sel.includes(k) ? '☑' : '☐'} {a.glyph} {a.label}</button>)}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {shownKeys.map(k => <AgentPane key={k} k={k} url={urls[k]} />)}

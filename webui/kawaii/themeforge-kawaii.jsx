@@ -361,15 +361,20 @@ function NewProject({ onAnalyze, onLaunch }) {
 /* ---- Cost (kawaii donut + bars) ---- */
 const COST = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.cost && window.__TF_DATA__.cost.by_agent && window.__TF_DATA__.cost.by_agent.length) ? window.__TF_DATA__.cost.by_agent : [{ k: 'claude', v: 12.77 }, { k: 'gemini', v: 7.34 }, { k: 'codex', v: 3.32 }, { k: 'opencode', v: 1.63 }];
 function Cost() {
-  const total = COST.reduce((s, d) => s + d.v, 0);
-  const days = Array.from({ length: 14 }, (_, i) => 0.3 + Math.abs(Math.sin(i / 2)) * 1.4 + (i > 10 ? 0.6 : 0));
-  const max = Math.max(...days);
+  const B = window.tfBridge;
+  const [data, setData] = useState((window.__TF_DATA__ && window.__TF_DATA__.cost) || {});
+  const rescan = () => { if (B && B.cost_data) B.cost_data().then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (!r.error) setData(r); }); };
+  const by = (data.by_agent && data.by_agent.length) ? data.by_agent : COST;
+  const total = (data.total != null) ? data.total : by.reduce((s, d) => s + d.v, 0);
+  const days = (data.days && data.days.length) ? data.days : Array.from({ length: 30 }, () => 0);
+  const max = Math.max(0.01, ...days);
+  const models = data.models || [];
   let acc = 0, C = 2 * Math.PI * 70;
   return (
     <div className="page fade">
-      <h2 className="sec">💰 Coste de IA <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>費用追跡</span></h2>
+      <h2 className="sec">💰 Coste de IA <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>費用追跡</span><button className="btn" style={{ float: 'right', padding: '4px 12px' }} onClick={rescan}>↻ Re-scan</button></h2>
       <div className="stats" style={{ marginBottom: 22 }}>
-        {[['💖', '$' + total.toFixed(2), 'total'], ['🌸', '$8.42', 'este mes'], ['🎀', '$3.94', 'media/proyecto'], ['✨', '421K', 'tokens/$']].map(([e, n, l]) => (
+        {[['💖', '$' + total.toFixed(2), 'total'], ['🌸', '$' + (data.month != null ? data.month.toFixed(2) : '0.00'), 'este mes'], ['🎀', String(models.length), 'modelos'], ['✨', String(data.tokens || '—'), 'tokens']].map(([e, n, l]) => (
           <div className="stat" key={l}><div className="em">{e}</div><div className="n">{n}</div><div className="l">{l}</div></div>
         ))}
       </div>
@@ -378,30 +383,41 @@ function Cost() {
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Por mascota 🐾</div>
           <svg viewBox="0 0 180 180" style={{ width: 180, height: 180 }}>
             <circle cx="90" cy="90" r="70" fill="none" stroke="var(--bg2)" strokeWidth="20" />
-            {COST.map(d => {
-              const frac = d.v / total, dash = C * frac;
-              const el = <circle key={d.k} cx="90" cy="90" r="70" fill="none" stroke={AGENTS[d.k].color} strokeWidth="20" strokeLinecap="round" strokeDasharray={`${dash - 4} ${C}`} strokeDashoffset={-C * acc} transform="rotate(-90 90 90)" />;
+            {by.map(d => {
+              const ag = AGENTS[d.k] || { color: 'var(--accent)' };
+              const frac = total ? d.v / total : 0, dash = C * frac;
+              const el = <circle key={d.k} cx="90" cy="90" r="70" fill="none" stroke={ag.color} strokeWidth="20" strokeLinecap="round" strokeDasharray={`${dash - 4} ${C}`} strokeDashoffset={-C * acc} transform="rotate(-90 90 90)" />;
               acc += frac; return el;
             })}
             <text x="90" y="96" textAnchor="middle" style={{ fontFamily: 'var(--cute)', fontSize: 22, fill: 'var(--accent)' }}>${total.toFixed(0)}</text>
           </svg>
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {COST.map(d => (
+            {by.map(d => { const ag = AGENTS[d.k] || { em: '🐾', label: d.k }; return (
               <div key={d.k} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <span>{AGENTS[d.k].em}</span><span style={{ flex: 1, textAlign: 'left' }}>{AGENTS[d.k].label}</span><span style={{ color: 'var(--accent)' }}>${d.v.toFixed(2)}</span>
-              </div>
-            ))}
+                <span>{ag.em}</span><span style={{ flex: 1, textAlign: 'left' }}>{ag.label}</span><span style={{ color: 'var(--accent)' }}>${d.v.toFixed(2)}</span>
+              </div>); })}
+            {!by.length && <span style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>sin gasto registrado ♡</span>}
           </div>
         </div>
         <div className="panelc">
-          <div style={{ fontWeight: 700, marginBottom: 16 }}>Gasto diario 🌈</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 180 }}>
+          <div style={{ fontWeight: 700, marginBottom: 16 }}>Gasto · últimos 30 días 🌈</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 160 }}>
             {days.map((v, i) => (
-              <div key={i} style={{ flex: 1, height: (v / max * 100) + '%', borderRadius: '99px 99px 6px 6px', background: i > 10 ? 'linear-gradient(var(--accent2),var(--accent))' : 'linear-gradient(var(--accent),var(--accent2))' }} title={'$' + v.toFixed(2)} />
+              <div key={i} style={{ flex: 1, height: Math.max(2, (v / max * 100)) + '%', borderRadius: '99px 99px 4px 4px', background: 'linear-gradient(var(--accent),var(--accent2))' }} title={'$' + v.toFixed(2)} />
             ))}
           </div>
-          <div style={{ textAlign: 'center', marginTop: 10, color: 'var(--tx-dim)', fontWeight: 600, fontSize: 12.5 }}>últimos 14 días ♡</div>
         </div>
+      </div>
+      <h2 className="sec" style={{ margin: '24px 0 12px' }}>🧁 Por modelo <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>模型</span></h2>
+      <div className="panelc" style={{ padding: 0, overflow: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr style={{ background: 'var(--bg2)' }}>{['Modelo', 'Mascota', 'Sesiones', 'In', 'Out', 'Precio', 'Coste'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--tx-dim)', fontWeight: 700 }}>{h}</th>)}</tr></thead>
+          <tbody>{models.length ? models.map((m, i) => <tr key={i} style={{ borderTop: '2px dashed var(--line)' }}>
+            <td style={{ padding: '8px 12px', fontWeight: 600 }}>{m.model}</td><td style={{ padding: '8px 12px' }}>{m.agent}</td>
+            <td style={{ padding: '8px 12px' }}>{m.sessions}</td><td style={{ padding: '8px 12px', color: 'var(--tx-dim)' }}>{m.input}</td><td style={{ padding: '8px 12px', color: 'var(--tx-dim)' }}>{m.output}</td>
+            <td style={{ padding: '8px 12px', color: 'var(--tx-dim)' }}>{m.rate}</td><td style={{ padding: '8px 12px', color: 'var(--accent)', fontWeight: 700 }}>${m.cost.toFixed(2)}</td>
+          </tr>) : <tr><td colSpan={7} style={{ padding: 22, textAlign: 'center', color: 'var(--tx-dim)', fontWeight: 600 }}>aún no hay sesiones de IA registradas ♡</td></tr>}</tbody>
+        </table>
       </div>
     </div>
   );
@@ -433,14 +449,21 @@ function Compare() {
     window.tfBridge.compare_ready.connect(onReady);
     return () => { try { window.tfBridge.compare_ready.disconnect(onReady); } catch (e) {} };
   }, []);
+  const [sel, setSel] = useState(Object.keys(AGENTS));
+  const toggle = (k) => setSel(s => s.includes(k) ? s.filter(x => x !== k) : [...s, k]);
   const go = () => { if (!real || !prompt.trim()) return; setUrls({}); setProviders([]); window.tfBridge.compare(prompt).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} setProviders(r.providers || []); }); };
-  const shownKeys = providers.length ? providers : Object.keys(AGENTS);
+  const clear = () => { setUrls({}); setProviders([]); };
+  const shownKeys = (providers.length ? providers : Object.keys(AGENTS)).filter(k => sel.includes(k));
   return (
     <div className="page fade">
       <h2 className="sec">⚔️ Comparar agentes <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>比較</span></h2>
-      <div className="panelc" style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+      <div className="panelc" style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
         <input className="ta" style={{ minHeight: 0, padding: '10px 14px', borderRadius: 99, flex: 1 }} value={prompt} onChange={e => setPrompt(e.target.value)} />
         <button className="btn pri" onClick={go}>{providers.length ? '↻ Re-run' : '▶ ¡Carrera!'}</button>
+        <button className="btn" onClick={clear}>🧹 Limpiar</button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {Object.entries(AGENTS).map(([k, a]) => <button key={k} className={'fchip' + (sel.includes(k) ? ' on' : '')} style={{ cursor: 'pointer' }} onClick={() => toggle(k)}>{sel.includes(k) ? '☑' : '☐'} {a.em} {a.label}</button>)}
       </div>
       {!real && <div className="panelc" style={{ textAlign: 'center', color: 'var(--tx-dim)', fontWeight: 600, marginBottom: 16 }}>Compare no disponible (sin puente) 🥺</div>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

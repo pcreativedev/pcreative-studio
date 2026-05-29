@@ -73,38 +73,42 @@ function Stat({ label, value, sub, color }) {
 }
 
 function CostScreen() {
-  const total = (typeof _COST.total === 'number') ? _COST.total : COST_BY_AGENT.reduce((s, d) => s + d.v, 0);
-  const month = (typeof _COST.month === 'number') ? _COST.month : DAYS.reduce((s, v) => s + v, 0);
-  const tokensLabel = (_COST.tokens || '0') + ' tokens';
-  const perProject = _COST.per_project ? ('$' + Number(_COST.per_project).toFixed(2)) : '—';
+  const [c, setC] = useState(_COST);
+  const rescan = () => { const B = window.tfBridge; if (B && B.cost_data) B.cost_data().then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (!r.error) setC(r); }); };
+  const byAgent = (c.by_agent && c.by_agent.length) ? c.by_agent : [];
+  const days = (c.days && c.days.length) ? c.days : Array.from({ length: 30 }, () => 0);
+  const models = c.models || [];
+  const total = (typeof c.total === 'number') ? c.total : byAgent.reduce((s, d) => s + d.v, 0);
+  const month = (typeof c.month === 'number') ? c.month : days.reduce((s, v) => s + v, 0);
+  const tokensLabel = (c.tokens || '0') + ' tokens';
   return (
     <div style={{ padding: '34px 40px 60px', position: 'relative', zIndex: 2 }}>
       <Eyebrow jp="費用追跡">AI COST · 費用</Eyebrow>
-      <h1 style={{ fontFamily: 'var(--font-mega)', fontSize: 38, margin: '12px 0 24px' }}>
-        <span className="neon-text">COST</span> TRACKER
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', margin: '12px 0 24px' }}>
+        <h1 style={{ fontFamily: 'var(--font-mega)', fontSize: 38, margin: 0 }}><span className="neon-text">COST</span> TRACKER</h1>
+        <Btn variant="ghost" icon="refresh" onClick={rescan}>Re-scan</Btn>
+      </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
         <Stat label="TOTAL ALL-TIME" value={`$${total.toFixed(2)}`} sub={tokensLabel} color="var(--accent)" />
         <Stat label="ESTE MES" value={`$${month.toFixed(2)}`} sub="últimos 30 días" color="var(--codex)" />
-        <Stat label="MODELOS" value={String(COST_MODELS.length)} sub="con coste registrado" />
-        <Stat label="PROVEEDORES" value={String(COST_BY_AGENT.length)} sub="activos" color="var(--gemini)" />
+        <Stat label="MODELOS" value={String(models.length)} sub="con coste registrado" />
+        <Stat label="PROVEEDORES" value={String(byAgent.length)} sub="activos" color="var(--gemini)" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20 }}>
         {/* donut */}
         <div className="panel card-corner" style={{ padding: 22, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div className="eyebrow" style={{ alignSelf: 'flex-start', marginBottom: 8 }}>POR PROVEEDOR · 代理別</div>
-          <Donut data={COST_BY_AGENT} total={total} />
+          {byAgent.length ? <Donut data={byAgent} total={total || 1} /> : <div className="mono faint" style={{ padding: 40 }}>sin gasto registrado</div>}
           <div style={{ width: '100%', marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {COST_BY_AGENT.map(d => (
+            {byAgent.map(d => { const ag = AGENTS[d.k] || { hex: '#00f0ff', color: 'var(--accent)', label: d.k }; return (
               <div key={d.k} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: AGENTS[d.k].hex, boxShadow: `0 0 8px ${AGENTS[d.k].hex}` }} />
-                <span style={{ flex: 1 }}>{AGENTS[d.k].label}</span>
-                <span className="mono" style={{ color: AGENTS[d.k].color }}>${d.v.toFixed(2)}</span>
-                <span className="mono faint" style={{ fontSize: 10, width: 38, textAlign: 'right' }}>{((d.v / total) * 100).toFixed(0)}%</span>
-              </div>
-            ))}
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: ag.hex, boxShadow: `0 0 8px ${ag.hex}` }} />
+                <span style={{ flex: 1 }}>{ag.label}</span>
+                <span className="mono" style={{ color: ag.color }}>${d.v.toFixed(2)}</span>
+                <span className="mono faint" style={{ fontSize: 10, width: 38, textAlign: 'right' }}>{total ? ((d.v / total) * 100).toFixed(0) : 0}%</span>
+              </div>); })}
           </div>
         </div>
 
@@ -113,9 +117,8 @@ function CostScreen() {
           <div className="panel" style={{ padding: 22 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <div className="eyebrow">GASTO DIARIO · 日別 (30d)</div>
-              <span className="mono" style={{ fontSize: 11, color: 'var(--accent-2)' }}>▲ pico semana actual</span>
             </div>
-            <BarChart days={DAYS} />
+            <BarChart days={days} />
           </div>
           <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
@@ -127,7 +130,8 @@ function CostScreen() {
                 </tr>
               </thead>
               <tbody>
-                {COST_MODELS.map((r, i) => {
+                {models.length === 0 && <tr><td colSpan={6} className="mono faint" style={{ padding: 22, textAlign: 'center' }}>// sin sesiones de IA registradas</td></tr>}
+                {models.map((r, i) => {
                   const ag = AGENTS[r.agent] || { color: 'var(--accent)', glyph: '◆' };
                   return (
                   <tr key={i} style={{ borderTop: '1px solid var(--line)' }}>

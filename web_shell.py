@@ -1328,6 +1328,28 @@ class ThemeForgeBridge(QObject):
             return json.dumps({"ok": False, "error": str(e)})
 
     @pyqtSlot(result=str)
+    def cost_data(self) -> str:
+        """Re-escanea el coste de IA (donut + 30d + tabla de modelos + totales)."""
+        try:
+            return json.dumps(_cost_data())
+        except Exception as e:
+            return json.dumps({"error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def market_export(self, markdown: str) -> str:
+        """Exporta un análisis de mercado a .md (selector de archivo nativo)."""
+        try:
+            from PyQt6.QtWidgets import QFileDialog
+            f, _ = QFileDialog.getSaveFileName(None, "Exportar análisis", "analisis-mercado.md", "Markdown (*.md)")
+            if not f:
+                return json.dumps({"ok": False, "cancelled": True})
+            from pathlib import Path
+            Path(f).write_text(markdown or "", encoding="utf-8")
+            return json.dumps({"ok": True, "file": f})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(result=str)
     def bootstrap_data(self) -> str:
         """Todos los datos reales (stacks/proyectos/providers/temas) para
         refrescar el prototipo en vivo si hace falta."""
