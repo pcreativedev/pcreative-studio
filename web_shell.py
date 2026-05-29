@@ -167,6 +167,53 @@ def _themes_data() -> dict:
         return {"themes": [], "current": "neotokyo"}
 
 
+def _fmt_tokens(n: int) -> str:
+    n = int(n or 0)
+    if n >= 1_000_000:
+        return f"{n / 1e6:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1e3:.0f}k"
+    return str(n)
+
+
+def _cost_data() -> dict:
+    """Datos reales del cost tracker (mismos scanners que la GUI)."""
+    try:
+        from cost_tracker import aggregate, PRICING
+        rep = aggregate()
+    except Exception:
+        return {}
+    by_agent = [{"k": k, "v": round(v["cost"], 2)}
+                for k, v in rep.by_provider.items() if v.get("cost", 0) > 0]
+    import datetime as _dt
+    today = _dt.date.today()
+    days = []
+    for i in range(29, -1, -1):
+        d = (today - _dt.timedelta(days=i)).isoformat()
+        days.append(round(rep.by_day.get(d, 0.0), 2))
+    models = []
+    for model, m in sorted(rep.by_model.items(), key=lambda kv: -kv[1].get("cost", 0)):
+        if m.get("cost", 0) <= 0:
+            continue
+        rate = ""
+        if model in PRICING:
+            pin, pout = PRICING[model][0], PRICING[model][1]
+            rate = f"${pin:g}/${pout:g}"
+        models.append({
+            "agent": m.get("provider", ""), "model": model,
+            "sessions": m.get("events", 0),
+            "input": _fmt_tokens(m.get("in", 0)),
+            "output": _fmt_tokens(m.get("out", 0)),
+            "rate": rate or "—", "cost": round(m.get("cost", 0), 2),
+        })
+    return {
+        "by_agent": by_agent, "days": days, "models": models,
+        "total": round(rep.total_cost_usd, 2),
+        "tokens": _fmt_tokens(rep.total_input + rep.total_output),
+        "month": round(rep.this_month_usd, 2),
+    }
+
+
 def bootstrap_data() -> dict:
     """Todos los datos reales que el prototipo necesita, en su forma exacta."""
     td = _themes_data()
@@ -176,6 +223,7 @@ def bootstrap_data() -> dict:
         "providers": _providers_data(),
         "themes": td["themes"],
         "current_theme": td["current"],
+        "cost": _cost_data(),
     }
 
 
