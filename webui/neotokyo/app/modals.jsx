@@ -31,7 +31,8 @@ function ReferenceAnalysisModal({ onClose }) {
   const [done, setDone] = useState(false);
   const [reply, setReply] = useState('');
   const [turns, setTurns] = useState([]);
-  const [lines, setLines] = useState([]);  // streaming real
+  const [lines, setLines] = useState([]);  // chunks de texto (token deltas)
+  const [status, setStatus] = useState('⏳ iniciando…');  // estado en vivo
   const boxRef = useRef(null);
 
   // Streaming REAL del análisis de referencia (reference_analyzer + IA).
@@ -42,8 +43,9 @@ function ReferenceAnalysisModal({ onClose }) {
     const kind = (window.__tfRef && window.__tfRef.kind) || 'folder';
     const onProg = (j) => {
       let r = {}; try { r = JSON.parse(j); } catch (e) {}
-      if (r.line !== undefined) setLines(ls => [...ls, r.line]);
-      if (r.done) { if (r.error) setLines(ls => [...ls, '⚠ ' + r.error]); setDone(true); }
+      if (r.status) setStatus(r.status);
+      if (r.text !== undefined) setLines(ls => [...ls, r.text]);
+      if (r.done) { if (r.error) setLines(ls => [...ls, '\n⚠ ' + r.error]); setStatus(r.error ? '⚠ error' : '✓ análisis completo · guardado'); setDone(true); }
     };
     if (window.tfBridge.reference_progress && window.tfBridge.reference_progress.connect)
       window.tfBridge.reference_progress.connect(onProg);
@@ -71,9 +73,9 @@ function ReferenceAnalysisModal({ onClose }) {
     <ModalShell title="Análisis de referencia con Claude Code" jp="参照分析 · REFERENCE ANALYSIS" onClose={onClose} width={820}>
       <div ref={boxRef} className="mono" style={{ padding: 18, fontSize: 12.5, lineHeight: 1.8, maxHeight: '52vh', overflowY: 'auto', background: '#03050b' }}>
         {real
-          ? lines.map((l, i) => <div key={i} style={{ color: 'var(--tx-dim)', marginBottom: 2, whiteSpace: 'pre-wrap' }}>{l}</div>)
+          ? <div style={{ color: 'var(--tx-dim)', whiteSpace: 'pre-wrap' }}>{lines.join('')}</div>
           : REF_STREAM.slice(0, shown).map((l, i) => <div key={i} style={{ color: color[l.t], marginBottom: 2 }}>{l.s}</div>)}
-        {!done && <span style={{ color: 'var(--accent)', animation: 'blink 0.8s infinite' }}>▊ {real ? 'analizando referencia con IA…' : 'streaming…'}</span>}
+        {!done && <div style={{ color: 'var(--accent)', marginTop: 8 }}><span style={{ animation: 'blink 0.8s infinite' }}>▊</span> {real ? status : 'streaming…'}</div>}
         {turns.map((t, i) => (
           <div key={i} style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
             <div style={{ color: 'var(--accent-2)' }}>👤 Tú: {t.you}</div>

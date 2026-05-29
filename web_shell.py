@@ -992,6 +992,14 @@ class ThemeForgeBridge(QObject):
             p = Path(value)
             facts = ra.gather_facts(p) if p.exists() else {"reference": value, "kind": "url"}
             prompt = ra.build_prompt(facts)
+            # "Detecta el stack" de la referencia (como el normal): muestra lo
+            # que gather_facts reconoció antes de pedir la recomendación a la IA.
+            det = (facts.get("framework") or facts.get("preview_profile")
+                   or facts.get("kind") or "?")
+            subs = facts.get("subprojects") or []
+            det_txt = (f"mono-repo · {len(subs)} sub-proyectos" if subs else str(det))
+            self.reference_progress.emit(json.dumps(
+                {"status": f"📂 Detectado: {det_txt} · pidiendo stack óptimo a la IA…"}))
         except Exception as e:
             self.reference_progress.emit(json.dumps({"done": True, "error": f"facts: {e}"}))
             return json.dumps({"ok": False, "error": str(e)})
