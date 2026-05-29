@@ -173,6 +173,8 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: ag.color }}>
           <span>{ag.glyph}</span> {ag.label}
         </span>
+        <Btn icon="folderOpen" variant="ghost" onClick={() => window.tfBridge && window.tfBridge.open_folder && window.tfBridge.open_folder(p.path)}>Folder</Btn>
+        <Btn icon="code" variant="ghost" onClick={() => window.tfBridge && window.tfBridge.open_vscode && window.tfBridge.open_vscode(p.path)}>VSCode</Btn>
         <Btn icon="check" variant="ghost" onClick={realPreflight}>Pre-flight</Btn>
         <Btn icon="box" variant="ghost" onClick={() => {
           if (window.tfBridge && window.tfBridge.build_zip && p.path) {

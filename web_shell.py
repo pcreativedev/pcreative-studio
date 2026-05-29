@@ -302,15 +302,59 @@ class ThemeForgeBridge(QObject):
         super().__init__(parent)
         self._procs = []  # mantener vivas las QProcess en vuelo
 
+    def _agent_launch_for(self, path: str):
+        """(cmd, args) para auto-lanzar la IA del provider activo con el prompt
+        de contexto del proyecto — replica el auto-agent de ProjectWindow."""
+        from pathlib import Path
+        try:
+            import ai_providers as aip
+            import app_prefs as ap
+            import shutil
+            sel = ap.default_provider()
+            binary = aip.PROVIDERS.get(sel, {}).get("command")
+            if not binary or not shutil.which(binary):
+                return "bash", []
+            cmd, extra = aip.interactive_cmd_args(sel)
+            ctx_file = aip.PROVIDERS[sel].get("context_file", "CLAUDE.md")
+            proj = Path(path)
+            cands = [ctx_file, "CLAUDE.md", "AGENTS.md", "GEMINI.md"]
+            ctx = next((c for c in cands if (proj / c).is_file()), ctx_file)
+            skills = ""
+            if (proj / ".claude" / "skills").is_dir():
+                skills = (" Este proyecto tiene **skills instaladas** (autoskills / "
+                          "UI-UX Pro) en `.claude/skills/`: lístalas, léelas y ÚSALAS.")
+            prompt = (
+                f"Acabas de abrir el proyecto «{proj.name}» desde ThemeForge. "
+                f"Lee COMPLETAMENTE {ctx} y todo lo que haya en context/ para entender "
+                f"el estado actual (qué es, stack, qué se ha hecho ya).{skills}\n\n"
+                f"Antes de tocar NADA del código:\n"
+                f"1. Resume en 4-6 líneas el estado del proyecto y lo ya hecho.\n"
+                f"2. Lista los primeros 3-5 pasos que propones para continuar.\n"
+                f"3. Espera mi OK antes de ejecutar nada."
+            )
+            return cmd, (extra or []) + [prompt]
+        except Exception:
+            return "bash", []
+
     @pyqtSlot(str, result=str)
     def start_terminal(self, path: str) -> str:
-        """Arranca el servidor de terminal real (xterm + node-pty) con cwd en el
-        proyecto y emite `terminal_ready` con la URL para embeber por iframe."""
+        """Auto-lanza la IA (provider activo + contexto del proyecto) en un
+        terminal real (xterm + node-pty) con cwd en el proyecto, igual que la
+        app normal. Emite `terminal_ready` con la URL para embeber."""
+        return self._start_terminal(path, agent=True)
+
+    @pyqtSlot(str, result=str)
+    def start_shell(self, path: str) -> str:
+        """Igual que start_terminal pero shell pelado (sin IA)."""
+        return self._start_terminal(path, agent=False)
+
+    def _start_terminal(self, path: str, agent: bool) -> str:
         import shutil
         node = shutil.which("node")
         if not node:
             self.terminal_ready.emit(json.dumps({"path": path, "error": "node no encontrado"}))
             return json.dumps({"ok": False, "error": "node no encontrado"})
+        cmd, args = self._agent_launch_for(path) if agent else ("bash", [])
         proc = QProcess(self)
         proc.setWorkingDirectory(str(TERMINAL_DIR))
         proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
@@ -321,14 +365,17 @@ class ThemeForgeBridge(QObject):
             for line in data.splitlines():
                 if line.startswith("PORT="):
                     port = line.split("=", 1)[1].strip()
-                    url = (f"http://127.0.0.1:{port}/?cwd="
-                           f"{urllib.parse.quote(path)}&cmd=bash")
+                    q = (f"cwd={urllib.parse.quote(path)}"
+                         f"&cmd={urllib.parse.quote(cmd)}")
+                    if args:
+                        q += "&args=" + urllib.parse.quote("\x1f".join(args))
+                    url = f"http://127.0.0.1:{port}/?{q}"
                     self.terminal_ready.emit(json.dumps({"path": path, "url": url}))
 
         proc.readyReadStandardOutput.connect(_on_out)
         proc.start(node, [str(TERMINAL_DIR / "server.js"), "0"])
         self._procs.append(proc)
-        return json.dumps({"ok": True, "starting": True})
+        return json.dumps({"ok": True, "starting": True, "agent": agent})
 
     @pyqtSlot(str, result=str)
     def start_preview(self, path: str) -> str:
@@ -367,6 +414,34 @@ class ThemeForgeBridge(QObject):
         except Exception as e:
             self.preview_ready.emit(json.dumps({"path": path, "error": str(e)}))
             return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def open_folder(self, path: str) -> str:
+        """Abre la carpeta del proyecto en el explorador de archivos."""
+        try:
+            import platform_compat as pc
+            pc.open_path(path)
+            return json.dumps({"ok": True})
+        except Exception:
+            import subprocess
+            try:
+                subprocess.Popen(["xdg-open", path])
+                return json.dumps({"ok": True})
+            except Exception as e:
+                return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def open_vscode(self, path: str) -> str:
+        """Abre el proyecto en VS Code (o el editor disponible)."""
+        import shutil
+        import subprocess
+        for ed in ("code", "codium", "cursor"):
+            if shutil.which(ed):
+                try:
+                    subprocess.Popen([ed, path]); return json.dumps({"ok": True, "editor": ed})
+                except Exception:
+                    pass
+        return json.dumps({"ok": False, "error": "no se encontró VS Code/Codium/Cursor"})
 
     @pyqtSlot(str, result=str)
     def run_preflight(self, path: str) -> str:

@@ -177,12 +177,22 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
         <div className="fade-in">
           <div className="panel" style={{ padding: 20, marginBottom: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div className="eyebrow">STACK · 基盤 <span style={{ color: 'var(--tx-faint)' }}>· 63 disponibles</span></div>
+              <div className="eyebrow">STACK · 基盤 <span style={{ color: 'var(--tx-faint)' }}>· {STACKS.length} disponibles</span></div>
               {filled && <Chip color="var(--accent)">✦ sugerido por IA</Chip>}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
-              {STACKS.map(s => <StackTile key={s.key} s={s} active={stack === s.key} onClick={() => setStack(s.key)} />)}
-            </div>
+            {/* Stacks agrupados por categoría (como en la app normal). */}
+            {(() => {
+              const groups = {};
+              STACKS.forEach(s => { const c = s.cat || 'Otros'; (groups[c] = groups[c] || []).push(s); });
+              return Object.keys(groups).map(cat => (
+                <div key={cat} style={{ marginBottom: 16 }}>
+                  <div className="mono faint" style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '4px 0 8px' }}>{cat} · {groups[cat].length}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                    {groups[cat].map(s => <StackTile key={s.key} s={s} active={stack === s.key} onClick={() => setStack(s.key)} />)}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
           <div className="panel" style={{ padding: '6px 20px 14px' }}>
             <CheckRow label="UI Pro components" jp="高級UI" sub="shadcn/ui · Aceternity · Magic UI pre-instalados" on={opts.uipro} onToggle={() => tog('uipro')} />
