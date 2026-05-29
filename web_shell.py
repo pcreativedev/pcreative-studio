@@ -444,6 +444,7 @@ class ThemeForgeBridge(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._procs = []  # mantener vivas las QProcess en vuelo
+        self._last_reference_analysis = None  # (value, texto) del último análisis IA
 
     def _agent_launch_for(self, path: str):
         """(cmd, args) para auto-lanzar la IA del provider activo con el prompt
@@ -656,6 +657,15 @@ class ThemeForgeBridge(QObject):
         n = 2
         while project_dir.exists() and any(project_dir.iterdir()):
             slug = f"{slugify(name)}-{n}"; project_dir = PROJECTS_DIR / slug; n += 1
+        # Inyecta el análisis IA de referencia (si se hizo uno) en CLAUDE.md,
+        # igual que el modo recreate del normal — así "se queda guardado".
+        ai_analysis = None
+        ref_value = (cfg.get("reference") or "").strip()
+        if self._last_reference_analysis and self._last_reference_analysis[1]:
+            stored_val, stored_txt = self._last_reference_analysis
+            if (not ref_value) or stored_val == ref_value:
+                ai_analysis = stored_txt
+        mode = cfg.get("mode") or "scratch"
         try:
             script = write_setup_script(
                 project_dir=project_dir, stack_key=stack, template_type=ttype,
@@ -665,6 +675,7 @@ class ThemeForgeBridge(QObject):
                 existing_repo=None, create_github_repo=False, github_user=None,
                 embedded=True, run_uipro=bool(opts.get("uipro", True)),
                 niche=(niche or None), launch_agent=False,
+                ai_analysis=ai_analysis, ai_analysis_kind="reference",
             )
         except Exception as e:
             return json.dumps({"ok": False, "error": f"write_setup_script: {e}"})
@@ -950,36 +961,105 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, str, result=str)
     def analyze_reference(self, value: str, kind: str) -> str:
-        """Analiza una referencia (carpeta/zip) con IA para recrearla: junta
-        facts + build_prompt + corre la IA en modo print, streaming por
-        `reference_progress`. Igual que el _ReferenceAnalysisDialog nativo."""
-        import threading
+        """Análisis de referencia REAL — idéntico al _ReferenceAnalysisDialog
+        nativo: corre el CLI del provider activo en modo stream-json con
+        WebSearch/WebFetch habilitados (oneshot_argv allow_web=True), prompt por
+        stdin, parsea con stream_parsers → emite `reference_progress` con status
+        en vivo (pensando/buscando en internet/usando tool/generando) + texto.
+        Al terminar GUARDA el análisis (para inyectarlo en CLAUDE.md al crear)."""
         from pathlib import Path
+        try:
+            import reference_analyzer as ra
+            import ai_providers as aip
+            import app_prefs as ap
+            import stream_parsers as sp
+        except Exception as e:
+            self.reference_progress.emit(json.dumps({"done": True, "error": f"import: {e}"}))
+            return json.dumps({"ok": False, "error": str(e)})
 
-        def _work():
+        provider = ap.default_provider()
+        state, info = ("error", "")
+        try:
+            state, info = aip.detect_status(provider)
+        except Exception:
+            pass
+        if state != "ok":
+            self.reference_progress.emit(json.dumps(
+                {"done": True, "error": f"Provider {provider} no listo: {info}"}))
+            return json.dumps({"ok": False, "error": "provider no listo"})
+
+        try:
+            p = Path(value)
+            facts = ra.gather_facts(p) if p.exists() else {"reference": value, "kind": "url"}
+            prompt = ra.build_prompt(facts)
+        except Exception as e:
+            self.reference_progress.emit(json.dumps({"done": True, "error": f"facts: {e}"}))
+            return json.dumps({"ok": False, "error": str(e)})
+
+        argv = aip.oneshot_argv(provider, allow_web=True)
+        parser = sp.parser_for(aip.PROVIDERS[provider]["command"])
+        try:
+            extra_env = aip.get_env(provider)
+        except Exception:
+            extra_env = {}
+
+        proc = QProcess(self)
+        proc.setProgram(argv[0])
+        proc.setArguments(argv[1:])
+        env = QProcessEnvironment.systemEnvironment()
+        for k, v in (extra_env or {}).items():
+            env.insert(k, str(v))
+        proc.setProcessEnvironment(env)
+
+        state_buf = {"buf": "", "text": [], "value": value}
+
+        def _on_out():
+            data = bytes(proc.readAllStandardOutput()).decode(errors="replace")
+            if parser is None:
+                state_buf["text"].append(data)
+                self.reference_progress.emit(json.dumps({"text": data}))
+                return
+            state_buf["buf"] += data
+            while "\n" in state_buf["buf"]:
+                line, state_buf["buf"] = state_buf["buf"].split("\n", 1)
+                if not line.strip():
+                    continue
+                try:
+                    evt = parser(line) or {}
+                except Exception:
+                    evt = {}
+                payload = {}
+                if evt.get("text_delta"):
+                    state_buf["text"].append(evt["text_delta"])
+                    payload["text"] = evt["text_delta"]
+                if evt.get("status"):
+                    payload["status"] = evt["status"]
+                if payload:
+                    self.reference_progress.emit(json.dumps(payload))
+
+        def _on_done(code, _s):
+            full = "".join(state_buf["text"]).strip()
+            self._last_reference_analysis = (state_buf["value"], full)
             try:
-                import reference_analyzer as ra
-                import shutil
-                p = Path(value)
-                facts = ra.gather_facts(p) if p.exists() else {"reference": value}
-                prompt = ra.build_prompt(facts)
-                binary = "claude" if shutil.which("claude") else None
-                if not binary:
-                    self.reference_progress.emit(json.dumps(
-                        {"done": True, "error": "claude CLI no encontrado para el análisis"}))
-                    return
-                import subprocess
-                proc = subprocess.Popen(
-                    [binary, "--print", prompt],
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-                for line in iter(proc.stdout.readline, ""):
-                    self.reference_progress.emit(json.dumps({"line": line.rstrip("\n")}))
-                proc.wait()
-                self.reference_progress.emit(json.dumps({"done": True}))
-            except Exception as e:
-                self.reference_progress.emit(json.dumps({"done": True, "error": str(e)}))
+                if full:
+                    ra_mod = __import__("reference_analyzer")
+                    if hasattr(ra_mod, "save_analysis"):
+                        pass  # guardado opcional; ya queda en _last_reference_analysis
+            except Exception:
+                pass
+            self.reference_progress.emit(json.dumps(
+                {"done": True, "saved": bool(full), "exit": code}))
+            if proc in self._procs:
+                self._procs.remove(proc)
 
-        threading.Thread(target=_work, daemon=True).start()
+        proc.readyReadStandardOutput.connect(_on_out)
+        proc.finished.connect(_on_done)
+        self.reference_progress.emit(json.dumps({"status": "⏳ Arrancando agente…"}))
+        proc.start()
+        proc.waitForStarted(5000)
+        proc.write(prompt.encode("utf-8"))
+        proc.closeWriteChannel()
+        self._procs.append(proc)
         return json.dumps({"ok": True, "running": True})
 
     @pyqtSlot(str, result=str)
