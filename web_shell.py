@@ -33,6 +33,7 @@ from PyQt6.QtCore import QObject, QUrl, QProcess, pyqtSlot, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 
 WEBUI_DIR = Path(__file__).resolve().parent / "webui" / "neotokyo"
+TERMINAL_DIR = Path(__file__).resolve().parent / "terminal"
 
 
 def _free_port() -> int:
@@ -236,10 +237,58 @@ class ThemeForgeBridge(QObject):
     progress = pyqtSignal(str)
     # Build terminado: JSON {ok, slug, path, exit}.
     build_done = pyqtSignal(str)
+    # Terminal real lista: JSON {path, url} para iframe.
+    terminal_ready = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._procs = []  # mantener vivas las QProcess en vuelo
+
+    @pyqtSlot(str, result=str)
+    def start_terminal(self, path: str) -> str:
+        """Arranca el servidor de terminal real (xterm + node-pty) con cwd en el
+        proyecto y emite `terminal_ready` con la URL para embeber por iframe."""
+        import shutil
+        node = shutil.which("node")
+        if not node:
+            self.terminal_ready.emit(json.dumps({"path": path, "error": "node no encontrado"}))
+            return json.dumps({"ok": False, "error": "node no encontrado"})
+        proc = QProcess(self)
+        proc.setWorkingDirectory(str(TERMINAL_DIR))
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+
+        def _on_out():
+            import urllib.parse
+            data = bytes(proc.readAllStandardOutput()).decode(errors="replace")
+            for line in data.splitlines():
+                if line.startswith("PORT="):
+                    port = line.split("=", 1)[1].strip()
+                    url = (f"http://127.0.0.1:{port}/?cwd="
+                           f"{urllib.parse.quote(path)}&cmd=bash")
+                    self.terminal_ready.emit(json.dumps({"path": path, "url": url}))
+
+        proc.readyReadStandardOutput.connect(_on_out)
+        proc.start(node, [str(TERMINAL_DIR / "server.js"), "0"])
+        self._procs.append(proc)
+        return json.dumps({"ok": True, "starting": True})
+
+    @pyqtSlot(str, result=str)
+    def run_preflight(self, path: str) -> str:
+        """Pre-flight real (checks de marketplace) sobre el proyecto."""
+        try:
+            from mcp_server import run_preflight as _rp
+            return json.dumps(_rp(path))
+        except Exception as e:
+            return json.dumps({"error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def build_zip(self, path: str) -> str:
+        """Empaqueta el proyecto para el marketplace (zip real)."""
+        try:
+            from mcp_server import build_zip as _bz
+            return json.dumps(_bz(path))
+        except Exception as e:
+            return json.dumps({"error": str(e)})
 
     @pyqtSlot(str, result=str)
     def create_project(self, payload_json: str) -> str:
@@ -303,13 +352,11 @@ class ThemeForgeBridge(QObject):
 
         def _done(code, _status):
             self.progress.emit(f"\n■ Scaffold terminado (exit {code}).\n")
+            # La UI web navega a su project screen (terminal real embebida) al
+            # recibir build_done — no abrimos ventana nativa: todo en Neo-Tokyo web.
             self.build_done.emit(json.dumps(
-                {"ok": code == 0, "slug": slug, "path": str(project_dir), "exit": code}))
-            try:
-                from themeforge import open_project_window
-                open_project_window(project_dir)
-            except Exception as e:
-                self.progress.emit(f"[error abriendo ventana] {e}\n")
+                {"ok": code == 0, "slug": slug, "name": name,
+                 "path": str(project_dir), "exit": code}))
             if proc in self._procs:
                 self._procs.remove(proc)
 

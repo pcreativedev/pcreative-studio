@@ -65,15 +65,62 @@ function Terminal({ running }) {
   );
 }
 
+// Terminal REAL embebida: xterm + node-pty servido por terminal/server.js,
+// arrancado por el puente nativo. Cae al terminal mock si no hay puente.
+function RealTerminal({ path, running }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    if (!window.tfBridge || !window.tfBridge.start_terminal || !path) return;
+    const onReady = (j) => {
+      let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.path === path && r.url) setUrl(r.url);
+    };
+    if (window.tfBridge.terminal_ready && window.tfBridge.terminal_ready.connect)
+      window.tfBridge.terminal_ready.connect(onReady);
+    window.tfBridge.start_terminal(path);
+    return () => {
+      if (window.tfBridge.terminal_ready && window.tfBridge.terminal_ready.disconnect)
+        try { window.tfBridge.terminal_ready.disconnect(onReady); } catch (e) {}
+    };
+  }, [path]);
+  if (!window.tfBridge || !path) return <Terminal running={running} />;
+  if (!url) return <div className="mono faint" style={{ flex: 1, padding: 16 }}>// iniciando terminal real (xterm · node-pty)…</div>;
+  return <iframe src={url} style={{ flex: 1, width: '100%', height: '100%', border: 'none', background: '#0c0c0d' }} />;
+}
+
+function tfToast(msg, color) {
+  const b = document.createElement('div');
+  b.textContent = msg;
+  b.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;' +
+    'background:#0b1020;color:' + (color || '#00f0ff') + ';border:1px solid ' + (color || '#00f0ff') +
+    ';border-radius:10px;padding:10px 18px;font:13px JetBrains Mono,monospace;box-shadow:0 0 18px rgba(0,240,255,.4);max-width:70%';
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 6000);
+}
+
 function ProjectWindow({ project, onBack, onDeploy, onBuild }) {
   const p = project;
   const [tab, setTab] = useState('desktop');
   const [running, setRunning] = useState(false);
   const [pushed, setPushed] = useState(false);
   const [reply, setReply] = useState('');
-  const ag = AGENTS[p.agent || 'claude'];
+  const ag = AGENTS[p.agent || 'claude'] || { color: 'var(--accent)', glyph: '◆', label: p.agent || 'agent' };
 
   useEffect(() => { const t = setTimeout(() => setRunning(true), 600); return () => clearTimeout(t); }, []);
+
+  const realPreflight = () => {
+    if (window.tfBridge && window.tfBridge.run_preflight && p.path) {
+      tfToast('⟳ Pre-flight en curso…');
+      window.tfBridge.run_preflight(p.path).then((j) => {
+        let r = {}; try { r = JSON.parse(j); } catch (e) {}
+        const verdict = r.verdict || r.status || (r.ok ? 'PASS' : 'revisar');
+        const fails = (r.fail || r.failures || r.errors || []).length || 0;
+        tfToast('✓ Pre-flight: ' + verdict + (fails ? ' · ' + fails + ' fallos' : ''), fails ? '#ffb000' : '#9dff3c');
+      }).catch(e => tfToast('Pre-flight error: ' + e, '#ff2e88'));
+      return;
+    }
+    onBuild && onBuild();
+  };
 
   const devices = [
     { k: 'desktop', icon: 'monitor', label: 'Desktop' },
@@ -102,7 +149,7 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: ag.color }}>
           <span>{ag.glyph}</span> {ag.label}
         </span>
-        <Btn icon="check" variant="ghost" onClick={onBuild}>Pre-flight</Btn>
+        <Btn icon="check" variant="ghost" onClick={realPreflight}>Pre-flight</Btn>
         <Btn icon="github" variant={pushed ? '' : 'primary'} onClick={() => setPushed(true)}>
           {pushed ? '✓ Pushed' : 'Push to GitHub'}
         </Btn>
@@ -159,7 +206,7 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild }) {
             <span className="chip" style={{ marginLeft: 'auto', fontSize: 9.5 }}>xterm · node-pty</span>
             {running && <span style={{ width: 7, height: 7, borderRadius: 99, background: 'var(--codex)', boxShadow: '0 0 8px var(--codex)', animation: 'blink 1.1s infinite' }} />}
           </div>
-          <Terminal running={running} />
+          <RealTerminal path={p.path} running={running} />
           {/* reply box */}
           <div style={{ borderTop: '1px solid var(--line)', padding: 12, display: 'flex', gap: 8 }}>
             <input value={reply} onChange={e => setReply(e.target.value)}

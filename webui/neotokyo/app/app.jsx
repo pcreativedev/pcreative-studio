@@ -145,9 +145,8 @@ function App() {
   };
   const openProject = (p) => {
     if (p && p.__new) { setRoute('new'); return; }
-    // Con el shell nativo, abrir un proyecto lanza la ProjectWindow REAL
-    // (terminal xterm + preview + git + build, ya con tema Neo-Tokyo).
-    if (window.tfBridge && p && p.path) { window.tfBridge.open_project(p.path); return; }
+    // Todo en el diseño web Neo-Tokyo: navegamos al project screen, que
+    // embebe la terminal REAL (xterm+node-pty) vía el puente.
     setProject(p); setRoute('project');
   };
   const launch = (cfg) => {
@@ -159,7 +158,10 @@ function App() {
           window.__tfProgWired = true;
           window.tfBridge.progress.connect((line) => console.log('[forge]', line));
           window.tfBridge.build_done && window.tfBridge.build_done.connect &&
-            window.tfBridge.build_done.connect((j) => console.log('[forge] done', j));
+            window.tfBridge.build_done.connect((j) => {
+              let r = {}; try { r = JSON.parse(j); } catch (e) {}
+              if (r.path) { setProject({ id: r.slug, name: r.name, path: r.path, status: 'live', accent: 'var(--accent)' }); setRoute('project'); }
+            });
         }
         window.tfBridge.create_project(JSON.stringify(cfg));
       } catch (e) { console.error('create_project', e); }
