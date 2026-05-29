@@ -106,6 +106,7 @@ def _projects_data() -> list:
         out.append({
             "id": r.get("slug", "") or r.get("name", ""),
             "name": r.get("name", "") or r.get("slug", ""),
+            "path": str(r.get("path", "") or ""),
             "jp": "",
             "type": r.get("category", "") or r.get("stack", "") or "Template",
             "stack": r.get("stack", "") or "",
@@ -211,6 +212,36 @@ class ThemeForgeBridge(QObject):
             except Exception:
                 pass
             return json.dumps({"ok": True, "theme": name})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def open_project(self, path_or_slug: str) -> str:
+        """Abre la ProjectWindow NATIVA real (terminal xterm + preview + git +
+        build + deploy, ya con el tema Neo-Tokyo). Acepta una ruta o un slug."""
+        try:
+            from pathlib import Path
+            p = Path(path_or_slug)
+            if not p.is_dir():
+                # Resolver por slug contra los proyectos reales.
+                for proj in _projects_data():
+                    if proj.get("id") == path_or_slug and proj.get("path"):
+                        p = Path(proj["path"]); break
+            if not p.is_dir():
+                return json.dumps({"ok": False, "error": f"no existe: {path_or_slug}"})
+            from themeforge import open_project_window
+            open_project_window(p)
+            return json.dumps({"ok": True, "path": str(p)})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(result=str)
+    def new_project(self) -> str:
+        """Abre el flujo nativo de New project (formulario completo)."""
+        try:
+            from themeforge import focus_new_project
+            ok = focus_new_project()
+            return json.dumps({"ok": bool(ok)})
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)})
 

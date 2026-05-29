@@ -64,7 +64,7 @@ function CheckRow({ label, sub, on, onToggle, jp }) {
 function NewProjectScreen({ onLaunch, onAnalyze }) {
   const [sub, setSub] = useState('vibe');
   const [vibe, setVibe] = useState('');
-  const [stack, setStack] = useState('next');
+  const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].key : 'next');
   const [agent, setAgent] = useState('claude');
   const [type, setType] = useState('SaaS Landing');
   const [mode, setMode] = useState('scratch');
@@ -81,7 +81,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
     setThinking(true); setFilled(false);
     setTimeout(() => {
       setStack(v.stack); setAgent(v.agent); setType(v.type);
-      setGenPrompt(`Build a production-ready ${v.type} using ${STACKS.find(s => s.key === v.stack).label}. ${(preset || { vibe }).vibe || vibe}. Cohesive design system, WCAG AA, real copy (no lorem), Unsplash imagery del nicho, deploy-ready. Anti-copy: layout original.`);
+      setGenPrompt(`Build a production-ready ${v.type} using ${(STACKS.find(s => s.key === v.stack)||{label:v.stack}).label}. ${(preset || { vibe }).vibe || vibe}. Cohesive design system, WCAG AA, real copy (no lorem), Unsplash imagery del nicho, deploy-ready. Anti-copy: layout original.`);
       setThinking(false); setFilled(true);
     }, 1400);
   };
@@ -152,7 +152,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
             <div className="eyebrow" style={{ margin: '18px 0 10px' }}>SUGERENCIA IA · 提案</div>
             {filled
               ? <div className="dim fade-in" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
-                  Stack <span style={{ color: 'var(--accent)' }}>{STACKS.find(s => s.key === stack).label}</span> · tipo <span style={{ color: 'var(--accent)' }}>{type}</span> · agente <span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span>
+                  Stack <span style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.key === stack)||{label:stack}).label}</span> · tipo <span style={{ color: 'var(--accent)' }}>{type}</span> · agente <span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span>
                 </div>
               : <div className="faint" style={{ fontSize: 12 }}>Pulsa «Pre-fill con IA» para autorrellenar.</div>}
           </div>
@@ -242,9 +242,9 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
         <div className="fade-in panel card-corner" style={{ padding: 22 }}>
           <div className="eyebrow" style={{ marginBottom: 14 }}>VISTA PREVIA · 確認</div>
           <div className="mono" style={{ background: 'var(--bg-void)', border: '1px solid var(--line)', borderRadius: 8, padding: 18, fontSize: 12.5, lineHeight: 1.9, color: 'var(--tx-dim)' }}>
-            <div><span className="faint"># stack ····</span> <span style={{ color: 'var(--accent)' }}>{STACKS.find(s => s.key === stack).label}</span></div>
+            <div><span className="faint"># stack ····</span> <span style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.key === stack)||{label:stack}).label}</span></div>
             <div><span className="faint"># tipo ·····</span> {type}</div>
-            <div><span className="faint"># modo ·····</span> {MODES.find(m => m.k === mode).label}</div>
+            <div><span className="faint"># modo ·····</span> {(MODES.find(m => m.k === mode)||{label:mode}).label}</div>
             <div><span className="faint"># agente ···</span> <span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span></div>
             <div><span className="faint"># mcp ······</span> {opts.mcp ? '.mcp.json (8 servers)' : 'off'}</div>
             <div><span className="faint"># ui pro ···</span> {opts.uipro ? 'shadcn + aceternity' : 'off'}</div>
@@ -257,7 +257,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
       {/* launch bar (always) */}
       <div className="panel" style={{ marginTop: 22, padding: '16px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: 'rgba(var(--accent-rgb),0.3)' }}>
         <div className="mono" style={{ fontSize: 12.5, color: 'var(--tx-dim)' }}>
-          <span style={{ color: 'var(--accent)' }}>{STACKS.find(s => s.key === stack).label}</span>{' · '}{MODES.find(m => m.k === mode).label}{' · '}<span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span>{' · ~$0.40'}
+          <span style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.key === stack)||{label:stack}).label}</span>{' · '}{(MODES.find(m => m.k === mode)||{label:mode}).label}{' · '}<span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span>{' · ~$0.40'}
         </div>
         <Btn variant="primary" icon="rocket" onClick={() => onLaunch({ stack, agent, type, name: 'Untitled Forge' })}>Forjar proyecto</Btn>
       </div>

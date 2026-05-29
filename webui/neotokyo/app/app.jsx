@@ -145,6 +145,9 @@ function App() {
   };
   const openProject = (p) => {
     if (p && p.__new) { setRoute('new'); return; }
+    // Con el shell nativo, abrir un proyecto lanza la ProjectWindow REAL
+    // (terminal xterm + preview + git + build, ya con tema Neo-Tokyo).
+    if (window.tfBridge && p && p.path) { window.tfBridge.open_project(p.path); return; }
     setProject(p); setRoute('project');
   };
   const launch = (cfg) => { setProject({ ...cfg, status: 'building', jp: '制作', accent: 'var(--accent)' }); setRoute('project'); };
