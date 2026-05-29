@@ -647,7 +647,12 @@ function RealPreview({ path, narrow }) {
   const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
   const reload = () => setK(x => x + 1);
   const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
-  const redetect = () => { if (B && B.refresh_profile && path) B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert(r.detected ? ('✓ preview detectable: ' + r.profile + ' ♡') : 'aún sin preview (instala deps o corre setup) 🥺'); }); };
+  const redetect = () => {
+    if (!(B && B.refresh_profile && path)) return;
+    B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.detected) { if (B.stop_preview) B.stop_preview(path); setUrl(null); setErr(null); setStatus('starting'); setTimeout(start, 500); }
+      else alert('Aún sin preview detectable — ¿el setup terminó de instalar deps? (mira la pestaña Setup) 🥺'); });
+  };
   useEffect(() => { if (B && path && status === 'idle') start(); }, [path]);
   const ctl = { fontSize: 11.5, padding: '5px 10px', borderRadius: 99 };
   return (

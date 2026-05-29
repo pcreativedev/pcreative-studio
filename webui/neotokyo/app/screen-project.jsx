@@ -174,7 +174,12 @@ function RealPreview({ path, accent, narrow }) {
   const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
   const reload = () => setK(x => x + 1);
   const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
-  const redetect = () => { if (B && B.refresh_profile && path) B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} tfToast(r.detected ? ('✓ preview detectable: ' + r.profile) : 'aún sin preview (instala deps o corre setup)', r.detected ? '#9dff3c' : '#ffb000'); }); };
+  const redetect = () => {
+    if (!(B && B.refresh_profile && path)) return;
+    B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.detected) { tfToast('✓ preview detectado: ' + r.profile + ' — arrancando…', '#9dff3c'); if (B.stop_preview) B.stop_preview(path); setUrl(null); setErr(null); setStatus('starting'); setTimeout(start, 500); }
+      else tfToast('Aún sin preview detectable — ¿el setup terminó de instalar deps?', '#ffb000'); });
+  };
   useEffect(() => { if (B && path && status === 'idle') start(); }, [path]);
   if (!B || !path) return <LivePreview accent={accent} narrow={narrow} />;
   const cbtn = { cursor: 'pointer', padding: '5px 10px', borderRadius: 7, fontSize: 11.5, fontFamily: 'var(--font-display)', background: 'transparent', border: '1px solid var(--line-bright)', color: 'var(--tx-dim)' };

@@ -445,6 +445,39 @@ def _operator_data() -> dict:
         return {"available": False, "missions": []}
 
 
+def _active_preview(proj):
+    """(profile, root) del preview — igual que `_compute_active_profile` nativo:
+    si la raíz no tiene perfil pero hay sub-proyectos (mono-repo, o app dentro de
+    apps/, web/, etc.), elige el sub-proyecto de cara al cliente con perfil. Así
+    Re-detectar/Start funcionan aunque el scaffold haya quedado en un subdir."""
+    from pathlib import Path
+    try:
+        from preview import detect_preview_profile, detect_subprojects
+    except Exception:
+        return None, proj
+    prof = detect_preview_profile(proj)
+    if prof:
+        return prof, proj
+    try:
+        subs = detect_subprojects(proj) or []
+    except Exception:
+        subs = []
+    cands = [s for s in subs if s.get("profile")]
+    if not cands:
+        return None, proj
+    _FRONT = ("web", "site", "storefront", "frontend", "www", "app", "client",
+              "landing", "marketing", "shop", "store", "public")
+    _BACK = ("admin", "api", "backend", "server", "dashboard", "cms", "docs", "studio", "worker")
+
+    def _rank(s):
+        name = (s.get("name") or "").lower()
+        return (1, 1 if any(k in name for k in _FRONT) else 0,
+                0 if any(k in name for k in _BACK) else 1)
+
+    best = max(cands, key=_rank)
+    return best.get("profile"), Path(best["path"])
+
+
 def bootstrap_data() -> dict:
     """Todos los datos reales que el prototipo necesita, en su forma exacta."""
     td = _themes_data()
@@ -728,21 +761,21 @@ class ThemeForgeBridge(QObject):
         """Arranca el dev server real del proyecto (detección de preview.py) y
         emite `preview_ready` con la URL para embeber por iframe."""
         try:
-            from preview import (detect_preview_profile, apply_port,
-                                 get_port_for_project)
+            from preview import apply_port, get_port_for_project
             import platform_compat as pc
             import shlex
             from pathlib import Path
             proj = Path(path)
-            prof = detect_preview_profile(proj)
+            # Detección subproject-aware (mono-repo / app en subdir), como la nativa.
+            prof, root = _active_preview(proj)
             if not prof:
                 self.preview_ready.emit(json.dumps(
-                    {"path": path, "error": "sin preview detectable (¿deps instaladas?)"}))
+                    {"path": path, "error": "sin preview detectable (¿deps instaladas? ¿está en un subdir?)"}))
                 return json.dumps({"ok": False, "error": "sin preview"})
-            port = get_port_for_project(proj.name, prof.get("default_port", 5173))
+            port = get_port_for_project(root.name, prof.get("default_port", 5173))
             cmd, env_extra, url = apply_port(prof, port)
             proc = QProcess(self)
-            proc.setWorkingDirectory(str(proj))
+            proc.setWorkingDirectory(str(root))
             proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
             env = QProcessEnvironment.systemEnvironment()
             local_bin = str(Path.home() / ".local" / "bin")
@@ -781,14 +814,15 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, result=str)
     def refresh_profile(self, path: str) -> str:
-        """Re-detecta el perfil de preview (tras instalar deps / correr setup).
-        Devuelve {ok, profile} para que la UI sepa si ya hay preview."""
+        """Re-detecta el perfil de preview (tras instalar deps / correr setup),
+        mirando también sub-proyectos (mono-repo / app en subdir). Devuelve
+        {ok, detected, profile, root}."""
         try:
-            from preview import detect_preview_profile
             from pathlib import Path
-            prof = detect_preview_profile(Path(path))
-            return json.dumps({"ok": True, "profile": (prof or {}).get("name", ""),
-                               "detected": bool(prof)})
+            prof, root = _active_preview(Path(path))
+            return json.dumps({"ok": True, "detected": bool(prof),
+                               "profile": (prof or {}).get("name", ""),
+                               "root": str(root)})
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)})
 
