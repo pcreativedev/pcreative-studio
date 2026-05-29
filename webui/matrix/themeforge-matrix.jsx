@@ -16,7 +16,7 @@ const STATUS = {
   archived: { label: 'archivado', em: '▣', color: '#3f7d54' },
 };
 
-const PROJECTS = [
+const PROJECTS = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.projects && window.__TF_DATA__.projects.length) ? window.__TF_DATA__.projects : [
   { id: 'm-aurora', name: 'Aurora SaaS', jp: 'オーロラ', type: 'SaaS Landing', agent: 'claude', status: 'live', cost: 4.82, tags: ['next', 'tailwind'], commits: 47, updated: 'hace 3 min' },
   { id: 'm-nordic', name: 'Nordic Forge', jp: '北欧', type: 'Agencia creativa', agent: 'codex', status: 'building', cost: 2.10, tags: ['astro', 'gsap'], commits: 23, updated: 'hace 12 min' },
   { id: 'm-meridian', name: 'Meridian Shop', jp: '商店', type: 'E-commerce', agent: 'gemini', status: 'live', cost: 7.34, tags: ['shopify', 'remix'], commits: 89, updated: 'hace 1 h' },
@@ -25,7 +25,7 @@ const PROJECTS = [
   { id: 'm-pixel', name: 'Pixel Arcade', jp: '遊技', type: 'Landing · game', agent: 'codex', status: 'archived', cost: 1.22, tags: ['tauri', 'react'], commits: 19, updated: 'hace 3 días' },
 ];
 
-const STACKS = [
+const STACKS = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.stacks && window.__TF_DATA__.stacks.length) ? window.__TF_DATA__.stacks.map(s => ({ k: s.key, label: s.label, jp: s.jp || '', em: '◆', cat: s.cat })) : [
   { k: 'next', label: 'Next.js', jp: '次世代', em: '▲' },
   { k: 'astro', label: 'Astro', jp: '星', em: '✦' },
   { k: 'laravel', label: 'Laravel', jp: '帆', em: '◣' },
@@ -45,7 +45,7 @@ const NAV = [
   { id: 'settings', em: '⚙', label: 'Ajustes', jp: '設定' },
 ];
 
-const MCP_SERVERS = [
+const MCP_SERVERS = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.mcp && window.__TF_DATA__.mcp.length) ? window.__TF_DATA__.mcp.map(m => ({ id: m.id, label: m.label, always: m.always, em: m.always ? '▮' : '◇', desc: m.desc, lic: m.lic })) : [
   { id: 'filesystem', label: 'filesystem', always: true, em: '▮', desc: 'Acceso al proyecto' },
   { id: 'fetch', label: 'fetch', always: true, em: '⇆', desc: 'HTTP / scraping' },
   { id: 'memory', label: 'memory', always: true, em: '⊟', desc: 'Memoria del agente' },
@@ -136,12 +136,20 @@ function ProjectCard({ p, onOpen }) {
 
 function Gallery({ onOpen }) {
   const [f, setF] = useState('all');
+  const [projects, setProjects] = useState(PROJECTS);  // galería en vivo
+  useEffect(() => {
+    if (window.tfBridge && window.tfBridge.list_projects)
+      window.tfBridge.list_projects().then(j => { try { const a = JSON.parse(j); if (Array.isArray(a)) setProjects(a); } catch (e) {} });
+  }, []);
   const fl = ['all', 'live', 'building', 'draft', 'archived'];
-  const list = PROJECTS.filter(p => f === 'all' || p.status === f);
+  const list = projects.filter(p => f === 'all' || p.status === f);
+  const liveN = projects.filter(p => p.status === 'live').length;
+  const buildingN = projects.filter(p => p.status === 'building').length;
+  const totalCost = projects.reduce((s, p) => s + (p.cost || 0), 0);
   return (
     <div className="page fade">
       <div className="stats">
-        {[['◫', '6', 'proyectos'], ['$', '19.84', 'cómputo IA'], ['●', '3', 'desplegados'], ['▶', '1', 'compilando']].map(([e, n, l]) => (
+        {[['◫', String(projects.length), 'proyectos'], ['$', totalCost.toFixed(2), 'cómputo IA'], ['●', String(liveN), 'desplegados'], ['▶', String(buildingN), 'compilando']].map(([e, n, l]) => (
           <div className="stat" key={l}><div className="em">{e}</div><div className="n">{n}</div><div className="l">{l}</div></div>
         ))}
       </div>
@@ -149,6 +157,7 @@ function Gallery({ onOpen }) {
         {fl.map(x => <button key={x} className={'fchip' + (f === x ? ' on' : '')} onClick={() => setF(x)}>{x === 'all' ? '> todos' : STATUS[x].em + ' ' + STATUS[x].label}</button>)}
       </div>
       <div className="grid">{list.map(p => <ProjectCard key={p.id} p={p} onOpen={onOpen} />)}</div>
+      {!list.length && <div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)', padding: 30, textAlign: 'center' }}>// sin proyectos — crea uno en «+ Nuevo»</div>}
     </div>
   );
 }
@@ -156,11 +165,32 @@ function Gallery({ onOpen }) {
 /* ---- New project (vibe scaffolder) ---- */
 function NewProject() {
   const [vibe, setVibe] = useState('');
-  const [stack, setStack] = useState('next');
+  const [pname, setPname] = useState('');
+  const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].k : 'next');
   const [agent, setAgent] = useState('claude');
   const [thinking, setThinking] = useState(false);
   const [done, setDone] = useState(false);
-  const go = () => { setThinking(true); setDone(false); setTimeout(() => { setThinking(false); setDone(true); setStack('next'); }, 1300); };
+  const [genPrompt, setGenPrompt] = useState('');
+  const go = () => {
+    setThinking(true); setDone(false);
+    if (window.tfBridge && window.tfBridge.suggest_stack && (vibe || '').trim()) {
+      const onRes = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+        if (r.stack && STACKS.find(s => s.k === r.stack)) setStack(r.stack);
+        setGenPrompt(r.prompt || r.dev_prompt || ('Build: ' + vibe));
+        setThinking(false); setDone(true);
+        try { window.tfBridge.suggest_result.disconnect(onRes); } catch (e) {} };
+      if (window.tfBridge.suggest_result && window.tfBridge.suggest_result.connect) window.tfBridge.suggest_result.connect(onRes);
+      window.tfBridge.suggest_stack(vibe); return;
+    }
+    setTimeout(() => { setThinking(false); setDone(true); }, 1300);
+  };
+  const forge = () => {
+    const name = (pname || '').trim() || (vibe || '').trim().slice(0, 42) || 'Untitled Forge';
+    if (window.tfBridge && window.tfBridge.create_project) {
+      window.tfBridge.create_project(JSON.stringify({ name, stack, agent, type: 'Template', mode: 'scratch', niche: vibe, opts: { autoskills: true, uipro: true, mcp: true } }));
+      alert('⚙ Creando «' + name + '» — el setup corre en segundo plano y aparecerá en la galería.');
+    }
+  };
   return (
     <div className="page fade" style={{ maxWidth: 920 }}>
       <h2 className="sec">{'>'} Vibe Scaffolder <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>新規制作</span></h2>
@@ -197,16 +227,20 @@ function NewProject() {
           </button>
         ))}
       </div>
-      <div className="panelc" style={{ marginTop: 22, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--term)' }}>
-        <span style={{ color: 'var(--tx-dim)' }}><b style={{ color: 'var(--accent)' }}>{STACKS.find(s => s.k === stack).label}</b> · {AGENTS[agent].label} · ~$0.40</span>
-        <button className="btn pri">▶ Forjar proyecto</button>
+      <div className="panelc" style={{ marginTop: 22 }}>
+        <div style={{ fontWeight: 600, marginBottom: 8, fontFamily: 'var(--term)' }}>$ nombre del proyecto <span style={{ color: 'var(--tx-dim)' }}>名前</span></div>
+        <input className="ta" value={pname} onChange={e => setPname(e.target.value)} placeholder="Ej: Aurora Dental · ~/Proyectos/themes/<slug>" style={{ minHeight: 0, height: 40 }} />
+      </div>
+      <div className="panelc" style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--term)' }}>
+        <span style={{ color: 'var(--tx-dim)' }}><b style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.k === stack) || { label: stack }).label}</b> · {(AGENTS[agent] || { label: agent }).label}</span>
+        <button className="btn pri" onClick={forge}>▶ Forjar proyecto</button>
       </div>
     </div>
   );
 }
 
 /* ---- Cost ---- */
-const COST = [{ k: 'claude', v: 12.77 }, { k: 'gemini', v: 7.34 }, { k: 'codex', v: 3.32 }, { k: 'opencode', v: 1.63 }];
+const COST = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.cost && window.__TF_DATA__.cost.by_agent && window.__TF_DATA__.cost.by_agent.length) ? window.__TF_DATA__.cost.by_agent : [{ k: 'claude', v: 12.77 }, { k: 'gemini', v: 7.34 }, { k: 'codex', v: 3.32 }, { k: 'opencode', v: 1.63 }];
 function Cost() {
   const total = COST.reduce((s, d) => s + d.v, 0);
   const days = Array.from({ length: 14 }, (_, i) => 0.3 + Math.abs(Math.sin(i / 2)) * 1.4 + (i > 10 ? 0.6 : 0));
@@ -396,6 +430,21 @@ const TERM_K = [
   { c: 'var(--tx-dim)', s: '> tipando … tsc — 0 errores' },
   { c: 'var(--p3)', s: '◤ tarea completa · preview actualizado' },
 ];
+// Terminal REAL embebida (xterm+node-pty vía el puente) con auto-agente+contexto.
+function RealTerm({ path }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    if (!window.tfBridge || !window.tfBridge.start_terminal || !path) return;
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path && r.url) setUrl(r.url); };
+    if (window.tfBridge.terminal_ready && window.tfBridge.terminal_ready.connect) window.tfBridge.terminal_ready.connect(onReady);
+    window.tfBridge.start_terminal(path);
+    return () => { try { window.tfBridge.terminal_ready.disconnect(onReady); } catch (e) {} };
+  }, [path]);
+  if (!window.tfBridge || !path) return <MatrixTerminal run={true} />;
+  if (!url) return <div style={{ flex: 1, padding: 14, fontFamily: 'var(--term)', color: 'var(--tx-dim)' }}>// iniciando terminal real (xterm · node-pty)…</div>;
+  return <iframe src={url} style={{ flex: 1, width: '100%', border: '1px solid var(--line)', borderRadius: 4, background: '#040804', minHeight: 0 }} />;
+}
+
 function MatrixTerminal({ run }) {
   const [n, setN] = useState(0);
   const box = useRef(null);
@@ -451,7 +500,7 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild }) {
             <b>⌗ Terminal del agente</b>
             <span className="tag" style={{ marginLeft: 'auto', color: ag.color, borderColor: ag.color }}>{ag.em} {ag.label}</span>
           </div>
-          <MatrixTerminal run={run} />
+          <RealTerm path={p.path} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <input className="ta" style={{ minHeight: 0, padding: '9px 14px', flex: 1 }} placeholder="responder al agente…" />
             <button className="btn pri" onClick={() => { setRun(false); setTimeout(() => setRun(true), 60); }}>▶</button>
