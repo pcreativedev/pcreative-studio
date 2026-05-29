@@ -67,7 +67,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
   const [pname, setPname] = useState('');  // nombre del proyecto
   const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].key : 'next');
   const [agent, setAgent] = useState('claude');
-  const [type, setType] = useState('SaaS Landing');
+  const [type, setType] = useState('');  // vacío = «(Sin tipo específico)» → no impone formato Envato
   const [mode, setMode] = useState('scratch');
   const [refKind, setRefKind] = useState('folder');
   const [refVal, setRefVal] = useState('');
@@ -173,7 +173,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
             <div className="eyebrow" style={{ margin: '18px 0 10px' }}>SUGERENCIA IA · 提案</div>
             {filled
               ? <div className="dim fade-in" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
-                  Stack <span style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.key === stack)||{label:stack}).label}</span> · tipo <span style={{ color: 'var(--accent)' }}>{type}</span> · agente <span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span>
+                  Stack <span style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.key === stack)||{label:stack}).label}</span> · tipo <span style={{ color: 'var(--accent)' }}>{type || 'sin especificar'}</span> · agente <span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span>
                 </div>
               : <div className="faint" style={{ fontSize: 12 }}>Pulsa «Pre-fill con IA» para autorrellenar.</div>}
           </div>
@@ -334,7 +334,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
           <div className="eyebrow" style={{ marginBottom: 14 }}>VISTA PREVIA · 確認</div>
           <div className="mono" style={{ background: 'var(--bg-void)', border: '1px solid var(--line)', borderRadius: 8, padding: 18, fontSize: 12.5, lineHeight: 1.9, color: 'var(--tx-dim)' }}>
             <div><span className="faint"># stack ····</span> <span style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.key === stack)||{label:stack}).label}</span></div>
-            <div><span className="faint"># tipo ·····</span> {type}</div>
+            <div><span className="faint"># tipo ·····</span> {type || '(sin especificar — lo define el stack/análisis)'}</div>
             <div><span className="faint"># modo ·····</span> {(MODES.find(m => m.k === mode)||{label:mode}).label}</div>
             <div><span className="faint"># agente ···</span> <span style={{ color: AGENTS[agent].color }}>{AGENTS[agent].label}</span></div>
             <div><span className="faint"># mcp ······</span> {opts.mcp ? '.mcp.json (8 servers)' : 'off'}</div>

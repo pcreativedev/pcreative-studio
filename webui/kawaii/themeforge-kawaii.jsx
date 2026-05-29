@@ -167,7 +167,7 @@ function NewProject({ onAnalyze, onLaunch }) {
   const [pname, setPname] = useState('');
   const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].k : 'next');
   const [agent, setAgent] = useState('claude');
-  const [type, setType] = useState('SaaS Landing');
+  const [type, setType] = useState('');  // vacío = «(Sin tipo específico)» → no impone formato Envato
   const [mode, setMode] = useState('scratch');
   const [refKind, setRefKind] = useState('folder');
   const [refVal, setRefVal] = useState('');
@@ -223,7 +223,7 @@ function NewProject({ onAnalyze, onLaunch }) {
           {thinking && <span style={{ marginLeft: 10, color: 'var(--accent)', fontWeight: 700 }}>{(AGENTS[agent] || {}).em} analizando…</span>}
           {done && (
             <div className="fade" style={{ marginTop: 16, background: 'var(--bg2)', borderRadius: 16, padding: 14, fontSize: 13.5, lineHeight: 1.6 }}>
-              <b>Prompt generado ♡</b><br />{genPrompt || ('Build a production-ready ' + type + ' usando ' + (STACKS.find(s => s.k === stack) || { label: stack }).label + '. ' + (vibe || 'Diseño kawaii pastel, redondeado, mascota animada.'))}
+              <b>Prompt generado ♡</b><br />{genPrompt || ('Build a production-ready ' + (type || 'producto') + ' usando ' + (STACKS.find(s => s.k === stack) || { label: stack }).label + '. ' + (vibe || 'Diseño kawaii pastel, redondeado, mascota animada.'))}
             </div>
           )}
         </div>

@@ -181,7 +181,7 @@ function NewProject({ onAnalyze, onLaunch }) {
   const [pname, setPname] = useState('');
   const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].k : 'next');
   const [agent, setAgent] = useState('claude');
-  const [type, setType] = useState('SaaS Landing');
+  const [type, setType] = useState('');  // vacío = «(Sin tipo específico)» → no impone formato Envato
   const [mode, setMode] = useState('scratch');
   const [refKind, setRefKind] = useState('folder');
   const [refVal, setRefVal] = useState('');
@@ -237,7 +237,7 @@ function NewProject({ onAnalyze, onLaunch }) {
           {thinking && <span style={{ marginLeft: 10, color: 'var(--accent)', fontFamily: 'var(--term)' }}>{(AGENTS[agent] || {}).em} analizando…</span>}
           {done && (
             <div className="fade" style={{ marginTop: 16, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4, padding: 14, fontSize: 13, lineHeight: 1.65, fontFamily: 'var(--term)' }}>
-              <b style={{ color: 'var(--accent)' }}>[ prompt generado ]</b><br />{genPrompt || ('Build a production-ready ' + type + ' usando ' + (STACKS.find(s => s.k === stack) || { label: stack }).label + '. ' + (vibe || 'Estética coherente, accesible, imágenes del nicho, deploy-ready.'))}
+              <b style={{ color: 'var(--accent)' }}>[ prompt generado ]</b><br />{genPrompt || ('Build a production-ready ' + (type || 'producto') + ' usando ' + (STACKS.find(s => s.k === stack) || { label: stack }).label + '. ' + (vibe || 'Estética coherente, accesible, imágenes del nicho, deploy-ready.'))}
             </div>
           )}
         </div>
