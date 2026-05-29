@@ -185,10 +185,17 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild }) {
             }).catch(e => tfToast('ZIP error: ' + e, '#ff2e88'));
           } else onBuild && onBuild();
         }}>Build ZIP</Btn>
-        <Btn icon="github" variant={pushed ? '' : 'primary'} onClick={() => setPushed(true)}>
-          {pushed ? '✓ Pushed' : 'Push to GitHub'}
-        </Btn>
-        <Btn icon="rocket" onClick={onDeploy}>Deploy</Btn>
+        <Btn icon="github" variant={pushed ? '' : 'primary'} onClick={() => {
+          if (window.tfBridge && window.tfBridge.git_push && p.path) {
+            tfToast('⟳ git add+commit+push…'); window.tfBridge.git_push(p.path); setPushed(true);
+          } else setPushed(true);
+        }}>{pushed ? '✓ Pushed' : 'Push to GitHub'}</Btn>
+        <Btn icon="rocket" onClick={() => {
+          if (window.tfBridge && window.tfBridge.deploy_demo && p.path) {
+            const prov = prompt('Deploy a (netlify/vercel/cloudflare/surge):', 'surge');
+            if (prov) { tfToast('🚀 Deploy a ' + prov + '… mira la terminal'); window.tfBridge.deploy_demo(p.path, prov); }
+          } else onDeploy && onDeploy();
+        }}>Deploy</Btn>
       </div>
 
       {/* MCP servers strip */}

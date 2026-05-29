@@ -343,6 +343,8 @@ class ThemeForgeBridge(QObject):
     preview_ready = pyqtSignal(str)
     # Análisis de mercado terminado: JSON {niche, markdown} o {error}.
     market_result = pyqtSignal(str)
+    # Streaming del análisis de referencia: JSON {line} o {done, error?}.
+    reference_progress = pyqtSignal(str)
 
     @pyqtSlot(str, result=str)
     def analyze_market(self, niche: str) -> str:
@@ -789,6 +791,108 @@ class ThemeForgeBridge(QObject):
             return json.dumps({"ok": code in (200, 201), "code": code, "key": key})
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(result=str)
+    def pixel_office_launch(self) -> str:
+        """Lanza el dashboard Pixel Office (visualizador de sesiones)."""
+        try:
+            import pixel_office
+            if pixel_office.is_dashboard_up():
+                return json.dumps({"ok": True, "already": True})
+            pixel_office.launch_background()
+            return json.dumps({"ok": True})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def git_push(self, path: str) -> str:
+        """git add+commit+push real en el proyecto (async, progreso por señal)."""
+        from pathlib import Path
+        proj = Path(path)
+        if not (proj / ".git").is_dir():
+            # init + commit inicial
+            cmd = ('git init && git add -A && git commit -m "ThemeForge: initial" '
+                   '|| true')
+        else:
+            cmd = ('git add -A && git commit -m "ThemeForge update" || true; '
+                   'git push 2>&1 || echo "[push] configura el remote primero]"')
+        proc = QProcess(self)
+        proc.setWorkingDirectory(str(proj))
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.readyReadStandardOutput.connect(
+            lambda: self.progress.emit(bytes(proc.readAllStandardOutput()).decode(errors="replace")))
+        proc.finished.connect(lambda c, _s: self.progress.emit(f"\n■ git (exit {c}).\n"))
+        proc.start("bash", ["-lc", cmd])
+        self._procs.append(proc)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, str, result=str)
+    def deploy_demo(self, path: str, provider: str) -> str:
+        """Despliegue real de demo (Netlify/Vercel/Cloudflare/Surge) async."""
+        try:
+            import demo_deploy as dd
+            from pathlib import Path
+            proj = Path(path)
+            cfg = dd.detect_build_config(proj)
+            info = dd.provider_info(provider or "surge")
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+        # Construir comando de deploy del provider (build primero si aplica).
+        steps = []
+        if getattr(cfg, "build_cmd", None):
+            steps.append(cfg.build_cmd)
+        dist = getattr(cfg, "dist_dir", "dist")
+        deploy_cmds = {
+            "netlify": f"netlify deploy --prod --dir {dist}",
+            "vercel": "vercel --prod --yes",
+            "surge": f"surge {dist}",
+            "cloudflare": f"npx wrangler pages deploy {dist}",
+        }
+        steps.append(deploy_cmds.get(provider, deploy_cmds["surge"]))
+        proc = QProcess(self)
+        proc.setWorkingDirectory(str(proj))
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.readyReadStandardOutput.connect(
+            lambda: self.progress.emit(bytes(proc.readAllStandardOutput()).decode(errors="replace")))
+        proc.finished.connect(lambda c, _s: self.progress.emit(f"\n■ deploy (exit {c}).\n"))
+        self.progress.emit(f"▶ Deploy a {provider}…\n")
+        proc.start("bash", ["-lc", " && ".join(steps)])
+        self._procs.append(proc)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, str, result=str)
+    def analyze_reference(self, value: str, kind: str) -> str:
+        """Analiza una referencia (carpeta/zip) con IA para recrearla: junta
+        facts + build_prompt + corre la IA en modo print, streaming por
+        `reference_progress`. Igual que el _ReferenceAnalysisDialog nativo."""
+        import threading
+        from pathlib import Path
+
+        def _work():
+            try:
+                import reference_analyzer as ra
+                import shutil
+                p = Path(value)
+                facts = ra.gather_facts(p) if p.exists() else {"reference": value}
+                prompt = ra.build_prompt(facts)
+                binary = "claude" if shutil.which("claude") else None
+                if not binary:
+                    self.reference_progress.emit(json.dumps(
+                        {"done": True, "error": "claude CLI no encontrado para el análisis"}))
+                    return
+                import subprocess
+                proc = subprocess.Popen(
+                    [binary, "--print", prompt],
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                for line in iter(proc.stdout.readline, ""):
+                    self.reference_progress.emit(json.dumps({"line": line.rstrip("\n")}))
+                proc.wait()
+                self.reference_progress.emit(json.dumps({"done": True}))
+            except Exception as e:
+                self.reference_progress.emit(json.dumps({"done": True, "error": str(e)}))
+
+        threading.Thread(target=_work, daemon=True).start()
+        return json.dumps({"ok": True, "running": True})
 
     @pyqtSlot(str, result=str)
     def ping(self, msg: str) -> str:

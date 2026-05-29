@@ -34,18 +34,39 @@ const REF_STREAM = [
 ];
 
 function ReferenceAnalysisModal({ onClose }) {
+  const real = !!(window.tfBridge && window.tfBridge.analyze_reference);
   const [shown, setShown] = useState(0);
   const [done, setDone] = useState(false);
   const [reply, setReply] = useState('');
   const [turns, setTurns] = useState([]);
+  const [lines, setLines] = useState([]);  // streaming real
   const boxRef = useRef(null);
 
+  // Streaming REAL del análisis de referencia (reference_analyzer + IA).
   useEffect(() => {
+    if (!real) return;
+    const ref = (window.__tfRef && window.__tfRef.value) || prompt('Ruta de la referencia a analizar (carpeta o .zip):') || '';
+    if (!ref) { setDone(true); return; }
+    const kind = (window.__tfRef && window.__tfRef.kind) || 'folder';
+    const onProg = (j) => {
+      let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.line !== undefined) setLines(ls => [...ls, r.line]);
+      if (r.done) { if (r.error) setLines(ls => [...ls, '⚠ ' + r.error]); setDone(true); }
+    };
+    if (window.tfBridge.reference_progress && window.tfBridge.reference_progress.connect)
+      window.tfBridge.reference_progress.connect(onProg);
+    window.tfBridge.analyze_reference(ref, kind);
+    return () => { try { window.tfBridge.reference_progress.disconnect(onProg); } catch (e) {} };
+  }, []);
+
+  // Fallback mock (prototipo suelto sin puente).
+  useEffect(() => {
+    if (real) return;
     if (shown >= REF_STREAM.length) { setDone(true); return; }
     const t = setTimeout(() => setShown(s => s + 1), 380 + Math.random() * 320);
     return () => clearTimeout(t);
   }, [shown]);
-  useEffect(() => { if (boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight; }, [shown, turns]);
+  useEffect(() => { if (boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight; }, [shown, turns, lines]);
 
   const send = () => {
     if (!reply.trim()) return;
@@ -57,10 +78,10 @@ function ReferenceAnalysisModal({ onClose }) {
   return (
     <ModalShell title="Análisis de referencia con Claude Code" jp="参照分析 · REFERENCE ANALYSIS" onClose={onClose} width={820}>
       <div ref={boxRef} className="mono" style={{ padding: 18, fontSize: 12.5, lineHeight: 1.8, maxHeight: '52vh', overflowY: 'auto', background: '#03050b' }}>
-        {REF_STREAM.slice(0, shown).map((l, i) => (
-          <div key={i} style={{ color: color[l.t], marginBottom: 2 }}>{l.s}</div>
-        ))}
-        {!done && <span style={{ color: 'var(--accent)', animation: 'blink 0.8s infinite' }}>▊ streaming…</span>}
+        {real
+          ? lines.map((l, i) => <div key={i} style={{ color: 'var(--tx-dim)', marginBottom: 2, whiteSpace: 'pre-wrap' }}>{l}</div>)
+          : REF_STREAM.slice(0, shown).map((l, i) => <div key={i} style={{ color: color[l.t], marginBottom: 2 }}>{l.s}</div>)}
+        {!done && <span style={{ color: 'var(--accent)', animation: 'blink 0.8s infinite' }}>▊ {real ? 'analizando referencia con IA…' : 'streaming…'}</span>}
         {turns.map((t, i) => (
           <div key={i} style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
             <div style={{ color: 'var(--accent-2)' }}>👤 Tú: {t.you}</div>

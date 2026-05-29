@@ -320,8 +320,8 @@ function SettingsScreen() {
             })}
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <Btn variant="primary" icon="play">Lanzar dashboard</Btn>
-            <Btn variant="ghost" icon="download">Reinstalar</Btn>
+            <Btn variant="primary" icon="play" onClick={() => window.tfBridge && window.tfBridge.pixel_office_launch && window.tfBridge.pixel_office_launch().then(j => { let r={}; try{r=JSON.parse(j)}catch(e){} alert(r.ok ? (r.already ? 'Pixel Office ya está activo.' : '🎮 Pixel Office lanzado.') : ('Error: ' + (r.error||''))); })}>Lanzar dashboard</Btn>
+            <Btn variant="ghost" icon="download" onClick={() => window.tfBridge && window.tfBridge.pixel_office_launch && window.tfBridge.pixel_office_launch()}>Reinstalar</Btn>
           </div>
         </div>
       )}

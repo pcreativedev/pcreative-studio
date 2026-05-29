@@ -69,6 +69,7 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
   const [type, setType] = useState('SaaS Landing');
   const [mode, setMode] = useState('scratch');
   const [refKind, setRefKind] = useState('folder');
+  const [refVal, setRefVal] = useState('');
   const [thinking, setThinking] = useState(false);
   const [filled, setFilled] = useState(false);
   const [genPrompt, setGenPrompt] = useState('');
@@ -230,12 +231,12 @@ function NewProjectScreen({ onLaunch, onAnalyze }) {
                 </div>
               )}
               <div style={{ display: 'flex', gap: 10 }}>
-                <input placeholder={refKind === 'url' ? 'https://demo-template.com' : refKind === 'figma' ? 'figma.com/file/…?node-id=' : 'Ruta o examinar…'}
+                <input value={refVal} onChange={e => setRefVal(e.target.value)} placeholder={refKind === 'url' ? 'https://demo-template.com' : refKind === 'figma' ? 'figma.com/file/…?node-id=' : 'Ruta o examinar…'}
                   style={{ flex: 1, background: 'var(--bg-void)', border: '1px solid var(--line-bright)', borderRadius: 8, padding: '9px 12px', color: 'var(--tx)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
                 <Btn icon="folderOpen" variant="ghost">Examinar</Btn>
               </div>
               <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
-                <Btn variant="primary" icon="search" onClick={onAnalyze}>🔍 Analizar con IA</Btn>
+                <Btn variant="primary" icon="search" onClick={() => { window.__tfRef = { value: refVal, kind: refKind }; onAnalyze(); }}>🔍 Analizar con IA</Btn>
                 <span className="faint" style={{ fontSize: 11.5 }}>
                   {refKind === 'figma' ? 'Lee el frame vía MCP figma-context (sin anti-copy: es tu diseño).' : 'Detecta stack + estudia layout/paleta/tipo, multi-turno.'}
                 </span>
