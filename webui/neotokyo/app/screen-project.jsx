@@ -225,6 +225,27 @@ function tfToast(msg, color) {
   setTimeout(() => b.remove(), 6000);
 }
 
+// Barra de MCP servers REAL: lee el .mcp.json del proyecto; clic = activar/desactivar.
+function MCPBar({ path }) {
+  const B = window.tfBridge;
+  const [servers, setServers] = useState([]);
+  const load = () => { if (B && B.read_mcp && path) B.read_mcp(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.servers) setServers(r.servers); }); };
+  useEffect(load, [path]);
+  const toggle = (id) => { if (!(B && B.toggle_mcp && path)) return; setServers(s => s.map(x => x.id === id ? { ...x, active: !x.active } : x)); B.toggle_mcp(path, id).then(load); };
+  const list = servers.length ? servers : MCP_SERVERS.map(m => ({ id: m.id, label: m.label, active: !!m.always, desc: m.desc }));
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 24px', borderBottom: '1px solid var(--line)', background: 'rgba(0,0,0,0.2)', overflowX: 'auto' }}>
+      <span className="eyebrow" style={{ fontSize: 9, flexShrink: 0 }}>MCP ·</span>
+      {list.map(m => (
+        <button key={m.id} className="chip" title={(m.active ? 'activo · ' : 'inactivo · ') + (m.desc || '')} onClick={() => toggle(m.id)}
+          style={{ cursor: 'pointer', fontSize: 9, padding: '2px 8px', flexShrink: 0, opacity: m.active ? 1 : 0.5, color: m.active ? 'var(--accent)' : 'var(--tx-dim)', borderColor: m.active ? 'rgba(var(--accent-rgb),0.5)' : 'var(--line)', background: 'transparent' }}>
+          {m.active ? '●' : '○'} {m.label}
+        </button>
+      ))}
+      <span className="mono faint" style={{ fontSize: 10, flexShrink: 0 }}>· clic = on/off (.mcp.json)</span>
+    </div>
+  );
+}
 function ProjectWindow({ project, onBack, onDeploy, onBuild, buildLog }) {
   const p = project;
   const [tab, setTab] = useState('desktop');
@@ -308,16 +329,8 @@ function ProjectWindow({ project, onBack, onDeploy, onBuild, buildLog }) {
         }}>Deploy</Btn>
       </div>
 
-      {/* MCP servers strip */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 24px', borderBottom: '1px solid var(--line)', background: 'rgba(0,0,0,0.2)', overflowX: 'auto' }}>
-        <span className="eyebrow" style={{ fontSize: 9, flexShrink: 0 }}>MCP ·</span>
-        {MCP_SERVERS.slice(0, 8).map(m => (
-          <span key={m.id} className="chip" style={{ fontSize: 9, padding: '2px 7px', flexShrink: 0, color: m.always ? 'var(--accent)' : 'var(--tx-dim)', borderColor: m.always ? 'rgba(var(--accent-rgb),0.4)' : 'var(--line)' }}>
-            {m.always && '●'} {m.label}
-          </span>
-        ))}
-        <span className="mono faint" style={{ fontSize: 10, flexShrink: 0 }}>+4 · .mcp.json</span>
-      </div>
+      {/* MCP servers strip (real, clic = on/off) */}
+      <MCPBar path={p.path} />
 
       {/* body: preview | terminal */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.55fr 1fr', minHeight: 0 }}>

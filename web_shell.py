@@ -1540,6 +1540,70 @@ class ThemeForgeBridge(QObject):
         return json.dumps({"ok": True, "running": True})
 
     @pyqtSlot(str, result=str)
+    def read_mcp(self, path: str) -> str:
+        """Lee el `.mcp.json` REAL del proyecto y devuelve el catálogo de MCP
+        servers con flag `active` (presente en el archivo). Igual fuente que el
+        setup nativo (mcp_catalog.CATALOG)."""
+        try:
+            import mcp_catalog as mc
+            from pathlib import Path
+            f = Path(path) / ".mcp.json"
+            active = set()
+            if f.is_file():
+                try:
+                    data = json.loads(f.read_text(encoding="utf-8", errors="ignore"))
+                    active = set((data.get("mcpServers") or {}).keys())
+                except Exception:
+                    pass
+            out = []
+            cat_keys = set()
+            for e in mc.CATALOG:
+                cat_keys.add(e.key)
+                out.append({"id": e.key, "label": e.name, "desc": e.description,
+                            "lic": e.license, "auth": bool(getattr(e, "requires_auth", False)),
+                            "active": e.key in active})
+            # Servers en el .mcp.json que no están en el catálogo (custom).
+            for k in (active - cat_keys):
+                out.append({"id": k, "label": k, "desc": "(personalizado)",
+                            "lic": "", "auth": False, "active": True})
+            return json.dumps({"ok": True, "servers": out, "has_file": f.is_file()})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e), "servers": []})
+
+    @pyqtSlot(str, str, result=str)
+    def toggle_mcp(self, path: str, key: str) -> str:
+        """Activa/desactiva un MCP server en el `.mcp.json` del proyecto (escritura
+        real, preservando servers personalizados). Devuelve {ok, active}."""
+        try:
+            import mcp_catalog as mc
+            from pathlib import Path
+            f = Path(path) / ".mcp.json"
+            data = {"mcpServers": {}}
+            if f.is_file():
+                try:
+                    loaded = json.loads(f.read_text(encoding="utf-8", errors="ignore"))
+                    if isinstance(loaded, dict):
+                        data = loaded
+                except Exception:
+                    pass
+            servers = data.get("mcpServers") or {}
+            if key in servers:
+                del servers[key]
+            else:
+                e = mc.by_key(key)
+                if not e:
+                    return json.dumps({"ok": False, "error": f"MCP desconocido: {key}"})
+                spec = mc.generate_mcp_json([e], Path(path))["mcpServers"].get(key, {})
+                servers[key] = spec
+            data["mcpServers"] = servers
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+            return json.dumps({"ok": True, "active": list(servers.keys()),
+                               "on": key in servers})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
     def ping(self, msg: str) -> str:
         return json.dumps({"pong": msg})
 

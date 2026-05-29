@@ -687,6 +687,26 @@ function BuildLog({ lines }) {
     </div>
   );
 }
+// Barra de MCP servers REAL: lee el .mcp.json del proyecto; clic = activar/desactivar ♡.
+function MCPBar({ path }) {
+  const B = window.tfBridge;
+  const [servers, setServers] = useState([]);
+  const load = () => { if (B && B.read_mcp && path) B.read_mcp(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.servers) setServers(r.servers); }); };
+  useEffect(load, [path]);
+  const toggle = (id) => { if (!(B && B.toggle_mcp && path)) return; setServers(s => s.map(x => x.id === id ? { ...x, active: !x.active } : x)); B.toggle_mcp(path, id).then(load); };
+  return (
+    <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--tx-dim)' }}>MCP ·</span>
+      {(servers.length ? servers : MCP_SERVERS.map(m => ({ id: m.id, label: m.label, active: !!m.always, desc: m.desc }))).map(m => (
+        <button key={m.id} className="tag" title={(m.active ? 'activo · ' : 'inactivo · ') + (m.desc || '')} onClick={() => toggle(m.id)}
+          style={{ cursor: 'pointer', color: m.active ? 'var(--accent)' : 'var(--tx-dim)', opacity: m.active ? 1 : 0.55, fontWeight: 700 }}>
+          {m.active ? '💝' : '🤍'} {m.label}
+        </button>
+      ))}
+      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx-dim)' }}>· clic = on/off ♡</span>
+    </div>
+  );
+}
 function ProjectWindow({ p, onBack, onDeploy, onBuild, onRef, buildLog }) {
   const [tab, setTab] = useState('desktop');
   const [pushed, setPushed] = useState(false);
@@ -725,11 +745,8 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild, onRef, buildLog }) {
         <button className={'btn' + (pushed ? '' : ' pri')} onClick={push}>{pushed ? '✓ Pushed' : '🐙 Push'}</button>
         <button className="btn pri" onClick={deploy}>🚀 Deploy</button>
       </div>
-      {/* MCP chips */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--tx-dim)' }}>MCP ·</span>
-        {MCP_SERVERS.slice(0, 7).map(m => <span key={m.id} className="tag" style={{ color: m.always ? 'var(--accent)' : 'var(--tx-dim)' }}>{m.em} {m.label}</span>)}
-      </div>
+      {/* MCP chips reales */}
+      <MCPBar path={p.path} />
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16, minHeight: 0 }}>
         <div className="panelc" style={{ display: 'flex', flexDirection: 'column', padding: 14, minHeight: 0 }}>
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
