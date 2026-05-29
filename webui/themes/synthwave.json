@@ -1,0 +1,20 @@
+{
+  "name": "Synthwave",
+  "jp": "シンセ波",
+  "vars": {
+    "--bg-void": "#0d0221",
+    "--bg-deep": "#120a2a",
+    "--bg-panel": "#1a0f33",
+    "--bg-panel-2": "#241544",
+    "--bg-raise": "#2e1a55",
+    "--tx": "#f5e6ff",
+    "--tx-dim": "#c9a9e9",
+    "--tx-faint": "#8a6fb0",
+    "--line": "rgba(200,120,255,0.14)",
+    "--line-bright": "rgba(255,120,220,0.30)",
+    "--accent": "#ff2bd6",
+    "--accent-2": "#00e5ff",
+    "--accent-rgb": "255, 43, 214",
+    "--accent2-rgb": "0, 229, 255"
+  }
+}

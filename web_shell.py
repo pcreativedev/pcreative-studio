@@ -186,11 +186,42 @@ def _theme_css_vars(pack) -> dict:
     }
 
 
+WEBTHEMES_DIR = WEBUI_DIR.parent / "themes"   # webui/themes/*.json (packs)
+
+
+def _web_theme_packs() -> list:
+    """Auto-descubre temas web enchufables: cualquier webui/themes/*.json se
+    convierte en un tema seleccionable que recolorea la UI web en vivo. Soltar
+    un JSON = nuevo tema, sin código (design-tokens → CSS vars)."""
+    out = []
+    if not WEBTHEMES_DIR.is_dir():
+        return out
+    for f in sorted(WEBTHEMES_DIR.glob("*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        v = data.get("vars") or {}
+        out.append({
+            "k": "web:" + f.stem, "label": data.get("name", f.stem),
+            "jp": data.get("jp", ""),
+            "bg": v.get("--bg-void", "#04060c"),
+            "acc": v.get("--accent", "#00f0ff"),
+            "acc2": v.get("--accent-2", "#ff2e88"),
+            "vars": v, "web": True, "pack": True,
+        })
+    return out
+
+
 def _themes_data() -> dict:
     try:
         import themes
-        cur = themes.current_theme_name()
-        out = []
+        try:
+            import app_prefs as ap
+            cur = ap.get("web_theme") or themes.current_theme_name()
+        except Exception:
+            cur = themes.current_theme_name()
+        out = list(_web_theme_packs())
         for ti in themes.list_themes():
             try:
                 pack = themes.load_theme(ti.name)
@@ -845,9 +876,15 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, result=str)
     def set_theme(self, name: str) -> str:
-        """Persiste el tema elegido en Settings → temas y lo aplica a las
-        superficies nativas. En la UI web sirve para recordar la selección."""
+        """Persiste el tema web elegido. Los temas-pack ('web:slug') se guardan
+        en app_prefs (no son temas nativos); los nativos en settings.json."""
         try:
+            import app_prefs as ap
+            if name.startswith("web:"):
+                ap.set("web_theme", name)
+                return json.dumps({"ok": True, "theme": name, "pack": True})
+            # Tema web base (neotokyo) o nativo: recordar y aplicar a lo nativo.
+            ap.set("web_theme", name)
             import themes
             from PyQt6.QtWidgets import QApplication
             themes.save_current_theme(name)
