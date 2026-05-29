@@ -16,7 +16,7 @@ const STATUS = {
   archived: { label: 'guardado', em: '📦', color: '#c4a8be' },
 };
 
-const PROJECTS = [
+const PROJECTS = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.projects && window.__TF_DATA__.projects.length) ? window.__TF_DATA__.projects : [
   { id: 'k-aurora', name: 'Aurora SaaS', jp: 'オーロラ', type: 'SaaS Landing', agent: 'claude', status: 'live', cost: 4.82, tags: ['next', 'tailwind'], commits: 47, updated: 'hace 3 min' },
   { id: 'k-nordic', name: 'Nordic Forge', jp: '北欧', type: 'Agencia creativa', agent: 'codex', status: 'building', cost: 2.10, tags: ['astro', 'gsap'], commits: 23, updated: 'hace 12 min' },
   { id: 'k-meridian', name: 'Meridian Shop', jp: '商店', type: 'E-commerce', agent: 'gemini', status: 'live', cost: 7.34, tags: ['shopify', 'remix'], commits: 89, updated: 'hace 1 h' },
@@ -25,7 +25,7 @@ const PROJECTS = [
   { id: 'k-pixel', name: 'Pixel Arcade', jp: '遊技', type: 'Landing · game', agent: 'codex', status: 'archived', cost: 1.22, tags: ['tauri', 'react'], commits: 19, updated: 'hace 3 días' },
 ];
 
-const STACKS = [
+const STACKS = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.stacks && window.__TF_DATA__.stacks.length) ? window.__TF_DATA__.stacks.map(s => ({ k: s.key, label: s.label, jp: s.jp || '', em: '🌷', cat: s.cat })) : [
   { k: 'next', label: 'Next.js', jp: '次世代', em: '⚡' },
   { k: 'astro', label: 'Astro', jp: '星', em: '🚀' },
   { k: 'laravel', label: 'Laravel', jp: '帆', em: '🎀' },
@@ -45,7 +45,7 @@ const NAV = [
   { id: 'settings', em: '🎨', label: 'Ajustes', jp: '設定' },
 ];
 
-const MCP_SERVERS = [
+const MCP_SERVERS = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.mcp && window.__TF_DATA__.mcp.length) ? window.__TF_DATA__.mcp.map(m => ({ id: m.id, label: m.label, always: m.always, em: m.always ? '💝' : '🎀', desc: m.desc, lic: m.lic })) : [
   { id: 'filesystem', label: 'filesystem', always: true, em: '📁', desc: 'Acceso al proyecto' },
   { id: 'fetch', label: 'fetch', always: true, em: '🌐', desc: 'HTTP / scraping' },
   { id: 'memory', label: 'memory', always: true, em: '🧠', desc: 'Memoria del agente' },
@@ -122,12 +122,20 @@ function ProjectCard({ p, onOpen }) {
 
 function Gallery({ onOpen }) {
   const [f, setF] = useState('all');
+  const [projects, setProjects] = useState(PROJECTS);  // galería en vivo
+  useEffect(() => {
+    if (window.tfBridge && window.tfBridge.list_projects)
+      window.tfBridge.list_projects().then(j => { try { const a = JSON.parse(j); if (Array.isArray(a)) setProjects(a); } catch (e) {} });
+  }, []);
   const fl = ['all', 'live', 'building', 'draft', 'archived'];
-  const list = PROJECTS.filter(p => f === 'all' || p.status === f);
+  const list = projects.filter(p => f === 'all' || p.status === f);
+  const liveN = projects.filter(p => p.status === 'live').length;
+  const buildingN = projects.filter(p => p.status === 'building').length;
+  const totalCost = projects.reduce((s, p) => s + (p.cost || 0), 0);
   return (
     <div className="page fade">
       <div className="stats">
-        {[['🎀', '6', 'proyectos'], ['💸', '$19.84', 'cómputo IA'], ['🌟', '3', 'publicados'], ['🔨', '1', 'forjando ahora']].map(([e, n, l]) => (
+        {[['🎀', String(projects.length), 'proyectos'], ['💸', '$' + totalCost.toFixed(2), 'cómputo IA'], ['🌟', String(liveN), 'publicados'], ['🔨', String(buildingN), 'forjando ahora']].map(([e, n, l]) => (
           <div className="stat" key={l}><div className="em">{e}</div><div className="n">{n}</div><div className="l">{l}</div></div>
         ))}
       </div>
@@ -135,6 +143,7 @@ function Gallery({ onOpen }) {
         {fl.map(x => <button key={x} className={'fchip' + (f === x ? ' on' : '')} onClick={() => setF(x)}>{x === 'all' ? '✨ todos' : STATUS[x].em + ' ' + STATUS[x].label}</button>)}
       </div>
       <div className="grid">{list.map(p => <ProjectCard key={p.id} p={p} onOpen={onOpen} />)}</div>
+      {!list.length && <div style={{ color: 'var(--tx-dim)', fontWeight: 600, padding: 30, textAlign: 'center' }}>aún no hay proyectos — crea uno en «✨ Nuevo» ♡</div>}
     </div>
   );
 }
@@ -142,11 +151,30 @@ function Gallery({ onOpen }) {
 /* ---- New project (vibe scaffolder kawaii) ---- */
 function NewProject() {
   const [vibe, setVibe] = useState('');
-  const [stack, setStack] = useState('next');
+  const [pname, setPname] = useState('');
+  const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].k : 'next');
   const [agent, setAgent] = useState('claude');
   const [thinking, setThinking] = useState(false);
   const [done, setDone] = useState(false);
-  const go = () => { setThinking(true); setDone(false); setTimeout(() => { setThinking(false); setDone(true); setStack('next'); }, 1300); };
+  const go = () => {
+    setThinking(true); setDone(false);
+    if (window.tfBridge && window.tfBridge.suggest_stack && (vibe || '').trim()) {
+      const onRes = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+        if (r.stack && STACKS.find(s => s.k === r.stack)) setStack(r.stack);
+        setThinking(false); setDone(true);
+        try { window.tfBridge.suggest_result.disconnect(onRes); } catch (e) {} };
+      if (window.tfBridge.suggest_result && window.tfBridge.suggest_result.connect) window.tfBridge.suggest_result.connect(onRes);
+      window.tfBridge.suggest_stack(vibe); return;
+    }
+    setTimeout(() => { setThinking(false); setDone(true); }, 1300);
+  };
+  const forge = () => {
+    const name = (pname || '').trim() || (vibe || '').trim().slice(0, 42) || 'Untitled Forge';
+    if (window.tfBridge && window.tfBridge.create_project) {
+      window.tfBridge.create_project(JSON.stringify({ name, stack, agent, type: 'Template', mode: 'scratch', niche: vibe, opts: { autoskills: true, uipro: true, mcp: true } }));
+      alert('🔨 Creando «' + name + '» ♡ — el setup corre en segundo plano y aparecerá en la galería.');
+    }
+  };
   return (
     <div className="page fade" style={{ maxWidth: 920 }}>
       <h2 className="sec">✨ Vibe Scaffolder <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>新規制作</span></h2>
@@ -155,10 +183,10 @@ function NewProject() {
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Cuéntame qué quieres crear 🌷</div>
           <textarea className="ta" value={vibe} onChange={e => setVibe(e.target.value)} placeholder='Ej: "Landing kawaii para cafetería de gatitos, pastel y redondito…"' />
           <button className="btn pri" style={{ marginTop: 14 }} onClick={go}>{thinking ? '✨ pensando…' : '✨ Pre-rellenar con IA'}</button>
-          {thinking && <span style={{ marginLeft: 10, color: 'var(--accent)', fontWeight: 700 }}>{AGENTS[agent].em} analizando…</span>}
+          {thinking && <span style={{ marginLeft: 10, color: 'var(--accent)', fontWeight: 700 }}>{(AGENTS[agent] || {}).em} analizando…</span>}
           {done && (
             <div className="fade" style={{ marginTop: 16, background: 'var(--bg2)', borderRadius: 16, padding: 14, fontSize: 13.5, lineHeight: 1.6 }}>
-              <b>Prompt generado ♡</b><br />Build a production-ready landing usando <b style={{ color: 'var(--accent)' }}>Next.js</b>. {vibe || 'Diseño kawaii pastel, redondeado, mascota animada.'} Sistema de diseño coherente, accesible, imágenes del nicho, deploy-ready.
+              <b>Prompt generado ♡</b><br />Build a production-ready landing usando <b style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.k === stack) || { label: stack }).label}</b>. {vibe || 'Diseño kawaii pastel, redondeado, mascota animada.'} Sistema de diseño coherente, accesible, imágenes del nicho, deploy-ready.
             </div>
           )}
         </div>
@@ -183,16 +211,20 @@ function NewProject() {
           </button>
         ))}
       </div>
-      <div className="panelc" style={{ marginTop: 22, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontWeight: 600, color: 'var(--tx-dim)' }}><b style={{ color: 'var(--accent)' }}>{STACKS.find(s => s.k === stack).label}</b> · {AGENTS[agent].label} · ~$0.40</span>
-        <button className="btn pri">🔨 ¡Forjar proyecto!</button>
+      <div className="panelc" style={{ marginTop: 22 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>Nombre del proyecto 🎀 <span style={{ fontFamily: 'var(--jp)', fontSize: 12, color: 'var(--tx-dim)' }}>名前</span></div>
+        <input className="ta" value={pname} onChange={e => setPname(e.target.value)} placeholder="Ej: Aurora Dental · ~/Proyectos/themes/<slug>" style={{ minHeight: 0, height: 42, borderRadius: 14 }} />
+      </div>
+      <div className="panelc" style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontWeight: 600, color: 'var(--tx-dim)' }}><b style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.k === stack) || { label: stack }).label}</b> · {(AGENTS[agent] || { label: agent }).label}</span>
+        <button className="btn pri" onClick={forge}>🔨 ¡Forjar proyecto!</button>
       </div>
     </div>
   );
 }
 
 /* ---- Cost (kawaii donut + bars) ---- */
-const COST = [{ k: 'claude', v: 12.77 }, { k: 'gemini', v: 7.34 }, { k: 'codex', v: 3.32 }, { k: 'opencode', v: 1.63 }];
+const COST = (typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.cost && window.__TF_DATA__.cost.by_agent && window.__TF_DATA__.cost.by_agent.length) ? window.__TF_DATA__.cost.by_agent : [{ k: 'claude', v: 12.77 }, { k: 'gemini', v: 7.34 }, { k: 'codex', v: 3.32 }, { k: 'opencode', v: 1.63 }];
 function Cost() {
   const total = COST.reduce((s, d) => s + d.v, 0);
   const days = Array.from({ length: 14 }, (_, i) => 0.3 + Math.abs(Math.sin(i / 2)) * 1.4 + (i > 10 ? 0.6 : 0));
@@ -270,25 +302,32 @@ function Compare() {
   );
 }
 
-/* ---- Operator ---- */
-const MISSIONS = [
-  { id: 'o1', name: 'Aurora · hero + pricing', agent: 'claude', st: 'corriendo', pct: 68, eta: '2m 10s' },
-  { id: 'o2', name: 'Nordic · case studies', agent: 'codex', st: 'corriendo', pct: 34, eta: '5m 40s' },
-  { id: 'o3', name: 'Meridian · checkout', agent: 'gemini', st: 'en cola', pct: 0, eta: '—' },
-  { id: 'o4', name: 'Zen · booking widget', agent: 'claude', st: 'listo ♡', pct: 100, eta: '✓' },
-];
+/* ---- Operator (Hermes real) ---- */
 function Operator() {
+  const op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
+  const real = !!(window.tfBridge && window.tfBridge.launch_mission);
+  const [missions, setMissions] = useState([]);  // misiones reales (vacío al inicio)
+  const launch = () => {
+    if (!real) return;
+    if (!op.available) { alert('Instala Hermes Agent para usar el Operator. 🐾'); return; }
+    const brief = prompt('Describe la misión (ej: «2 variantes Envato de landing dental, stack Astro»):');
+    if (!brief) return;
+    window.tfBridge.launch_mission(brief);
+    setMissions(ms => [{ id: 'm' + ms.length, name: brief.slice(0, 60), agent: 'claude', st: 'corriendo', pct: 0, eta: 'Hermes…' }, ...ms]);
+  };
+  const running = missions.filter(m => m.pct < 100).length;
   return (
     <div className="page fade">
-      <h2 className="sec">🚀 Mission Control <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>司令室</span></h2>
+      <h2 className="sec">🚀 Mission Control <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>司令室</span>
+        <button className="btn pri" style={{ float: 'right' }} onClick={launch}>🐾 Lanzar misión</button></h2>
       <div className="stats" style={{ marginBottom: 22 }}>
-        {[['🔨', '2', 'activas'], ['⏳', '1', 'en cola'], ['🌟', '12', 'hoy'], ['💸', '$8.40', 'coste hoy']].map(([e, n, l]) => (
+        {[['🔨', String(running), 'activas'], ['📋', String(missions.length), 'total'], ['🩵', op.available ? (op.version || 'on') : 'off', 'hermes']].map(([e, n, l]) => (
           <div className="stat" key={l}><div className="em">{e}</div><div className="n">{n}</div><div className="l">{l}</div></div>
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {MISSIONS.map(m => {
-          const a = AGENTS[m.agent];
+        {missions.length ? missions.map(m => {
+          const a = AGENTS[m.agent] || { color: 'var(--accent)', em: '🐾' };
           return (
             <div className="panelc" key={m.id} style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -300,7 +339,7 @@ function Operator() {
               <div className="bar2" style={{ marginTop: 11 }}><i style={{ width: m.pct + '%', background: m.pct === 100 ? 'var(--p3)' : 'linear-gradient(90deg,var(--accent),var(--accent2))' }} /></div>
             </div>
           );
-        })}
+        }) : <div className="panelc" style={{ padding: 30, textAlign: 'center', color: 'var(--tx-dim)', fontWeight: 600 }}>aún no hay misiones — pulsa «Lanzar misión» {op.available ? '♡' : '(requiere Hermes)'}</div>}
       </div>
     </div>
   );
@@ -394,13 +433,47 @@ function KawaiiTerminal({ run }) {
     </div>
   );
 }
+// Terminal REAL embebida (xterm+node-pty vía el puente) con auto-agente+contexto.
+function RealTerm({ path }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    if (!window.tfBridge || !window.tfBridge.start_terminal || !path) return;
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path && r.url) setUrl(r.url); };
+    if (window.tfBridge.terminal_ready && window.tfBridge.terminal_ready.connect) window.tfBridge.terminal_ready.connect(onReady);
+    window.tfBridge.start_terminal(path);
+    return () => { try { window.tfBridge.terminal_ready.disconnect(onReady); } catch (e) {} };
+  }, [path]);
+  if (!window.tfBridge || !path) return <KawaiiTerminal run={true} />;
+  if (!url) return <div style={{ flex: 1, padding: 14, color: 'var(--tx-dim)', fontWeight: 600 }}>🖥️ iniciando terminal real (xterm · node-pty)… ♡</div>;
+  return <iframe src={url} style={{ flex: 1, width: '100%', border: 'none', borderRadius: 16, background: '#1b1020', minHeight: 0 }} />;
+}
+// Preview REAL (dev server vía el puente)
+function RealPreview({ path }) {
+  const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
+  useEffect(() => {
+    if (!window.tfBridge || !window.tfBridge.start_preview || !path) return;
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path) { if (r.url) setUrl(r.url); else setErr(r.error || 'error'); } };
+    if (window.tfBridge.preview_ready && window.tfBridge.preview_ready.connect) window.tfBridge.preview_ready.connect(onReady);
+    window.tfBridge.start_preview(path);
+    return () => { try { window.tfBridge.preview_ready.disconnect(onReady); } catch (e) {} };
+  }, [path]);
+  if (!window.tfBridge || !path) return <Slot id={'pw'} cls="" radius={16} ph="preview de tu tema ♡" />;
+  if (err) return <div style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>preview: {err} 🥺</div>;
+  if (!url) return <div style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>✨ arrancando dev server real… ♡</div>;
+  return <iframe src={url} style={{ width: '100%', height: '100%', minHeight: 300, border: 'none', borderRadius: 16, background: '#fff' }} />;
+}
+
 function ProjectWindow({ p, onBack, onDeploy, onBuild, onRef }) {
   const [tab, setTab] = useState('desktop');
-  const [run, setRun] = useState(false);
   const [pushed, setPushed] = useState(false);
-  const ag = AGENTS[p.agent], st = STATUS[p.status];
-  useEffect(() => { const t = setTimeout(() => setRun(true), 500); return () => clearTimeout(t); }, []);
+  const ag = AGENTS[p.agent] || { color: 'var(--accent)', em: '🐾', label: p.agent || 'agent' };
+  const st = STATUS[p.status] || { color: 'var(--tx-dim)', em: '○', label: p.status || '' };
   const tabs = [['desktop', '🖥️ Desktop'], ['mobile', '📱 Mobile'], ['code', '💻 Code']];
+  const B = window.tfBridge;
+  const preflight = () => { if (B && B.run_preflight) { alert('🔎 Pre-flight… ♡'); B.run_preflight(p.path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert('Pre-flight: ' + (r.verdict || r.status || (r.ok ? 'PASS ♡' : JSON.stringify(r).slice(0, 200)))); }); } else onBuild && onBuild(); };
+  const buildzip = () => { if (B && B.build_zip) { alert('📦 Empaquetando ZIP… ♡'); B.build_zip(p.path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert('ZIP: ' + (r.zip_path || r.zip || r.error || 'hecho ♡')); }); } else onBuild && onBuild(); };
+  const push = () => { if (B && B.git_push) { B.git_push(p.path); setPushed(true); } else setPushed(true); };
+  const deploy = () => { if (B && B.deploy_demo) { const pv = prompt('Deploy a (netlify/vercel/cloudflare/surge):', 'surge'); if (pv) B.deploy_demo(p.path, pv); } else onDeploy && onDeploy(); };
   return (
     <div className="page fade" style={{ height: '100%', display: 'flex', flexDirection: 'column', paddingBottom: 26 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -408,9 +481,10 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild, onRef }) {
         <b style={{ fontSize: 19 }}>{p.name}</b><span style={{ fontFamily: 'var(--jp)', color: 'var(--tx-dim)' }}>{p.jp}</span>
         <span className="pstatus" style={{ position: 'static', color: st.color }}>{st.em} {st.label}</span>
         <div style={{ flex: 1 }} />
-        <button className="btn" onClick={onBuild}>✅ Pre-flight</button>
-        <button className={'btn' + (pushed ? '' : ' pri')} onClick={() => setPushed(true)}>{pushed ? '✓ Pushed 🐙' : '🐙 Push'}</button>
-        <button className="btn pri" onClick={onDeploy}>🚀 Deploy</button>
+        <button className="btn" onClick={preflight}>✅ Pre-flight</button>
+        <button className="btn" onClick={buildzip}>📦 ZIP</button>
+        <button className={'btn' + (pushed ? '' : ' pri')} onClick={push}>{pushed ? '✓ Pushed 🐙' : '🐙 Push'}</button>
+        <button className="btn pri" onClick={deploy}>🚀 Deploy</button>
       </div>
       {/* MCP chips */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -421,10 +495,10 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild, onRef }) {
         <div className="panelc" style={{ display: 'flex', flexDirection: 'column', padding: 14, minHeight: 0 }}>
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
             {tabs.map(([k, l]) => <button key={k} className={'fchip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--tx-dim)', fontWeight: 600, alignSelf: 'center' }}>localhost:5173 ♡</span>
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--tx-dim)', fontWeight: 600, alignSelf: 'center' }}>preview real ♡</span>
           </div>
-          <div style={{ flex: 1, display: 'grid', placeItems: 'center', background: 'var(--bg2)', borderRadius: 18, padding: 16, minHeight: 0, overflow: 'auto' }}>
-            <Slot id={'pw-' + p.id} cls="" radius={16} ph="preview de tu tema ♡ (arrastra un anime)" />
+          <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', background: 'var(--bg2)', borderRadius: 18, padding: 0, minHeight: 0, overflow: 'auto' }}>
+            <RealPreview path={p.path} />
           </div>
         </div>
         <div className="panelc" style={{ display: 'flex', flexDirection: 'column', padding: 14, minHeight: 0 }}>
@@ -432,93 +506,90 @@ function ProjectWindow({ p, onBack, onDeploy, onBuild, onRef }) {
             <b>🖥️ Terminal del agente</b>
             <span className="tag" style={{ marginLeft: 'auto' }}>{ag.em} {ag.label}</span>
           </div>
-          <KawaiiTerminal run={run} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <input className="ta" style={{ minHeight: 0, padding: '9px 14px', borderRadius: 99, flex: 1 }} placeholder="responder al agente… ♡" />
-            <button className="btn pri" onClick={() => { setRun(false); setTimeout(() => setRun(true), 60); }}>▶</button>
-          </div>
+          <RealTerm path={p.path} />
         </div>
       </div>
-      <style>{`#pw-${p.id}{width:100%;height:${tab === 'mobile' ? '320px' : '300px'};max-width:${tab === 'mobile' ? '280px' : 'none'};}`}</style>
     </div>
   );
 }
 
-/* ---- Market ---- */
+/* ---- Market (analizador real con IA) ---- */
 function Market() {
   const [q, setQ] = useState('');
   const [done, setDone] = useState(false);
   const [load, setLoad] = useState(false);
-  const go = () => { setLoad(true); setDone(false); setTimeout(() => { setLoad(false); setDone(true); }, 1200); };
-  const rows = [['Dental clinic landing', '$39', '★4.8', '1,240', 'alta'], ['Booking + calendar', '$49', '★4.9', '2,100', 'alta'], ['Multipurpose business', '$29', '★4.4', '8,400', 'saturada']];
+  const [md, setMd] = useState('');
+  const real = !!(window.tfBridge && window.tfBridge.analyze_market);
+  useEffect(() => {
+    if (!real || !window.tfBridge.market_result || !window.tfBridge.market_result.connect) return;
+    const onRes = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} setLoad(false); setMd(r.error ? ('⚠ ' + r.error) : (r.markdown || '')); setDone(true); };
+    window.tfBridge.market_result.connect(onRes);
+    return () => { try { window.tfBridge.market_result.disconnect(onRes); } catch (e) {} };
+  }, []);
+  const go = (kind) => { if (!real) return; setLoad(true); setDone(false); setMd(''); window.tfBridge.analyze_market(kind || q); };
   return (
     <div className="page fade">
       <h2 className="sec">🌷 Market Analyzer <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>市場分析</span></h2>
-      <div className="panelc" style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+      <div className="panelc" style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
         <input className="ta" style={{ minHeight: 0, padding: '11px 16px', borderRadius: 99 }} value={q} onChange={e => setQ(e.target.value)} placeholder='Nicho a investigar — ej: "café de gatitos" 🐱' />
-        <button className="btn pri" onClick={go}>{load ? '🔎 buscando…' : '🔎 Analizar'}</button>
+        <button className="btn pri" onClick={() => go()}>{load ? '🔎 buscando…' : '🔎 Analizar'}</button>
       </div>
-      {load && <div className="panelc" style={{ textAlign: 'center', color: 'var(--accent)', fontWeight: 700 }}>✨ consultando ThemeForest · Creative Market · Gumroad… ✨</div>}
-      {done && (
-        <div className="fade" style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
-          <div className="panelc" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
-              <thead><tr style={{ background: 'var(--bg2)' }}>{['Template', 'Precio', 'Rating', 'Ventas', 'Competencia'].map((h, i) => <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '12px 16px', color: 'var(--tx-dim)', fontWeight: 700 }}>{h}</th>)}</tr></thead>
-              <tbody>{rows.map((r, i) => <tr key={i} style={{ borderTop: '2px dashed var(--line)' }}>
-                <td style={{ padding: '12px 16px', fontWeight: 600 }}>{r[0]}</td>
-                <td style={{ textAlign: 'right', padding: '12px 16px', color: 'var(--p3)', fontWeight: 700 }}>{r[1]}</td>
-                <td style={{ textAlign: 'right', padding: '12px 16px', color: 'var(--p4)', fontWeight: 700 }}>{r[2]}</td>
-                <td style={{ textAlign: 'right', padding: '12px 16px', color: 'var(--tx-dim)', fontWeight: 600 }}>{r[3]}</td>
-                <td style={{ textAlign: 'right', padding: '12px 16px' }}><span className="tag" style={{ color: r[4] === 'alta' ? 'var(--p3)' : 'var(--accent)' }}>{r[4]}</span></td>
-              </tr>)}</tbody>
-            </table>
-          </div>
-          <div className="panelc" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx-dim)' }}>VEREDICTO ♡</div>
-            <div style={{ fontFamily: 'var(--cute)', fontSize: 30, color: 'var(--p3)', margin: '8px 0' }}>¡FORJAR! 🔨</div>
-            <div style={{ fontSize: 13, color: 'var(--tx-dim)', fontWeight: 600, lineHeight: 1.6 }}>Demanda alta, sweet-spot <b style={{ color: 'var(--accent)' }}>$45–55</b>. Diferénciate con booking integrado.</div>
-          </div>
-        </div>
-      )}
+      {real && <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+        {[['@general', 'Mercado 2026'], ['@stacks', 'Stacks'], ['@prediction', 'Predicción 2027']].map(([k, l]) => <button key={k} className="tag" style={{ cursor: 'pointer' }} onClick={() => go(k)}>{l}</button>)}
+        {done && md && <button className="tag" style={{ cursor: 'pointer', marginLeft: 'auto', color: 'var(--accent)' }} onClick={() => window.tfNav && window.tfNav('new')}>✨ Crear proyecto desde análisis</button>}
+      </div>}
+      {load && <div className="panelc" style={{ textAlign: 'center', color: 'var(--accent)', fontWeight: 700 }}>✨ analizando mercado con IA (OpenRouter) — puede tardar… ✨</div>}
+      {done && md && <div className="panelc fade"><pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 13, lineHeight: 1.7, color: 'var(--tx)', margin: 0 }}>{md}</pre></div>}
       {!done && !load && <div className="panelc" style={{ textAlign: 'center', color: 'var(--tx-dim)', fontWeight: 600 }}>introduce un nicho para empezar 🌸</div>}
     </div>
   );
 }
 
-/* ---- Licensing ---- */
+/* ---- Licensing (sistema real anti-nulled pcreative) ---- */
 function Licensing() {
-  const [pr, setPr] = useState('lemon');
-  const provs = [['lemon', 'Lemon Squeezy', '🍋'], ['polar', 'Polar', '🐻‍❄️'], ['paddle', 'Paddle', '🚣'], ['custom', 'Custom', '🌟']];
+  const real = !!(window.tfBridge && window.tfBridge.licensing_status);
+  const [st, setSt] = useState(null);
+  const [sub, setSub] = useState('lic');
+  const [np, setNp] = useState(''); const [ne, setNe] = useState(''); const [nt, setNt] = useState('regular');
+  const [prods, setProds] = useState(null); const [gum, setGum] = useState(null); const [tools, setTools] = useState('');
+  const api = (p, m, b) => window.tfBridge.licensing_api(p, m || 'GET', b ? JSON.stringify(b) : '').then(j => { try { return JSON.parse(j); } catch (e) { return {}; } });
+  const refresh = () => { if (real) window.tfBridge.licensing_status().then(j => { try { setSt(JSON.parse(j)); } catch (e) {} }); };
+  useEffect(() => { refresh(); }, []);
+  const create = () => { if (!np.trim()) return; window.tfBridge.licensing_create(np, ne, nt).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert(r.ok ? ('✓ Licencia ♡: ' + (r.key || '')) : ('Error: ' + (r.error || r.code))); refresh(); }); };
+  if (!real) return <div className="page fade"><div className="panelc">Licensing no disponible (sin puente). 🥺</div></div>;
   return (
-    <div className="page fade" style={{ maxWidth: 900 }}>
+    <div className="page fade" style={{ maxWidth: 980 }}>
       <h2 className="sec">🔑 Licencias <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>認可</span></h2>
-      <div className="panelc" style={{ marginBottom: 18 }}>
-        <div style={{ fontWeight: 700, marginBottom: 12 }}>Proveedor 💝</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-          {provs.map(([k, l, e]) => <button key={k} className={'tile' + (pr === k ? ' on' : '')} onClick={() => setPr(k)} style={{ textAlign: 'center' }}><div style={{ fontSize: 24 }}>{e}</div><div style={{ fontWeight: 700, fontSize: 13.5, marginTop: 6 }}>{l}</div></button>)}
-        </div>
+      <div className="panelc" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13.5, fontWeight: 600 }}>
+        <span style={{ width: 11, height: 11, borderRadius: 99, background: st ? (st.reachable ? 'var(--p3)' : (st.configured ? '#ffcf5e' : 'var(--tx-dim)')) : 'var(--tx-dim)' }} />
+        <span>{!st ? 'consultando… ♡' : !st.configured ? 'Sin backend (config en licensing.json)' : st.reachable ? ('Backend OK ✓ · ' + (st.licenses || []).length + ' licencias · ' + (st.products || []).length + ' productos') : 'Configurado pero no responde 🥺'}</span>
+        <button className="btn" style={{ marginLeft: 'auto' }} onClick={refresh}>↻</button>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div className="panelc">
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>Config ⚙️</div>
-          {[['Store ID', 'store_8f2a9c'], ['Product ID', 'prod_kawaii_01'], ['API key', '••••••••3f7a']].map(([l, v]) => (
-            <div key={l} style={{ marginBottom: 11 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--tx-dim)', marginBottom: 4 }}>{l}</div>
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: '9px 13px', fontWeight: 600, fontSize: 13 }}>{v}</div>
-            </div>
-          ))}
-          <button className="btn pri" style={{ marginTop: 6 }}>💝 Cablear en proyecto</button>
-        </div>
-        <div className="panelc">
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>Validador · license.ts 🌸</div>
-          <div style={{ background: 'var(--bg2)', borderRadius: 14, padding: 14, fontSize: 12.5, lineHeight: 1.8, fontFamily: 'var(--font)', color: 'var(--tx-dim)' }}>
-            <div><b style={{ color: 'var(--accent2)' }}>export async function</b> <b style={{ color: 'var(--p3)' }}>validate</b>(key) {'{'}</div>
-            <div>&nbsp;&nbsp;<b style={{ color: 'var(--accent2)' }}>const</b> r = await fetch(API);</div>
-            <div>&nbsp;&nbsp;<b style={{ color: 'var(--accent2)' }}>return</b> r.valid; {'}'}</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        {[['lic', 'Licencias'], ['prod', 'Productos'], ['gum', 'Gumroad'], ['tools', 'Tools']].map(([k, l]) => (
+          <button key={k} className={'fchip' + (sub === k ? ' on' : '')} style={{ cursor: 'pointer' }} onClick={() => { setSub(k); if (k === 'prod' && !prods) api('/api/products/versions').then(r => setProds(r.data)); if (k === 'gum' && !gum) api('/api/gumroad').then(r => setGum(r.data)); }}>{l}</button>
+        ))}
+      </div>
+      {sub === 'lic' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
+          <div className="panelc" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: 'var(--bg2)' }}>{['Key', 'Producto', 'Tipo', 'Estado'].map(h => <th key={h} style={{ textAlign: 'left', padding: '11px 14px', color: 'var(--tx-dim)', fontWeight: 700 }}>{h}</th>)}</tr></thead>
+              <tbody>{(st && st.licenses && st.licenses.length) ? st.licenses.map((l, i) => <tr key={i} style={{ borderTop: '2px dashed var(--line)' }}><td style={{ padding: '9px 14px', color: 'var(--accent)', fontWeight: 600 }}>{l.key}</td><td style={{ padding: '9px 14px' }}>{l.product}</td><td style={{ padding: '9px 14px', color: 'var(--tx-dim)' }}>{l.type}</td><td style={{ padding: '9px 14px' }}>{l.status}</td></tr>) : <tr><td colSpan={4} style={{ padding: 22, textAlign: 'center', color: 'var(--tx-dim)', fontWeight: 600 }}>aún no hay licencias ♡</td></tr>}</tbody>
+            </table>
           </div>
-          <div style={{ marginTop: 12, color: 'var(--p3)', fontWeight: 700, fontSize: 13 }}>✓ Validación activa · 256-bit ♡</div>
+          <div className="panelc">
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Crear licencia 💝 <span style={{ fontFamily: 'var(--jp)', fontSize: 12, color: 'var(--tx-dim)' }}>発行</span></div>
+            <input className="ta" style={{ minHeight: 0, height: 40, marginBottom: 8, borderRadius: 12 }} value={np} onChange={e => setNp(e.target.value)} placeholder="producto (slug)" />
+            <input className="ta" style={{ minHeight: 0, height: 40, marginBottom: 8, borderRadius: 12 }} value={ne} onChange={e => setNe(e.target.value)} placeholder="email comprador" />
+            <select className="ta" style={{ minHeight: 0, height: 40, marginBottom: 10, borderRadius: 12 }} value={nt} onChange={e => setNt(e.target.value)}><option value="regular">regular</option><option value="extended">extended</option></select>
+            <button className="btn pri" onClick={create}>🔑 Crear licencia</button>
+          </div>
         </div>
-      </div>
+      )}
+      {sub === 'prod' && <div className="panelc"><div style={{ display: 'flex', marginBottom: 10 }}><b style={{ flex: 1 }}>Productos / Versiones</b><button className="btn" onClick={() => api('/api/products/versions').then(r => setProds(r.data))}>↻</button></div><pre style={{ whiteSpace: 'pre-wrap', fontSize: 12.5, color: 'var(--tx-dim)', margin: 0, fontWeight: 600 }}>{prods ? ((prods.products || []).map(p => '🌸 ' + p.id + ' · ' + (p.currentVersion || '—') + ' · ' + p.repo).join('\n') || '(sin productos)') : 'cargando… ♡'}</pre></div>}
+      {sub === 'gum' && <div className="panelc"><div style={{ display: 'flex', marginBottom: 10 }}><b style={{ flex: 1 }}>Ventas Gumroad</b><button className="btn" onClick={() => api('/api/gumroad').then(r => setGum(r.data))}>↻</button></div><pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, color: 'var(--tx-dim)', margin: 0 }}>{gum ? JSON.stringify(gum, null, 2) : 'cargando… ♡'}</pre></div>}
+      {sub === 'tools' && <div className="panelc"><div style={{ display: 'flex', gap: 8, marginBottom: 10 }}><button className="btn" onClick={() => api('/api/integrations/status').then(r => setTools(JSON.stringify(r.data, null, 2)))}>Estado integraciones</button></div><pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, color: 'var(--tx-dim)', margin: 0, minHeight: 50 }}>{tools || '// resultado'}</pre></div>}
     </div>
   );
 }
@@ -707,6 +778,7 @@ function App() {
   }, []);
 
   const nav = (id) => { setProject(null); setRoute(id); };
+  useEffect(() => { window.tfNav = nav; }, []);
   const openProject = (p) => { setProject(p); setRoute('project'); };
   const titles = { gallery: '🖼️ Galería de proyectos', new: '✨ Nuevo proyecto', cost: '💰 Coste de IA', compare: '⚔️ Comparar agentes', operator: '🚀 Mission Control', market: '🌷 Market Analyzer', licensing: '🔑 Licencias', settings: '🎨 Ajustes', project: '📂 ' + (project ? project.name : '') };
 
