@@ -216,6 +216,28 @@ def _cost_data() -> dict:
     }
 
 
+_ALWAYS_MCP = {"filesystem", "fetch", "memory", "github", "themeforge"}
+
+
+def _mcp_data() -> list:
+    """Catálogo MCP real (mcp_catalog.CATALOG) en la forma del prototipo."""
+    try:
+        import mcp_catalog as mc
+    except Exception:
+        return []
+    out = []
+    for e in mc.CATALOG:
+        rel = e.relevance[0] if e.relevance else "any"
+        cat = "core" if e.key in _ALWAYS_MCP else rel
+        out.append({
+            "id": e.key, "label": e.key, "cat": cat,
+            "always": e.key in _ALWAYS_MCP,
+            "desc": e.description, "lic": e.license,
+            "repo": e.repo, "auth": bool(e.requires_auth),
+        })
+    return out
+
+
 def bootstrap_data() -> dict:
     """Todos los datos reales que el prototipo necesita, en su forma exacta."""
     td = _themes_data()
@@ -226,6 +248,7 @@ def bootstrap_data() -> dict:
         "themes": td["themes"],
         "current_theme": td["current"],
         "cost": _cost_data(),
+        "mcp": _mcp_data(),
     }
 
 

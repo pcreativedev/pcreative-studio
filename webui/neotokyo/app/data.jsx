@@ -130,7 +130,7 @@ function MockPreview({ kind, accent }) {
 Object.assign(window, { PROJECTS, STACKS, STATUS, MockPreview });
 
 /* ---- MCP catalog (.mcp.json — curated + community, from repo) ---- */
-const MCP_SERVERS = [
+const _MOCK_MCP_SERVERS = [
   { id: 'filesystem', label: 'filesystem', cat: 'core', always: true, desc: 'Acceso al árbol del proyecto', lic: 'MIT' },
   { id: 'fetch', label: 'fetch', cat: 'core', always: true, desc: 'HTTP fetch / scraping', lic: 'MIT' },
   { id: 'memory', label: 'memory', cat: 'core', always: true, desc: 'Memoria persistente del agente', lic: 'MIT' },
@@ -144,6 +144,7 @@ const MCP_SERVERS = [
   { id: 'postgres', label: 'postgres', cat: 'data', desc: 'Query a la DB provisionada', lic: 'MIT' },
   { id: 'wordpress', label: 'wordpress', cat: 'cms', desc: 'CRUD WP nativo (Automattic)', lic: 'GPL-2' },
 ];
+const MCP_SERVERS = (_TF.mcp && _TF.mcp.length) ? _TF.mcp : _MOCK_MCP_SERVERS;
 
 /* ---- Deploy targets ---- */
 const DEPLOY_TARGETS = [
