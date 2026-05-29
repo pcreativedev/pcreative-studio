@@ -25,24 +25,40 @@ function MissionRow({ m }) {
   );
 }
 
+function HermesFrame({ kind, start }) {
+  const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
+  useEffect(() => {
+    const B = window.tfBridge;
+    if (!B || !B.terminal_ready || !B.terminal_ready.connect) { setErr('sin puente'); return; }
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.kind === kind) { if (r.url) setUrl(r.url); else if (r.error) setErr(r.error); } };
+    B.terminal_ready.connect(onReady);
+    if (B[start]) B[start]();
+    return () => { try { B.terminal_ready.disconnect(onReady); } catch (e) {} };
+  }, [kind]);
+  if (err) return <div className="panel mono faint" style={{ padding: 20, color: 'var(--gemini)' }}>// {err}</div>;
+  if (!url) return <div className="panel mono faint" style={{ padding: 20 }}>// iniciando {kind === 'hermes-admin' ? 'dashboard' : 'chat'} de Hermes…</div>;
+  return <iframe src={url} style={{ width: '100%', height: '70vh', border: '1px solid var(--line)', borderRadius: 8, background: '#0c0c0d' }} />;
+}
 function OperatorScreen() {
   const _op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
   const real = !!(window.tfBridge && window.tfBridge.launch_mission);
-  // Misiones reales (vacío hasta lanzar una); mock solo sin puente.
   const [missions, setMissions] = useState(real ? (_op.missions || []) : MISSIONS);
+  const [power, setPower] = useState(!!_op.available);
+  const [tab, setTab] = useState('mision');
   const running = missions.filter(m => m.status === 'running').length;
   const queued = missions.filter(m => m.status === 'queued').length;
   const launchMission = () => {
-    if (!real) return;
+    if (!real || !power) return;
     if (!_op.available) { alert('Instala Hermes Agent para usar el Operator.'); return; }
     const brief = prompt('Describe la misión (ej: «2 variantes Envato de landing para clínica dental, stack Astro»):');
     if (!brief) return;
     window.tfBridge.launch_mission(brief);
     setMissions(ms => [{ id: 'm' + Date.now(), name: brief.slice(0, 60), agent: 'claude', status: 'running', progress: 0, eta: '—', step: 'Hermes orquestando…' }, ...ms]);
   };
+  const tabs = [['mision', '🎯 Misión'], ['chat', '💬 Chat'], ['admin', '⚙ Admin']];
   return (
     <div style={{ padding: '34px 40px 60px', position: 'relative', zIndex: 2 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
         <div>
           <Eyebrow jp="司令室">OPERATOR · HERMES MISSION CONTROL</Eyebrow>
           <h1 style={{ fontFamily: 'var(--font-mega)', fontSize: 38, margin: '12px 0 6px' }}>
@@ -50,9 +66,20 @@ function OperatorScreen() {
           </h1>
           <div className="dim" style={{ fontSize: 13.5 }}>Orquesta builds autónomos en paralelo · {running} activos · {queued} en cola</div>
         </div>
-        <Btn variant="primary" icon="rocket" onClick={launchMission}>Lanzar misión</Btn>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn variant="ghost" icon="power" onClick={() => setPower(p => !p)} disabled={!_op.available}>{power ? 'Hermes ON' : 'Hermes OFF'}</Btn>
+          {tab === 'mision' && <Btn variant="primary" icon="rocket" onClick={launchMission}>Lanzar misión</Btn>}
+        </div>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {tabs.map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ cursor: 'pointer', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontFamily: 'var(--font-display)', background: tab === k ? 'rgba(var(--accent-rgb),0.12)' : 'transparent', border: '1px solid ' + (tab === k ? 'rgba(var(--accent-rgb),0.45)' : 'var(--line)'), color: tab === k ? 'var(--accent)' : 'var(--tx-dim)' }}>{l}</button>)}
+      </div>
+
+      {tab === 'chat' && (power ? <HermesFrame kind="hermes-chat" start="start_hermes_chat" /> : <div className="panel mono faint" style={{ padding: 20 }}>// enciende Hermes para el chat</div>)}
+      {tab === 'admin' && (power ? <HermesFrame kind="hermes-admin" start="hermes_admin" /> : <div className="panel mono faint" style={{ padding: 20 }}>// enciende Hermes para el dashboard</div>)}
+
+      {tab === 'mision' && <>
       {/* live stats strip */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 22 }}>
         {[['ACTIVAS', running, 'var(--accent)'], ['EN COLA', queued, 'var(--gemini)'], ['TOTAL', missions.length, 'var(--codex)'], ['HERMES', _op.available ? (_op.version || 'on') : 'off', 'var(--accent-2)']].map(([l, v, c]) => (
@@ -89,6 +116,7 @@ function OperatorScreen() {
           </div>
         </div>
       </div>
+      </>}
     </div>
   );
 }

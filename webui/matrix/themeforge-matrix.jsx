@@ -487,45 +487,75 @@ function Compare() {
   );
 }
 
-/* ---- Operator ---- */
+/* ---- Operator (Hermes: power + Misión/Chat/Admin) ---- */
+const PHASES = ['Plan', 'Crear', 'Build', 'QA', 'Empaquetar'];
+// iframe del Chat/Admin de Hermes (terminal_ready filtrado por kind).
+function HermesFrame({ kind, start }) {
+  const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
+  useEffect(() => {
+    const B = window.tfBridge;
+    if (!B || !B.terminal_ready || !B.terminal_ready.connect) { setErr('sin puente'); return; }
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.kind === kind) { if (r.url) setUrl(r.url); else if (r.error) setErr(r.error); } };
+    B.terminal_ready.connect(onReady);
+    if (B[start]) B[start]();
+    return () => { try { B.terminal_ready.disconnect(onReady); } catch (e) {} };
+  }, [kind]);
+  if (err) return <div className="panelc" style={{ color: 'var(--p3)', fontFamily: 'var(--term)' }}>// {err}</div>;
+  if (!url) return <div className="panelc" style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// iniciando {kind === 'hermes-admin' ? 'dashboard' : 'chat'} de Hermes…</div>;
+  return <iframe src={url} style={{ width: '100%', height: '68vh', border: '1px solid var(--line)', borderRadius: 4, background: '#040804' }} />;
+}
 function Operator() {
   const op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
   const real = !!(window.tfBridge && window.tfBridge.launch_mission);
-  const [missions, setMissions] = useState([]);  // misiones reales (vacío al inicio)
+  const [missions, setMissions] = useState([]);
+  const [power, setPower] = useState(!!op.available);
+  const [tab, setTab] = useState('mision');
   const launch = () => {
-    if (!real) return;
+    if (!real || !power) return;
     if (!op.available) { alert('Instala Hermes Agent para usar el Operator.'); return; }
     const brief = prompt('Describe la misión (ej: «2 variantes Envato de landing dental, stack Astro»):');
     if (!brief) return;
     window.tfBridge.launch_mission(brief);
-    setMissions(ms => [{ id: 'm' + ms.length, name: brief.slice(0, 60), agent: 'claude', st: 'corriendo', pct: 0, eta: 'Hermes…' }, ...ms]);
+    setMissions(ms => [{ id: 'm' + ms.length, name: brief.slice(0, 60), agent: 'claude', st: 'corriendo', pct: 10, phase: 0, eta: 'Hermes…' }, ...ms]);
   };
   const running = missions.filter(m => m.pct < 100).length;
+  const tabs = [['mision', '🎯 Misión'], ['chat', '💬 Chat'], ['admin', '⚙ Admin']];
   return (
     <div className="page fade">
       <h2 className="sec">⌬ Mission Control <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>司令室</span>
-        <button className="btn pri" style={{ float: 'right' }} onClick={launch}>▶ Lanzar misión</button></h2>
-      <div className="stats" style={{ marginBottom: 22 }}>
+        <button className="btn" style={{ float: 'right', color: power ? 'var(--accent)' : 'var(--p3)', borderColor: power ? 'var(--accent)' : 'var(--p3)' }} onClick={() => setPower(p => !p)} disabled={!op.available}>⏻ {power ? 'Hermes ON' : 'Hermes OFF'}</button></h2>
+      <div className="stats" style={{ marginBottom: 16 }}>
         {[['▶', String(running), 'activas'], ['◫', String(missions.length), 'total'], ['◈', op.available ? (op.version || 'on') : 'off', 'hermes']].map(([e, n, l]) => (
           <div className="stat" key={l}><div className="em">{e}</div><div className="n">{n}</div><div className="l">{l}</div></div>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-        {missions.length ? missions.map(m => {
-          const a = AGENTS[m.agent] || { color: 'var(--accent)', em: '◆' };
-          return (
-            <div className="panelc" key={m.id} style={{ padding: '15px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--term)' }}>
-                <span style={{ fontSize: 15, color: a.color }}>{a.em}</span>
-                <b style={{ flex: 1 }}>{m.name}</b>
-                <span style={{ color: m.pct === 100 ? 'var(--accent)' : 'var(--p3)' }}>{m.st}</span>
-                <span style={{ color: 'var(--tx-dim)', width: 56, textAlign: 'right' }}>{m.eta}</span>
-              </div>
-              <div className="bar2" style={{ marginTop: 11 }}><i style={{ width: m.pct + '%' }} /></div>
-            </div>
-          );
-        }) : <div className="panelc" style={{ padding: 30, textAlign: 'center', color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// sin misiones — pulsa «Lanzar misión» {op.available ? '' : '(requiere Hermes)'}</div>}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        {tabs.map(([k, l]) => <button key={k} className={'fchip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}
       </div>
+      {tab === 'mision' && <>
+        <button className="btn pri" style={{ marginBottom: 16 }} onClick={launch} disabled={!power}>▶ Lanzar misión</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+          {missions.length ? missions.map(m => {
+            const a = AGENTS[m.agent] || { color: 'var(--accent)', em: '◆' };
+            return (
+              <div className="panelc" key={m.id} style={{ padding: '15px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--term)' }}>
+                  <span style={{ fontSize: 15, color: a.color }}>{a.em}</span>
+                  <b style={{ flex: 1 }}>{m.name}</b>
+                  <span style={{ color: m.pct === 100 ? 'var(--accent)' : 'var(--p3)' }}>{m.st}</span>
+                  <span style={{ color: 'var(--tx-dim)', width: 56, textAlign: 'right' }}>{m.eta}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 10, fontFamily: 'var(--term)', fontSize: 11 }}>
+                  {PHASES.map((ph, i) => <span key={ph} style={{ color: i <= (m.phase || 0) ? 'var(--accent)' : 'var(--tx-dim)' }}>{i <= (m.phase || 0) ? '●' : '○'} {ph}</span>)}
+                </div>
+                <div className="bar2" style={{ marginTop: 10 }}><i style={{ width: m.pct + '%' }} /></div>
+              </div>
+            );
+          }) : <div className="panelc" style={{ padding: 30, textAlign: 'center', color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// sin misiones — pulsa «Lanzar misión» {op.available ? '' : '(requiere Hermes)'}</div>}
+        </div>
+      </>}
+      {tab === 'chat' && (power ? <HermesFrame kind="hermes-chat" start="start_hermes_chat" /> : <div className="panelc" style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// enciende Hermes para el chat</div>)}
+      {tab === 'admin' && (power ? <HermesFrame kind="hermes-admin" start="hermes_admin" /> : <div className="panelc" style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// enciende Hermes para el dashboard</div>)}
     </div>
   );
 }

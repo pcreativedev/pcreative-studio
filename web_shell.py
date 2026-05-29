@@ -700,6 +700,53 @@ class ThemeForgeBridge(QObject):
             return json.dumps({"ok": False, "error": "Hermes no instalado"})
         return self._start_terminal(path, hermes, ["-s", "themeforge-operator"], "hermes")
 
+    @pyqtSlot(result=str)
+    def start_hermes_chat(self) -> str:
+        """Chat Hermes (Operator) sin proyecto concreto — corre en ~ . Emite
+        `terminal_ready` con kind 'hermes-chat' (path = home)."""
+        import shutil
+        from pathlib import Path
+        hermes = shutil.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
+        if not Path(hermes).is_file():
+            self.terminal_ready.emit(json.dumps({"path": "~", "kind": "hermes-chat", "error": "Hermes no instalado"}))
+            return json.dumps({"ok": False, "error": "Hermes no instalado"})
+        return self._start_terminal(str(Path.home()), hermes, ["-s", "themeforge-operator"], "hermes-chat")
+
+    @pyqtSlot(result=str)
+    def hermes_admin(self) -> str:
+        """Arranca el dashboard web de Hermes (`hermes dashboard --tui`) en un
+        puerto libre, sondea hasta que responda y emite `terminal_ready`
+        {kind:'hermes-admin', url} para embeberlo por iframe."""
+        import shutil
+        from pathlib import Path
+        hermes = shutil.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
+        if not Path(hermes).is_file():
+            self.terminal_ready.emit(json.dumps({"kind": "hermes-admin", "error": "Hermes no instalado"}))
+            return json.dumps({"ok": False, "error": "Hermes no instalado"})
+        port = _free_port()
+        proc = QProcess(self)
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.start(hermes, ["dashboard", "--tui", "--no-open", "--skip-build",
+                            "--host", "127.0.0.1", "--port", str(port)])
+        self._procs.append(proc)
+        state = {"n": 0}
+        timer = QTimer(self)
+        timer.setInterval(700)
+
+        def _poll():
+            state["n"] += 1
+            if self._port_is_open("127.0.0.1", port):
+                self.terminal_ready.emit(json.dumps(
+                    {"kind": "hermes-admin", "url": f"http://127.0.0.1:{port}/"}))
+                timer.stop()
+            elif state["n"] > 40:  # ~28s
+                self.terminal_ready.emit(json.dumps(
+                    {"kind": "hermes-admin", "error": "el dashboard no respondió a tiempo"}))
+                timer.stop()
+        timer.timeout.connect(_poll)
+        timer.start()
+        return json.dumps({"ok": True, "starting": True})
+
     @pyqtSlot(str, result=str)
     def start_setup(self, path: str) -> str:
         """Pestaña «Setup»: ejecuta el setup REAL (scaffold + npm install +
