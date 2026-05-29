@@ -502,6 +502,98 @@ def run_agent_build(
     }
 
 
+@mcp.tool()
+def screenshot_project(
+    project_path: str,
+    route: str = "/",
+    viewport: str = "1280x800",
+    timeout: int = 90,
+) -> dict:
+    """Capture a PNG screenshot of the project's running web preview, for
+    VISUAL QA. Starts the dev server (via ThemeForge's preview detection),
+    waits for it, screenshots with headless Chromium, then stops the server.
+
+    Returns {ok, image_path, url}. Pass image_path to your `vision_analyze`
+    tool to critique the design (layout, hierarchy, spacing, color, polish)
+    and feed fixes back into run_agent_build. Works for JS dev-server stacks
+    (Next/Astro/Vite/etc.); for stacks it can't auto-serve it returns an
+    error and you should fall back to your own browser_navigate+browser_vision.
+
+    Args:
+      project_path: absolute project path.
+      route: path to capture (e.g. "/", "/pricing").
+      viewport: "WxH" (default 1280x800; use 390x844 for mobile).
+      timeout: seconds to wait for the dev server before giving up.
+    """
+    import shutil
+    import socket
+    import subprocess
+    import time as _time
+    import preview as _pv
+
+    p = Path(project_path).expanduser().resolve()
+    if not p.is_dir():
+        return {"ok": False, "error": f"not a directory: {p}"}
+    profile = _pv.detect_preview_profile(p)
+    if not profile or not profile.get("command"):
+        return {"ok": False, "error": "no web dev-server profile detected; "
+                "use browser_navigate+browser_vision against a running server."}
+    chrome = next((c for c in ("chromium", "chromium-browser", "google-chrome",
+                               "google-chrome-stable", "brave", "brave-browser")
+                   if shutil.which(c)), None)
+    if not chrome:
+        return {"ok": False, "error": "no Chromium/Chrome found for screenshot."}
+
+    port = _pv.get_port_for_project(p.name, int(profile.get("default_port", 3000)))
+    cmd, env_over, url = _pv.apply_port(profile, port)
+    try:
+        w, h = (int(x) for x in viewport.lower().split("x", 1))
+    except Exception:
+        w, h = 1280, 800
+    full_url = url.rstrip("/") + "/" + route.lstrip("/")
+    out = p / "screenshots"; out.mkdir(exist_ok=True)
+    out_png = out / f"qa-{route.strip('/').replace('/', '_') or 'home'}-{port}.png"
+
+    import os
+    env = {**os.environ, **(env_over or {})}
+    server = None
+    try:
+        server = subprocess.Popen(cmd, cwd=str(p), env=env,
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Espera a que el puerto acepte conexiones.
+        deadline = _time.monotonic() + timeout
+        up = False
+        while _time.monotonic() < deadline:
+            if server.poll() is not None:
+                return {"ok": False, "error": "dev server exited early "
+                        f"(exit {server.returncode}); may need a build step first."}
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    up = True; break
+            except OSError:
+                _time.sleep(0.7)
+        if not up:
+            return {"ok": False, "error": f"dev server not ready on :{port} in {timeout}s."}
+        _time.sleep(2.0)  # margen para el primer render/hidratación
+        r = subprocess.run(
+            [chrome, "--headless=new", "--hide-scrollbars", "--no-sandbox",
+             f"--window-size={w},{h}", f"--screenshot={out_png}", full_url],
+            capture_output=True, text=True, timeout=60)
+        if not out_png.is_file():
+            return {"ok": False, "error": f"screenshot failed: {(r.stderr or '')[-300:]}"}
+        return {"ok": True, "image_path": str(out_png), "url": full_url,
+                "viewport": f"{w}x{h}"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": str(e)}
+    finally:
+        if server and server.poll() is None:
+            server.terminate()
+            try:
+                server.wait(timeout=5)
+            except Exception:
+                server.kill()
+
+
 # ─────────────────── Entry point ────────────────────────────────────
 if __name__ == "__main__":
     mcp.run(transport="stdio")

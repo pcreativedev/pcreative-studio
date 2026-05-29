@@ -325,6 +325,16 @@ class MissionTab(QWidget):
         self.cb_research.setToolTip("Hermes estudia tendencias/competencia con "
                                     "web_search/browser antes de diseñar.")
         row_stack.addWidget(self.cb_research)
+        self.cb_images = QCheckBox("🎨 Imágenes IA")
+        self.cb_images.setChecked(True)
+        self.cb_images.setToolTip("Genera assets originales (hero/OG/logos/ilustraciones) "
+                                  "con image_generate, además de Unsplash/Pixabay.")
+        row_stack.addWidget(self.cb_images)
+        self.cb_visualqa = QCheckBox("👁️ QA visual")
+        self.cb_visualqa.setChecked(True)
+        self.cb_visualqa.setToolTip("Screenshot del preview → vision_analyze → "
+                                    "crítica de diseño → fix (loop estético).")
+        row_stack.addWidget(self.cb_visualqa)
         self.cb_audit = QCheckBox("🔒 Auditoría")
         self.cb_audit.setChecked(True); self.cb_audit.setEnabled(False)
         self.cb_audit.setToolTip("Auditoría de seguridad/compliance OBLIGATORIA "
@@ -426,20 +436,30 @@ class MissionTab(QWidget):
                     "trends, top ThemeForest/Dribbble/Awwwards references and 2-3 "
                     "competitors → a short design brief that feeds the build prompts. "
                     if self.cb_research.isChecked() else "")
+        images = ("Generate ORIGINAL imagery with image_generate (hero/sections via "
+                  "FLUX, logos/vectors via Recraft, OG images) on-brand with each "
+                  "palette; save them in the project and reference them. "
+                  if self.cb_images.isChecked() else "")
+        visualqa = ("Then a VISUAL QA loop: screenshot_project key routes (desktop + "
+                    "mobile) → vision_analyze → fix design issues (max 3 passes), and a "
+                    "browser smoke test of the multipage nav. "
+                    if self.cb_visualqa.isChecked() else "")
         return (
             f"Run a ThemeForge Operator mission. Build agent (provider): {prov}. "
             f"Number of variants: {n}. {stack_line}Mission brief: {brief}\n\n"
             "Follow the themeforge-operator skill (web/UX-UI specialized). " + research +
             "Plan a MULTIPAGE web template with a DISTINCT UI/UX Pro Max style+palette "
             "per variant; read & follow the skills listed in the project's AGENTS.md. "
+            + images +
             "For each variant: create_project (run_autoskills=true, run_uipro=true), "
             "run_agent_build with a detailed prompt (real routes/pages + complete demo "
-            "data + Unsplash/Pixabay images, Envato-ready), run_preflight in a QA loop "
-            "(max 3 fixes), THEN the mandatory SECURITY & COMPLIANCE AUDIT (no leaked "
-            "secrets, npm/composer audit, no malicious code, asset licenses, XSS/CSRF/"
-            "SQLi) — only package with build_zip if the audit passes. For multiple "
-            "variants dispatch parallel delegate_task subagents. Report each variant: "
-            "path, style, QA result, security verdict, zip.")
+            "data + real images, Envato-ready), run_preflight in a QA loop (max 3 fixes). "
+            + visualqa +
+            "THEN the mandatory SECURITY & COMPLIANCE AUDIT (no leaked secrets, npm/"
+            "composer audit, no malicious code, asset licenses, XSS/CSRF/SQLi) — only "
+            "package with build_zip if the audit passes. For multiple variants dispatch "
+            "parallel delegate_task subagents. Report each variant: path, style, QA "
+            "result, visual-QA notes, security verdict, zip.")
 
     # ── run / stop ──
     def _launch(self):
@@ -469,9 +489,15 @@ class MissionTab(QWidget):
         self._proc.errorOccurred.connect(
             lambda _e: self._append("✗ no se pudo ejecutar hermes."))
         args = ["chat", "-q", self._build_prompt(), "-s", self.SKILL]
-        if self.cb_research.isChecked():
-            # Habilita búsqueda/navegación web para la investigación de diseño.
-            args += ["-t", "web,browser"]
+        # Toolsets extra según los toggles (web/browser research, imágenes, visión).
+        tsets = ["terminal", "delegation"]
+        if self.cb_research.isChecked() or self.cb_visualqa.isChecked():
+            tsets += ["web", "browser"]
+        if self.cb_images.isChecked():
+            tsets.append("image_gen")
+        if self.cb_visualqa.isChecked():
+            tsets.append("vision")
+        args += ["-t", ",".join(dict.fromkeys(tsets))]
         self._proc.start(self._hermes, args)
 
     def _on_output(self):
@@ -1619,6 +1645,142 @@ class CronTab(QWidget):
             self.refresh()
 
 
+# ───────────────────────── 🛡️ Avanzado (sandbox + portal + remoto) ──────
+class AdvancedTab(QWidget):
+    """Seguridad/aislamiento de ejecución, portal de imágenes y control remoto
+    (gateway). Envuelve `hermes config set` + `hermes portal` + `hermes gateway`."""
+
+    BACKENDS = ["local", "docker", "ssh", "modal", "daytona", "singularity"]
+    APPROVALS = ["manual", "smart", "off"]
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._hermes = find_hermes()
+        self._proc: QProcess | None = None
+        root = QVBoxLayout(self)
+
+        title = QLabel("🛡️ Avanzado")
+        f = QFont(); f.setPointSize(13); f.setBold(True); title.setFont(f)
+        root.addWidget(title)
+
+        # ── Sandbox / seguridad ──
+        sbox = QFrame(); sbox.setFrameShape(QFrame.Shape.StyledPanel)
+        sl = QVBoxLayout(sbox)
+        sl.addWidget(QLabel("<b>🔒 Aislamiento & seguridad de ejecución</b>"))
+        sl.addWidget(QLabel("Para cadenas autónomas, ejecuta los builds en contenedor "
+                            "(el sandbox es la frontera de seguridad) y controla la "
+                            "aprobación de comandos peligrosos."))
+        sform = QFormLayout()
+        self.cb_backend = QComboBox(); self.cb_backend.addItems(self.BACKENDS)
+        self.cb_backend.setToolTip("local = en tu máquina · docker/modal/daytona = "
+                                   "aislado en contenedor (recomendado para cadenas).")
+        sform.addRow("Backend terminal:", self.cb_backend)
+        self.cb_approvals = QComboBox(); self.cb_approvals.addItems(self.APPROVALS)
+        self.cb_approvals.setToolTip("manual = siempre pregunta · smart = la IA evalúa "
+                                     "el riesgo · off = sin checks (solo en sandbox).")
+        sform.addRow("Aprobaciones:", self.cb_approvals)
+        sl.addLayout(sform)
+        self.btn_apply_sec = QPushButton("Aplicar seguridad")
+        self.btn_apply_sec.clicked.connect(self._apply_security)
+        sl.addWidget(self.btn_apply_sec)
+        root.addWidget(sbox)
+
+        # ── Portal / imágenes ──
+        pbox = QFrame(); pbox.setFrameShape(QFrame.Shape.StyledPanel)
+        pl = QVBoxLayout(pbox)
+        pl.addWidget(QLabel("<b>🎨 Portal de herramientas (imágenes, web, browser)</b>"))
+        pl.addWidget(QLabel("El Nous Portal habilita image_generate (FLUX/Recraft/"
+                            "Ideogram), web search y cloud browser con una sola cuenta."))
+        prow = QHBoxLayout()
+        self.btn_portal = QPushButton("Estado del portal")
+        self.btn_portal.clicked.connect(lambda: self._run(["portal", "status"]))
+        prow.addWidget(self.btn_portal)
+        self.btn_portal_tools = QPushButton("Herramientas del portal")
+        self.btn_portal_tools.clicked.connect(lambda: self._run(["portal", "tools"]))
+        prow.addWidget(self.btn_portal_tools)
+        prow.addStretch()
+        pl.addLayout(prow)
+        root.addWidget(pbox)
+
+        # ── Remoto / gateway ──
+        gbox = QFrame(); gbox.setFrameShape(QFrame.Shape.StyledPanel)
+        gl = QVBoxLayout(gbox)
+        gl.addWidget(QLabel("<b>📲 Control remoto (gateway)</b>"))
+        gl.addWidget(QLabel("Lanza misiones desde Telegram/Discord/Slack y recibe el "
+                            "aviso/zip al terminar. El daemon también tickea el cron."))
+        grow = QHBoxLayout()
+        for label, args in (("Estado", ["gateway", "status"]),
+                            ("▶ Arrancar", ["gateway", "start"]),
+                            ("⏹ Parar", ["gateway", "stop"]),
+                            ("Pairing", ["pairing", "list"])):
+            b = QPushButton(label)
+            b.clicked.connect(lambda _c=False, a=args: self._run(a))
+            grow.addWidget(b)
+        grow.addStretch()
+        gl.addLayout(grow)
+        gl.addWidget(QLabel("<span style='color:#888'>Configurar plataformas: "
+                            "<code>hermes gateway setup</code> en una terminal "
+                            "(asistente interactivo) o desde ⚙️ Admin.</span>"))
+        root.addWidget(gbox)
+
+        self.log = QPlainTextEdit(); self.log.setReadOnly(True)
+        self.log.setStyleSheet("font-family:monospace; font-size:11px; "
+                               "background:#111; color:#cdd;")
+        root.addWidget(self.log, 1)
+
+        if not self._hermes:
+            root.insertWidget(1, _no_hermes_banner("ℹ️ Hermes no instalado."))
+        self.refresh()
+
+    def refresh(self):
+        prov, model = _hermes_model_info()  # noqa: F841 (toca config; barato)
+        # Lee backend/approvals actuales del config.
+        be = ap = None
+        cfg = HERMES_HOME / "config.yaml"
+        if cfg.is_file():
+            try:
+                txt = cfg.read_text(encoding="utf-8")
+                for ln in txt.splitlines():
+                    s = ln.strip()
+                    if s.startswith("backend:") and be is None:
+                        be = s.split(":", 1)[1].strip()
+                    if s.startswith("mode:") and ap is None:
+                        ap = s.split(":", 1)[1].strip()
+            except Exception:
+                pass
+        if be in self.BACKENDS:
+            self.cb_backend.setCurrentText(be)
+        if ap in self.APPROVALS:
+            self.cb_approvals.setCurrentText(ap)
+
+    def _apply_security(self):
+        if not self._hermes:
+            return
+        be = self.cb_backend.currentText()
+        ap = self.cb_approvals.currentText()
+        c1, o1 = run_hermes(["config", "set", "terminal.backend", be], timeout=15)
+        c2, o2 = run_hermes(["config", "set", "approvals.mode", ap], timeout=15)
+        self.log.appendPlainText(
+            f"$ hermes config set terminal.backend {be}\n{o1}\n"
+            f"$ hermes config set approvals.mode {ap}\n{o2}")
+        self.log.appendPlainText("✓ seguridad aplicada" if c1 == 0 and c2 == 0
+                                 else "✗ revisa la salida")
+
+    def _run(self, args: list[str]):
+        if not self._hermes:
+            return
+        self.log.appendPlainText(f"$ hermes {' '.join(args)}")
+        self._proc = _spawn_hermes(
+            self, args, lambda t: self.log.appendPlainText(t.rstrip()),
+            lambda code: self.log.appendPlainText(f"■ exit {code}"))
+
+    def set_powered(self, on: bool):
+        for b in (self.btn_apply_sec, self.btn_portal, self.btn_portal_tools):
+            b.setEnabled(bool(self._hermes) and on)
+        if on:
+            self.refresh()
+
+
 # ───────────────────────── stubs (fases siguientes) ─────────────────────
 class _StubTab(QWidget):
     """Placeholder honesto para tabs aún no implementados. Explica qué hará."""
@@ -1676,6 +1838,7 @@ class HermesPanel(QWidget):
         self.memory = MemoryTab()
         self.kanban = KanbanTab()
         self.cron = CronTab()
+        self.advanced = AdvancedTab()
         self.chat = HermesTerminal()
         self.admin = AdminTab()
 
@@ -1686,6 +1849,7 @@ class HermesPanel(QWidget):
         self.tabs.addTab(self.memory, "🧠 Memoria")
         self.tabs.addTab(self.kanban, "📊 Kanban")
         self.tabs.addTab(self.cron, "⏰ Cron")
+        self.tabs.addTab(self.advanced, "🛡️ Avanzado")
         self.tabs.addTab(self.admin, "⚙️ Admin")
         self.tabs.addTab(self.chat, "💬 Chat")
 
@@ -1700,7 +1864,7 @@ class HermesPanel(QWidget):
         self._powered = on
         self.strip.set_powered(on)
         for t in (self.mission, self.provider, self.agents, self.create,
-                  self.memory, self.kanban, self.cron, self.admin):
+                  self.memory, self.kanban, self.cron, self.advanced, self.admin):
             try:
                 t.set_powered(on)
             except Exception:

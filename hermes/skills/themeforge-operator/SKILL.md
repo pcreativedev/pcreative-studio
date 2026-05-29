@@ -1,11 +1,11 @@
 ---
 name: themeforge-operator
-description: "Autonomously build marketplace-ready (ThemeForest/Envato/CodeCanyon) WEB templates & pages via the ThemeForge MCP — specialized in web design, UX/UI & aesthetics. Workflow: research (web) -> plan -> create -> build -> QA-loop -> SECURITY AUDIT -> package. Builds single templates or whole CHAINS (batches) of them, spawns parallel subagents per variant, and learns across projects."
-version: 1.1.0
+description: "Autonomously build marketplace-ready (ThemeForest/Envato/CodeCanyon) WEB templates & pages via the ThemeForge MCP — specialized in web design, UX/UI & aesthetics. Workflow: research (web) -> plan -> generate original imagery -> create -> build -> QA-loop (technical + VISUAL) -> SECURITY AUDIT -> package. Builds single templates or whole CHAINS (batches), spawns parallel subagents per variant, and learns across projects."
+version: 1.2.0
 platforms: [linux, macos, windows]
 metadata:
   hermes:
-    tags: [themeforge, marketplace, envato, themeforest, codecanyon, web-design, ux, ui, aesthetics, design-research, scaffolding, security-audit, delegation, parallel, batch]
+    tags: [themeforge, marketplace, envato, themeforest, codecanyon, web-design, ux, ui, aesthetics, design-research, image-generation, visual-qa, scaffolding, security-audit, delegation, parallel, batch]
     requires_toolsets: [terminal]
     related_skills: [subagent-driven-development, codex, popular-web-designs, dogfood]
 ---
@@ -35,8 +35,13 @@ The `themeforge` MCP server must be connected. Tools are prefixed `mcp_themeforg
 - `mcp_themeforge_create_project` — create dir + AI context + autoskills + UI/UX Pro Max
 - `mcp_themeforge_run_agent_build` — run an AI agent autonomously to build/edit a project
 - `mcp_themeforge_run_preflight` — marketplace readiness checks (pass/warn/fail)
+- `mcp_themeforge_screenshot_project` — start the dev server, screenshot a route, stop it → PNG path (for VISUAL QA)
 - `mcp_themeforge_build_zip` — package a project for marketplace upload
 - `mcp_themeforge_list_supported_providers` — agent providers + auth status
+
+You also have **Hermes's own toolsets** (use them): `web`/`browser` (research + live
+testing), `image_generate` (original imagery), `vision_analyze` (visual critique),
+`delegate_task` (parallel subagents), `cronjob`, `memory`, `send_message`.
 
 If these tools are not available, tell the user to register the `themeforge` MCP
 server in `~/.hermes/config.yaml` and stop.
@@ -74,6 +79,18 @@ UI/UX Pro Max):
   hero concept, must-have sections) and feed it into each build prompt. Save it to the
   project's `.hermes.md`.
 
+## 0b. Generate original imagery (don't ship only stock)
+For a premium, non-generic look, **generate original assets with `image_generate`**
+and place them in the project (then reference them in the build), instead of relying
+only on Unsplash/Pixabay:
+- **Hero / section backgrounds / photos** → FLUX 2 Pro (fidelity) or FLUX 2 Klein (fast).
+- **Logos / icons / vector marks** → Recraft V4 Pro (vector/graphic design).
+- **In-image text (badges, banners)** → Ideogram V3 (strong text adherence).
+- **OG / social preview image** per page.
+Prompt each from the niche + the chosen palette/style so imagery is on-brand. Save to
+the project (e.g. `public/img/`), use real `alt`, and keep file sizes web-optimized.
+If the image gateway/keys aren't available, fall back to Unsplash/Pixabay gracefully.
+
 ## Workflow (per template)
 
 ### 1. Plan
@@ -94,11 +111,21 @@ UI/UX Pro Max):
    **style + palette**; multipage routes; **complete realistic demo data + real image
    URLs (Unsplash/Pixabay)**, no lorem ipsum / broken images; **Envato-ready**
    (responsive 360→1920, WCAG AA, SEO per page, clean code, docs); concrete sections.
-3. **QA loop:** `mcp_themeforge_run_preflight(project_path)`. On `fail` (or important
-   `warn`), `run_agent_build` again with the SPECIFIC issues. Repeat until pass **or 3
-   iterations** — never loop forever.
-4. **Security & compliance audit (BEFORE packaging) — MANDATORY GATE.** See below.
-5. **Package:** only after the audit passes → `mcp_themeforge_build_zip(project_path)`.
+3. **Technical QA loop:** `mcp_themeforge_run_preflight(project_path)`. On `fail` (or
+   important `warn`), `run_agent_build` again with the SPECIFIC issues. Repeat until pass
+   **or 3 iterations** — never loop forever.
+4. **VISUAL QA loop (you specialize in aesthetics):** `mcp_themeforge_screenshot_project`
+   for the key routes (home + 1-2 inner pages) at desktop (1280x800) and mobile
+   (390x844). Run `vision_analyze` on each PNG and critique like a senior product
+   designer: visual hierarchy, spacing/rhythm, type scale, color/contrast, alignment,
+   imagery quality, empty states, mobile layout, and overall "would this sell on
+   ThemeForest?". Feed concrete fixes into `run_agent_build`. Re-screenshot. Cap at 2-3
+   visual passes. (If screenshot_project can't serve the stack, use your own
+   `browser_navigate` + `browser_vision` against a running dev server.)
+5. **Browser smoke test:** with `browser_navigate`, click through the nav to confirm the
+   MULTIPAGE routes load and links/forms work (not just the home page).
+6. **Security & compliance audit (BEFORE packaging) — MANDATORY GATE.** See below.
+7. **Package:** only after the audit passes → `mcp_themeforge_build_zip(project_path)`.
 
 ### 3. 🔒 Security & compliance audit — runs BEFORE every `build_zip`
 Security is always ahead of shipping. Do NOT package a template that fails this gate.
@@ -118,10 +145,19 @@ Run it on the project dir (use terminal + read tools):
 - If anything fails → `run_agent_build` with the specific finding to fix, then re-audit.
   Record the audit result (pass + what was checked) in `.hermes.md`. Only then package.
 
-### 4. Report
+### Report
 Per template/variant: name, `project_path`, stack, style/palette, preflight result,
-**security-audit verdict (what was checked + pass/fix)**, and zip path. Flag anything
-still failing.
+**visual-QA notes**, **security-audit verdict (what was checked + pass/fix)**, and zip
+path. Flag anything still failing.
+
+## Execution safety & notifications
+- **Isolation:** for autonomous/unattended runs (chains, cron) prefer a sandboxed
+  terminal backend (`terminal.backend: docker`/modal/daytona in `~/.hermes/config.yaml`)
+  so builds run inside a container — the container is the security boundary. The
+  dangerous-command approval system and the hardline blocklist still protect local runs.
+- **Notify on completion:** when a mission/chain finishes (especially headless or via
+  cron), use `send_message` to deliver a summary + zip path(s) to the user's channel
+  (Telegram/Discord/…) so they don't have to watch the run.
 
 ## Chain mode — build templates in a batch, automatically
 When the user asks for many templates ("haz 10 landings de nichos distintos", "una
