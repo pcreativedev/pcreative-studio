@@ -1421,6 +1421,12 @@ class HermesPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._powered = False
+        # Distribuye/actualiza el skill themeforge-operator del repo a ~/.hermes.
+        try:
+            from hermes_operator_skill import ensure_operator_skill_installed
+            ensure_operator_skill_installed()
+        except Exception:
+            pass
         outer = QVBoxLayout(self)
         outer.setContentsMargins(6, 6, 6, 6)
 
