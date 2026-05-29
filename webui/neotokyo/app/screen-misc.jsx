@@ -107,7 +107,16 @@ function MarketScreen() {
           {[['@general', 'Mercado 2026'], ['@stacks', 'Stacks'], ['@prediction', 'Predicción 2027']].map(([k, l]) => (
             <button key={k} className="chip" style={{ cursor: 'pointer' }} onClick={() => { setLoading(true); setDone(false); setMd(''); window.tfBridge.analyze_market(k); }}>{l}</button>
           ))}
-          {done && md && <button className="chip" style={{ cursor: 'pointer', marginLeft: 'auto', color: 'var(--codex)', borderColor: 'var(--codex)' }} onClick={() => window.tfNav && window.tfNav('new')}>🚀 Crear proyecto desde este análisis</button>}
+          {(() => { const g = (s) => { setLoading(true); setDone(false); setMd(''); window.tfBridge.analyze_market(s); }; return [
+            <button key="ni" className="chip" style={{ cursor: 'pointer' }} onClick={() => { const v = prompt('Nicho concreto:'); if (v) g(v); }}>🎯 Nicho</button>,
+            <button key="mk" className="chip" style={{ cursor: 'pointer' }} onClick={() => { const v = prompt('Marketplace (ThemeForest/CodeCanyon/Gumroad…):'); if (v) g('marketplace: ' + v); }}>🏪 Marketplace</button>,
+            <button key="cm" className="chip" style={{ cursor: 'pointer' }} onClick={() => { const a = prompt('Nicho A:'); if (!a) return; const b = prompt('Nicho B:'); if (!b) return; g('compara estos 2 nichos: ' + a + ' vs ' + b); }}>⚖ Comparar 2</button>,
+          ]; })()}
+          {done && md && <>
+            <button className="chip" style={{ cursor: 'pointer' }} onClick={() => { try { navigator.clipboard.writeText(md); } catch (e) {} }}>📋 Copiar</button>
+            <button className="chip" style={{ cursor: 'pointer' }} onClick={() => window.tfBridge.market_export && window.tfBridge.market_export(md)}>💾 Exportar</button>
+            <button className="chip" style={{ cursor: 'pointer', marginLeft: 'auto', color: 'var(--codex)', borderColor: 'var(--codex)' }} onClick={() => window.tfNav && window.tfNav('new')}>🚀 Crear proyecto desde este análisis</button>
+          </>}
         </div>
       )}
 

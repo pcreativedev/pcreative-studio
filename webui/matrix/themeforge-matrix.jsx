@@ -905,6 +905,11 @@ function Market() {
     return () => { try { window.tfBridge.market_result.disconnect(onRes); } catch (e) {} };
   }, []);
   const go = (kind) => { if (!real) return; setLoad(true); setDone(false); setMd(''); window.tfBridge.analyze_market(kind || q); };
+  const niche = () => { const v = prompt('Nicho concreto a investigar:'); if (v) go(v); };
+  const market = () => { const v = prompt('Marketplace (ThemeForest / CodeCanyon / Gumroad…):'); if (v) go('marketplace: ' + v); };
+  const cmp = () => { const a = prompt('Nicho A:'); if (!a) return; const b = prompt('Nicho B:'); if (!b) return; go('compara estos 2 nichos: ' + a + ' vs ' + b); };
+  const copy = () => { try { navigator.clipboard.writeText(md); } catch (e) {} };
+  const exportMd = () => { if (window.tfBridge && window.tfBridge.market_export) window.tfBridge.market_export(md); };
   return (
     <div className="page fade">
       <h2 className="sec">⊞ Market Analyzer <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>市場分析</span></h2>
@@ -914,7 +919,14 @@ function Market() {
       </div>
       {real && <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', fontFamily: 'var(--term)' }}>
         {[['@general', 'Mercado 2026'], ['@stacks', 'Stacks'], ['@prediction', 'Predicción 2027']].map(([k, l]) => <button key={k} className="tag" style={{ cursor: 'pointer' }} onClick={() => go(k)}>{l}</button>)}
-        {done && md && <button className="tag" style={{ cursor: 'pointer', marginLeft: 'auto', color: 'var(--accent)' }} onClick={() => window.tfNav && window.tfNav('new')}>▶ Crear proyecto desde análisis</button>}
+        <button className="tag" style={{ cursor: 'pointer' }} onClick={niche}>🎯 Nicho</button>
+        <button className="tag" style={{ cursor: 'pointer' }} onClick={market}>🏪 Marketplace</button>
+        <button className="tag" style={{ cursor: 'pointer' }} onClick={cmp}>⚖ Comparar 2</button>
+        {done && md && <>
+          <button className="tag" style={{ cursor: 'pointer' }} onClick={copy}>📋 Copiar</button>
+          <button className="tag" style={{ cursor: 'pointer' }} onClick={exportMd}>💾 Exportar</button>
+          <button className="tag" style={{ cursor: 'pointer', marginLeft: 'auto', color: 'var(--accent)' }} onClick={() => window.tfNav && window.tfNav('new')}>▶ Crear proyecto desde análisis</button>
+        </>}
       </div>}
       {load && <div className="panelc" style={{ textAlign: 'center', color: 'var(--accent)', fontFamily: 'var(--term)' }}>{'>'} analizando mercado con IA (OpenRouter) — puede tardar…</div>}
       {done && md && <div className="panelc fade"><pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--term)', fontSize: 13, lineHeight: 1.7, color: 'var(--tx)', margin: 0 }}>{md}</pre></div>}
