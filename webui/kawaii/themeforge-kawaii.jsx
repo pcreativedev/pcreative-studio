@@ -307,25 +307,29 @@ function Operator() {
 }
 
 /* ---- Settings (themes) ---- */
-const THEMES = [
-  { k: 'kawaii', label: 'Kawaii 🌸', a: '#ff8fc7', b: '#b9a3ff', bg: '#fff5fa' },
-  { k: 'neotokyo', label: 'Neo-Tokyo', a: '#00f0ff', b: '#ff2e88', bg: '#04060c' },
-  { k: 'matcha', label: 'Matcha 🍵', a: '#7fc99a', b: '#cfe6a8', bg: '#f3f8ec' },
-  { k: 'peach', label: 'Durazno 🍑', a: '#ff9e7d', b: '#ffd36e', bg: '#fff3ec' },
-  { k: 'sky', label: 'Cielo 🩵', a: '#7fd4ff', b: '#b9a3ff', bg: '#eef7ff' },
-  { k: 'milk', label: 'Milk 🥛', a: '#d9b8ff', b: '#ffc2e0', bg: '#faf6ff' },
-];
+// Temas REALES de ThemeForge inyectados por el shell (prototipos + packs + clásicos).
+const THEMES = ((typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.themes) || [
+  { k: 'kawaii', label: 'Kawaii 🌸', acc: '#ff8fc7', acc2: '#b9a3ff', bg: '#fff5fa', proto: true, web: true },
+]);
 function Settings() {
-  const [th, setTh] = useState('kawaii');
+  const [th, setTh] = useState((window.__TF_DATA__ && window.__TF_DATA__.current_theme) || 'kawaii');
+  const applyTheme = (t) => {
+    setTh(t.k);
+    if (t.proto) { if (window.tfBridge && window.tfBridge.use_web_theme) window.tfBridge.use_web_theme(t.k); }
+    else if (t.web) { if (window.tfApplyTheme && t.vars) window.tfApplyTheme(t.vars); if (window.tfBridge && window.tfBridge.set_theme) window.tfBridge.set_theme(t.k); }
+    else if (window.tfBridge && window.tfBridge.switch_to_classic) { if (confirm('Tema clásico «' + t.label + '» (UI nativa). ThemeForge se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k); }
+  };
   return (
     <div className="page fade" style={{ maxWidth: 820 }}>
       <h2 className="sec">🎨 Temas de la app <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>テーマ</span></h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
         {THEMES.map(t => (
-          <button key={t.k} className={'tile' + (th === t.k ? ' on' : '')} onClick={() => setTh(t.k)} style={{ padding: 0, overflow: 'hidden' }}>
+          <button key={t.k} className={'tile' + (th === t.k ? ' on' : '')} onClick={() => applyTheme(t)} style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
+            {t.proto && <span style={{ position: 'absolute', top: 5, right: 5, fontSize: 9, padding: '2px 6px', borderRadius: 99, background: 'rgba(255,143,199,0.2)', color: 'var(--accent)' }}>診⟳</span>}
+            {t.web === false && <span style={{ position: 'absolute', top: 5, right: 5, fontSize: 9, padding: '2px 6px', borderRadius: 99, background: 'rgba(255,176,0,0.2)', color: '#d99a00' }}>古典↻</span>}
             <div style={{ height: 64, background: t.bg, padding: 10, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-              <span style={{ width: 18, height: 18, borderRadius: 99, background: t.a, boxShadow: `0 0 8px ${t.a}` }} />
-              <span style={{ width: 18, height: 18, borderRadius: 99, background: t.b }} />
+              <span style={{ width: 18, height: 18, borderRadius: 99, background: t.acc, boxShadow: `0 0 8px ${t.acc}` }} />
+              <span style={{ width: 18, height: 18, borderRadius: 99, background: t.acc2 }} />
             </div>
             <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 14 }}>{t.label}</div>
           </button>
