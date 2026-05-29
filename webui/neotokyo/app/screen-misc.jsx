@@ -259,25 +259,26 @@ function SettingsScreen() {
       {/* ---- CREDENTIALS ---- */}
       {sub === 'creds' && (
         <div className="fade-in panel" style={{ padding: '6px 22px 16px', maxWidth: 760 }}>
-          {[
-            ['Anthropic API key', 'sk-ant-••••••••3f7a', 'var(--claude)', '✳'],
-            ['OpenAI / Codex key', 'sk-••••••••9c21', 'var(--codex)', '◇'],
-            ['Google Gemini key', 'AIza••••••••7b40', 'var(--gemini)', '✦'],
-            ['Figma API key', 'figd_••••••••12ab', 'var(--accent)', '◈'],
-            ['OpenRouter key', 'sk-or-••••••••', 'var(--opencode)', '⬡'],
-            ['GitHub token', 'ghp_••••••••', 'var(--tx)', ''],
-          ].map(([l, v, c, g]) => (
-            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 0', borderBottom: '1px solid var(--line)' }}>
-              {g && <span style={{ color: c, fontSize: 15, width: 18 }}>{g}</span>}
+          {(_TFD.creds || [
+            { id: 'anthropic', label: 'Anthropic API key', color: 'var(--claude)', configured: false },
+            { id: 'openrouter', label: 'OpenRouter key', color: 'var(--opencode)', configured: false },
+          ]).map((cr) => (
+            <div key={cr.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 0', borderBottom: '1px solid var(--line)' }}>
+              <span style={{ color: cr.color, fontSize: 15, width: 18 }}>◈</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13.5 }}>{l}</div>
-                <div className="mono faint" style={{ fontSize: 11, marginTop: 2 }}>{v}</div>
+                <div style={{ fontSize: 13.5 }}>{cr.label}</div>
+                <div className="mono faint" style={{ fontSize: 11, marginTop: 2 }}>{cr.configured ? '•••••••••••• configurada' : 'sin configurar'}</div>
               </div>
-              <span style={{ width: 7, height: 7, borderRadius: 99, background: 'var(--codex)', boxShadow: '0 0 8px var(--codex)' }} />
-              <Btn variant="ghost" icon="penTool" style={{ padding: '6px 10px' }}>Editar</Btn>
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: cr.configured ? 'var(--codex)' : 'var(--tx-faint)', boxShadow: cr.configured ? '0 0 8px var(--codex)' : 'none' }} />
+              <Btn variant="ghost" icon="penTool" style={{ padding: '6px 10px' }} onClick={() => {
+                if (!window.tfBridge || !window.tfBridge.set_credential) return;
+                const v = prompt('Pega la ' + cr.label + ' (vacío para borrar):');
+                if (v === null) return;
+                window.tfBridge.set_credential(cr.id, v).then(() => { cr.configured = !!v.trim(); location.reload(); });
+              }}>Editar</Btn>
             </div>
           ))}
-          <div className="faint" style={{ fontSize: 11.5, marginTop: 14 }}>Las claves se guardan cifradas en el keychain del SO · nunca en el proyecto.</div>
+          <div className="faint" style={{ fontSize: 11.5, marginTop: 14 }}>Las claves se guardan en <span className="mono">~/.config/themeforge/keys.json</span> (chmod 0600) · nunca en el proyecto.</div>
         </div>
       )}
 

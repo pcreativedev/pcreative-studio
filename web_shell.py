@@ -238,6 +238,30 @@ def _mcp_data() -> list:
     return out
 
 
+_CRED_SLOTS = [
+    ("anthropic", "Anthropic API key", "#62b4ff"),
+    ("openai", "OpenAI / Codex key", "#86efac"),
+    ("gemini", "Google Gemini key", "#fbbf24"),
+    ("figma", "Figma API key", "#00f0ff"),
+    ("openrouter", "OpenRouter key", "#c084fc"),
+    ("github", "GitHub token", "#e9f0ff"),
+]
+
+
+def _creds_data() -> list:
+    """Estado real de credenciales (qué claves están configuradas)."""
+    try:
+        import ai_providers as aip
+        keys = aip.load_keys()
+    except Exception:
+        keys = {}
+    out = []
+    for kid, label, color in _CRED_SLOTS:
+        out.append({"id": kid, "label": label, "color": color,
+                    "configured": bool(keys.get(kid))})
+    return out
+
+
 def _operator_data() -> dict:
     """Estado real del Operator (Hermes): disponible + versión."""
     try:
@@ -268,6 +292,7 @@ def bootstrap_data() -> dict:
         "cost": _cost_data(),
         "mcp": _mcp_data(),
         "operator": _operator_data(),
+        "creds": _creds_data(),
     }
 
 
@@ -657,6 +682,29 @@ class ThemeForgeBridge(QObject):
             from themeforge import focus_new_project
             ok = focus_new_project()
             return json.dumps({"ok": bool(ok)})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, result=str)
+    def set_credential(self, key_id: str, value: str) -> str:
+        """Guarda una API key real (keys.json, chmod 0600) y la aplica al entorno."""
+        try:
+            import ai_providers as aip
+            import os as _os
+            if (value or "").strip():
+                aip.save_key(key_id, value.strip())
+                env_map = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY",
+                           "gemini": "GEMINI_API_KEY", "figma": "FIGMA_API_KEY",
+                           "openrouter": "OPENROUTER_API_KEY", "github": "GITHUB_TOKEN"}
+                if key_id in env_map:
+                    _os.environ[env_map[key_id]] = value.strip()
+                try:
+                    aip.apply_all_known_keys()
+                except Exception:
+                    pass
+            else:
+                aip.delete_key(key_id)
+            return json.dumps({"ok": True, "id": key_id, "configured": bool(value.strip())})
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)})
 
