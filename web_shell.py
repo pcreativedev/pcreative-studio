@@ -928,6 +928,49 @@ class ThemeForgeBridge(QObject):
             return json.dumps({"ok": False, "error": str(e)})
 
     @pyqtSlot(str, result=str)
+    def list_subprojects(self, path: str) -> str:
+        """Sub-proyectos de un mono-repo (apps/web, apps/api…), para el dropdown
+        de preview. Cada uno con su ruta absoluta y si tiene preview detectable."""
+        try:
+            from preview import detect_subprojects
+            from pathlib import Path
+            subs = detect_subprojects(Path(path)) or []
+            out = [{"name": s.get("name", ""), "path": str(s.get("path", "")),
+                    "rel": s.get("rel_path", ""), "has_preview": bool(s.get("profile")),
+                    "ref": bool(s.get("from_reference"))} for s in subs]
+            return json.dumps({"ok": True, "subprojects": out})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e), "subprojects": []})
+
+    @pyqtSlot(str, result=str)
+    def screenshot_preview(self, path: str) -> str:
+        """Captura PNG del preview en marcha (Chromium headless) → guarda en
+        <proyecto>/screenshots/preview-<ts>.png. Igual idea que el 📸 nativo."""
+        try:
+            import shutil
+            import subprocess
+            from pathlib import Path
+            entry = self._preview_procs.get(path)
+            url = entry[1] if entry else None
+            if not url:
+                return json.dumps({"ok": False, "error": "preview no arrancado"})
+            chrome = next((c for c in ("chromium", "chromium-browser", "google-chrome",
+                                       "google-chrome-stable", "brave", "brave-browser")
+                           if shutil.which(c)), None)
+            if not chrome:
+                return json.dumps({"ok": False, "error": "no se encontró Chromium/Chrome para capturar"})
+            shots = Path(path) / "screenshots"
+            shots.mkdir(parents=True, exist_ok=True)
+            stamp = time.strftime("%Y%m%d-%H%M%S")
+            out = shots / f"preview-{stamp}.png"
+            subprocess.Popen([chrome, "--headless=new", "--hide-scrollbars",
+                              "--window-size=1440,900",
+                              f"--screenshot={out}", url])
+            return json.dumps({"ok": True, "file": str(out)})
+        except Exception as e:
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
     def open_preview_external(self, path: str) -> str:
         """Abre la URL del preview en el navegador externo (modo app)."""
         try:

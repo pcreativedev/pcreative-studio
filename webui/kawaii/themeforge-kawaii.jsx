@@ -696,49 +696,58 @@ function RealTerm({ path, fresh }) {
     </div>
   );
 }
-// Preview REAL con controles (Start / Stop / Reload / abrir en navegador) ♡.
-function RealPreview({ path, narrow }) {
+// Preview REAL: controles + sub-proyectos + viewport + screenshot ♡.
+const VPORTS = [['📱', 360], ['📋', 768], ['💻', 1280], ['🖥', 1920], ['⛶', 0]];
+function RealPreview({ path }) {
   const B = window.tfBridge;
+  const [activePath, setActivePath] = useState(path);
+  const [subs, setSubs] = useState([]);
   const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
   const [status, setStatus] = useState('idle'); const [k, setK] = useState(0);
-  const [log, setLog] = useState('');
+  const [log, setLog] = useState(''); const [vw, setVw] = useState(0);
+  useEffect(() => { if (B && B.list_subprojects && path) B.list_subprojects(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} setSubs((r.subprojects || []).filter(s => s.has_preview)); }); }, [path]);
   useEffect(() => {
     if (!B || !B.preview_ready || !B.preview_ready.connect) return;
-    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== path) return;
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== activePath) return;
       if (r.log !== undefined) { setLog(l => (l + r.log).slice(-4000)); return; }
       if (r.stopped) { setUrl(null); setStatus('stopped'); return; }
       if (r.url) { setUrl(r.url); setErr(null); setStatus('up'); } else if (r.error) { setErr(r.error); setStatus('error'); } };
     B.preview_ready.connect(onReady);
     return () => { try { B.preview_ready.disconnect(onReady); } catch (e) {} };
-  }, [path]);
-  const start = () => { if (B && B.start_preview && path) { setErr(null); setLog(''); setStatus('starting'); B.start_preview(path); } };
-  const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
+  }, [activePath]);
+  const start = () => { if (B && B.start_preview && activePath) { setErr(null); setLog(''); setStatus('starting'); B.start_preview(activePath); } };
+  const stop = () => { if (B && B.stop_preview && activePath) { B.stop_preview(activePath); setUrl(null); setStatus('stopped'); } };
   const reload = () => setK(x => x + 1);
-  const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
+  const openExt = () => { if (B && B.open_preview_external && activePath) B.open_preview_external(activePath); };
+  const shot = () => { if (B && B.screenshot_preview && activePath) B.screenshot_preview(activePath).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} alert(r.ok ? ('📸 captura: ' + r.file + ' ♡') : ('Error: ' + (r.error || ''))); }); };
+  const switchSub = (sp) => { if (status === 'up' && B.stop_preview) B.stop_preview(activePath); setUrl(null); setErr(null); setStatus('idle'); setActivePath(sp); };
   const redetect = () => {
-    if (!(B && B.refresh_profile && path)) return;
-    B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-      if (r.detected) { if (B.stop_preview) B.stop_preview(path); setUrl(null); setErr(null); setStatus('starting'); setTimeout(start, 500); }
+    if (!(B && B.refresh_profile && activePath)) return;
+    B.refresh_profile(activePath).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.detected) { if (B.stop_preview) B.stop_preview(activePath); setUrl(null); setErr(null); setStatus('starting'); setTimeout(start, 500); }
       else alert('Aún sin preview detectable — ¿el setup terminó de instalar deps? (mira la pestaña Setup) 🥺'); });
   };
-  useEffect(() => { if (B && path && status === 'idle') start(); }, [path]);
+  useEffect(() => { if (B && activePath && status === 'idle') start(); }, [activePath]);
   const ctl = { fontSize: 11.5, padding: '5px 10px', borderRadius: 99 };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 0 10px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 0 8px', flexWrap: 'wrap' }}>
         <button className="btn" style={ctl} onClick={start} disabled={status === 'up' || status === 'starting'}>▶ Start</button>
         <button className="btn" style={ctl} onClick={stop} disabled={status !== 'up'}>■ Stop</button>
-        <button className="btn" style={ctl} onClick={reload} disabled={status !== 'up'}>↻ Reload</button>
-        <button className="btn" style={ctl} onClick={openExt} disabled={status !== 'up'}>🗗 Navegador</button>
-        <button className="btn" style={ctl} onClick={redetect}>🔄 Re-detectar</button>
-        <input className="ta" readOnly value={url || ''} placeholder="URL del preview… ♡" style={{ minHeight: 0, padding: '5px 10px', flex: 1, fontSize: 11.5, borderRadius: 99, minWidth: 120 }} />
+        <button className="btn" style={ctl} onClick={reload} disabled={status !== 'up'}>↻</button>
+        <button className="btn" style={ctl} onClick={openExt} disabled={status !== 'up'}>🗗</button>
+        <button className="btn" style={ctl} onClick={shot} disabled={status !== 'up'}>📸</button>
+        <button className="btn" style={ctl} onClick={redetect}>🔄</button>
+        {subs.length > 1 && <select className="ta" value={activePath} onChange={e => switchSub(e.target.value)} style={{ minHeight: 0, padding: '5px 10px', fontSize: 11, borderRadius: 99 }}>{subs.map(s => <option key={s.path} value={s.path}>{s.name}{s.ref ? ' (ref)' : ''}</option>)}</select>}
+        <input className="ta" readOnly value={url || ''} placeholder="URL… ♡" style={{ minHeight: 0, padding: '5px 10px', flex: 1, fontSize: 11.5, borderRadius: 99, minWidth: 90 }} />
+        {VPORTS.map(([e, w]) => <button key={w} className={'btn' + (vw === w ? ' pri' : '')} style={{ ...ctl, padding: '5px 8px' }} title={w ? w + 'px' : 'full'} onClick={() => setVw(w)}>{e}</button>)}
       </div>
       <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', minHeight: 0, overflow: 'auto' }}>
-        {!B || !path ? <Slot id={'pw'} cls="" radius={16} ph="preview de tu tema ♡" />
+        {!B || !activePath ? <Slot id={'pw'} cls="" radius={16} ph="preview de tu tema ♡" />
           : err ? <div style={{ color: 'var(--tx-dim)', fontWeight: 600, placeSelf: 'center' }}>preview: {err} 🥺</div>
           : status === 'stopped' ? <div style={{ color: 'var(--tx-dim)', fontWeight: 600, placeSelf: 'center' }}>■ preview detenido — pulsa ▶ Start ♡</div>
           : !url ? <div style={{ alignSelf: 'stretch', width: '100%', overflow: 'auto', fontFamily: 'var(--font)', fontSize: 11.5, color: 'var(--tx-dim)', fontWeight: 600, whiteSpace: 'pre-wrap', padding: 6 }}>{'✨ arrancando dev server (sondeando puerto)… ♡\n' + (log || '')}</div>
-          : <iframe key={k} src={url} style={{ width: narrow ? 320 : '100%', maxWidth: '100%', height: '100%', minHeight: 280, border: 'none', borderRadius: 16, background: '#fff', justifySelf: 'center' }} />}
+          : <iframe key={k} src={url} style={{ width: vw ? vw : '100%', maxWidth: '100%', height: '100%', minHeight: 280, border: 'none', borderRadius: 16, background: '#fff', justifySelf: 'center' }} />}
       </div>
     </div>
   );

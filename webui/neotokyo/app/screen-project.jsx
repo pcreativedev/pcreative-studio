@@ -156,50 +156,59 @@ function TermTabs({ path, running, fresh }) {
 
 // Preview REAL con controles (Start/Stop/Reload/Navegador/Re-detectar), igual
 // que la barra de preview de la ProjectWindow nativa.
+const VPORTS = [['📱', 360], ['📋', 768], ['💻', 1280], ['🖥', 1920], ['⛶', 0]];
 function RealPreview({ path, accent, narrow }) {
   const B = window.tfBridge;
+  const [activePath, setActivePath] = useState(path);
+  const [subs, setSubs] = useState([]);
   const [url, setUrl] = useState(null);
   const [err, setErr] = useState(null);
   const [status, setStatus] = useState('idle');
   const [k, setK] = useState(0);
-  const [log, setLog] = useState('');
+  const [log, setLog] = useState(''); const [vw, setVw] = useState(0);
+  useEffect(() => { if (B && B.list_subprojects && path) B.list_subprojects(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} setSubs((r.subprojects || []).filter(s => s.has_preview)); }); }, [path]);
   useEffect(() => {
     if (!B || !B.preview_ready || !B.preview_ready.connect) return;
-    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== path) return;
+    const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== activePath) return;
       if (r.log !== undefined) { setLog(l => (l + r.log).slice(-4000)); return; }
       if (r.stopped) { setUrl(null); setStatus('stopped'); return; }
       if (r.url) { setUrl(r.url); setErr(null); setStatus('up'); } else if (r.error) { setErr(r.error); setStatus('error'); } };
     B.preview_ready.connect(onReady);
     return () => { try { B.preview_ready.disconnect(onReady); } catch (e) {} };
-  }, [path]);
-  const start = () => { if (B && B.start_preview && path) { setErr(null); setLog(''); setStatus('starting'); B.start_preview(path); } };
-  const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
+  }, [activePath]);
+  const start = () => { if (B && B.start_preview && activePath) { setErr(null); setLog(''); setStatus('starting'); B.start_preview(activePath); } };
+  const stop = () => { if (B && B.stop_preview && activePath) { B.stop_preview(activePath); setUrl(null); setStatus('stopped'); } };
   const reload = () => setK(x => x + 1);
-  const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
+  const openExt = () => { if (B && B.open_preview_external && activePath) B.open_preview_external(activePath); };
+  const shot = () => { if (B && B.screenshot_preview && activePath) B.screenshot_preview(activePath).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} tfToast(r.ok ? ('📸 ' + r.file) : ('Error: ' + (r.error || '')), r.ok ? '#9dff3c' : '#ff2e88'); }); };
+  const switchSub = (sp) => { if (status === 'up' && B.stop_preview) B.stop_preview(activePath); setUrl(null); setErr(null); setStatus('idle'); setActivePath(sp); };
   const redetect = () => {
-    if (!(B && B.refresh_profile && path)) return;
-    B.refresh_profile(path).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-      if (r.detected) { tfToast('✓ preview detectado: ' + r.profile + ' — arrancando…', '#9dff3c'); if (B.stop_preview) B.stop_preview(path); setUrl(null); setErr(null); setStatus('starting'); setTimeout(start, 500); }
+    if (!(B && B.refresh_profile && activePath)) return;
+    B.refresh_profile(activePath).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.detected) { tfToast('✓ preview detectado: ' + r.profile + ' — arrancando…', '#9dff3c'); if (B.stop_preview) B.stop_preview(activePath); setUrl(null); setErr(null); setStatus('starting'); setTimeout(start, 500); }
       else tfToast('Aún sin preview detectable — ¿el setup terminó de instalar deps?', '#ffb000'); });
   };
-  useEffect(() => { if (B && path && status === 'idle') start(); }, [path]);
+  useEffect(() => { if (B && activePath && status === 'idle') start(); }, [activePath]);
   if (!B || !path) return <LivePreview accent={accent} narrow={narrow} />;
-  const cbtn = { cursor: 'pointer', padding: '5px 10px', borderRadius: 7, fontSize: 11.5, fontFamily: 'var(--font-display)', background: 'transparent', border: '1px solid var(--line-bright)', color: 'var(--tx-dim)' };
+  const cbtn = { cursor: 'pointer', padding: '5px 9px', borderRadius: 7, fontSize: 11.5, fontFamily: 'var(--font-display)', background: 'transparent', border: '1px solid var(--line-bright)', color: 'var(--tx-dim)' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
         <button style={{ ...cbtn, opacity: (status === 'up' || status === 'starting') ? 0.4 : 1 }} onClick={start}>▶ Start</button>
         <button style={{ ...cbtn, opacity: status !== 'up' ? 0.4 : 1 }} onClick={stop}>■ Stop</button>
-        <button style={{ ...cbtn, opacity: status !== 'up' ? 0.4 : 1 }} onClick={reload}>↻ Reload</button>
-        <button style={{ ...cbtn, opacity: status !== 'up' ? 0.4 : 1 }} onClick={openExt}>🗗 Navegador</button>
-        <button style={cbtn} onClick={redetect}>🔄 Re-detectar</button>
-        <input className="mono" readOnly value={url || ''} placeholder="URL del preview…" style={{ flex: 1, minWidth: 100, background: 'var(--bg-void)', border: '1px solid var(--line)', borderRadius: 7, padding: '5px 9px', color: 'var(--tx-dim)', fontSize: 11, outline: 'none' }} />
+        <button style={{ ...cbtn, opacity: status !== 'up' ? 0.4 : 1 }} onClick={reload}>↻</button>
+        <button style={{ ...cbtn, opacity: status !== 'up' ? 0.4 : 1 }} onClick={openExt}>🗗</button>
+        <button style={{ ...cbtn, opacity: status !== 'up' ? 0.4 : 1 }} onClick={shot}>📸</button>
+        <button style={cbtn} onClick={redetect}>🔄</button>
+        {subs.length > 1 && <select className="mono" value={activePath} onChange={e => switchSub(e.target.value)} style={{ ...cbtn, padding: '5px 8px' }}>{subs.map(s => <option key={s.path} value={s.path}>{s.name}{s.ref ? ' (ref)' : ''}</option>)}</select>}
+        <input className="mono" readOnly value={url || ''} placeholder="URL…" style={{ flex: 1, minWidth: 80, background: 'var(--bg-void)', border: '1px solid var(--line)', borderRadius: 7, padding: '5px 9px', color: 'var(--tx-dim)', fontSize: 11, outline: 'none' }} />
+        {VPORTS.map(([e, w]) => <button key={w} style={{ ...cbtn, padding: '5px 7px', background: vw === w ? 'rgba(var(--accent-rgb),0.14)' : 'transparent', color: vw === w ? 'var(--accent)' : 'var(--tx-dim)' }} title={w ? w + 'px' : 'full'} onClick={() => setVw(w)}>{e}</button>)}
       </div>
       <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', minHeight: 0, overflow: 'auto', background: '#070b16' }}>
         {err ? <div className="mono faint" style={{ placeSelf: 'center', padding: 24 }}>// preview: {err}</div>
           : status === 'stopped' ? <div className="mono faint" style={{ placeSelf: 'center', padding: 24 }}>■ preview detenido — pulsa ▶ Start</div>
           : !url ? <div className="mono faint" style={{ alignSelf: 'stretch', width: '100%', overflow: 'auto', padding: 14, fontSize: 11.5, whiteSpace: 'pre-wrap' }}>{'// arrancando dev server (sondeando puerto)…\n' + (log || '')}</div>
-          : <iframe key={k} src={url} style={{ width: narrow ? 320 : '100%', maxWidth: '100%', height: '100%', minHeight: 320, border: 'none', background: '#fff', justifySelf: 'center' }} />}
+          : <iframe key={k} src={url} style={{ width: vw ? vw : '100%', maxWidth: '100%', height: '100%', minHeight: 320, border: 'none', background: '#fff', justifySelf: 'center' }} />}
       </div>
     </div>
   );
