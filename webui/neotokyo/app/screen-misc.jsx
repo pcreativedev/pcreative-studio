@@ -192,7 +192,7 @@ function SettingsScreen() {
           <div className="eyebrow" style={{ marginBottom: 16 }}>TEMAS BUILT-IN · テーマ <span className="faint">· 8 + editor + Figma DTCG</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {APP_THEMES.map(t => (
-              <button key={t.k} onClick={() => { setTheme(t.k); if (window.tfBridge) window.tfBridge.set_theme(t.k); }}
+              <button key={t.k} onClick={() => { setTheme(t.k); if (window.tfApplyTheme && t.vars) window.tfApplyTheme(t.vars); if (window.tfBridge) window.tfBridge.set_theme(t.k); }}
                 className={theme === t.k ? 'neon-edge' : ''}
                 style={{ cursor: 'pointer', padding: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid ' + (theme === t.k ? 'rgba(var(--accent-rgb),0.5)' : 'var(--line)'), background: 'transparent' }}>
                 <div style={{ height: 64, background: t.bg, position: 'relative', padding: 10 }}>

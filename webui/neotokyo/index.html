@@ -20,6 +20,23 @@
        Python object once connected; window.tfBridgeReady is a Promise. -->
   <script src="qwebchannel.js"></script>
   <script>
+    // Aplica un tema recoloreando las CSS vars de :root en vivo (sin recargar).
+    // Forma estándar: setProperty por cada token del tema.
+    window.tfApplyTheme = function (vars) {
+      if (!vars) return;
+      const root = document.documentElement;
+      Object.keys(vars).forEach(function (k) { root.style.setProperty(k, vars[k]); });
+    };
+    // Aplica el tema actual al arrancar (datos inyectados en __TF_DATA__).
+    (function () {
+      try {
+        var d = window.__TF_DATA__ || {};
+        var cur = d.current_theme;
+        var t = (d.themes || []).find(function (x) { return x.k === cur; });
+        if (t && t.vars) window.tfApplyTheme(t.vars);
+      } catch (e) {}
+    })();
+
     window.tfBridge = null;
     window.tfBridgeReady = new Promise((resolve) => {
       function connect() {

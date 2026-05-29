@@ -153,6 +153,34 @@ def _providers_data() -> list:
         return []
 
 
+def _hex_rgb(h: str) -> str:
+    """'#rrggbb' → 'r, g, b' (para las CSS vars *-rgb del prototipo)."""
+    try:
+        h = h.lstrip("#")
+        if len(h) == 3:
+            h = "".join(c * 2 for c in h)
+        return f"{int(h[0:2],16)}, {int(h[2:4],16)}, {int(h[4:6],16)}"
+    except Exception:
+        return "0, 240, 255"
+
+
+def _theme_css_vars(pack) -> dict:
+    """Mapea los tokens del ThemePack a las CSS vars que usa el prototipo web,
+    para que elegir un tema RECOLOREE la UI web en vivo."""
+    c = pack.color
+    acc = c.accent
+    acc2 = getattr(c, "danger", None) or getattr(c, "accent_hover", None) or "#ff2e88"
+    return {
+        "--bg-void": c.bg_primary, "--bg-deep": c.bg_secondary,
+        "--bg-panel": c.bg_secondary, "--bg-panel-2": c.bg_tertiary,
+        "--bg-raise": c.bg_elevated,
+        "--tx": c.fg_primary, "--tx-dim": c.fg_secondary, "--tx-faint": c.fg_disabled,
+        "--line": c.border, "--line-bright": c.border_strong,
+        "--accent": acc, "--accent-2": acc2,
+        "--accent-rgb": _hex_rgb(acc), "--accent2-rgb": _hex_rgb(acc2),
+    }
+
+
 def _themes_data() -> dict:
     try:
         import themes
@@ -164,12 +192,13 @@ def _themes_data() -> dict:
                 acc = pack.color.accent
                 acc2 = getattr(pack.color, "danger", "#ff2e88")
                 bg = pack.color.bg_primary
+                cssvars = _theme_css_vars(pack)
             except Exception:
-                acc, acc2, bg = "#00f0ff", "#ff2e88", "#04060c"
+                acc, acc2, bg, cssvars = "#00f0ff", "#ff2e88", "#04060c", {}
             out.append({
                 "k": ti.name, "label": ti.display_name,
                 "jp": _THEME_JP.get(ti.name, ""),
-                "bg": bg, "acc": acc, "acc2": acc2,
+                "bg": bg, "acc": acc, "acc2": acc2, "vars": cssvars,
             })
         return {"themes": out, "current": cur}
     except Exception:
