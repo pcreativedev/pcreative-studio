@@ -504,38 +504,71 @@ function HermesFrame({ kind, start }) {
   if (!url) return <div className="panelc" style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// iniciando {kind === 'hermes-admin' ? 'dashboard' : 'chat'} de Hermes…</div>;
   return <iframe src={url} style={{ width: '100%', height: '68vh', border: '1px solid var(--line)', borderRadius: 4, background: '#040804' }} />;
 }
+const HMARKERS = [['plan', 0], ['scaffold', 1], ['creando', 1], ['create_project', 1], ['building', 2], ['run_agent_build', 2], ['preflight', 3], ['qa', 3], ['build_zip', 4], ['.zip', 4], ['packaged', 4]];
+const HSTUBS = [
+  ['agentes', '🤖 Agentes', 'Galería de agentes especializados por familia de stack (Shopify · Hydrogen · WordPress · Magento+Hyvä · Frontend · Mobile…). Elige, edita o mira lo aprendido.', 'Fase B'],
+  ['crear', '➕ Crear', 'Crea tu propio agente: nombre + stacks base + especialidad. Hermes redacta el SKILL.md por ti y aprende con cada proyecto.', 'Fase E'],
+  ['memoria', '🧠 Memoria', 'Lo que Hermes ha aprendido: memorias globales + notas por proyecto (.hermes.md). Cada misión añade lo que funcionó.', 'Fase H'],
+  ['kanban', '📊 Kanban', 'Misiones en paralelo (varias variantes) con workers → verificador → sintetizador, cada worker en su git worktree. Progreso en vivo.', 'Fase F'],
+  ['cron', '⏰ Cron', 'Misiones programadas: «cada lunes 9am genera la landing del nicho top y mándame el zip». Sobre el scheduler nativo de Hermes.', 'Fase G'],
+];
 function Operator() {
   const op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
   const real = !!(window.tfBridge && window.tfBridge.launch_mission);
   const [missions, setMissions] = useState([]);
   const [power, setPower] = useState(!!op.available);
   const [tab, setTab] = useState('mision');
+  const [hs, setHs] = useState({ available: op.available, version: op.version });
+  const [brief, setBrief] = useState('');
+  const [variants, setVariants] = useState(1);
+  const [prov, setProv] = useState('codex');
+  const [log, setLog] = useState('');
+  const refreshHs = () => { const B = window.tfBridge; if (B && B.hermes_status) B.hermes_status().then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} setHs(r); }); };
+  useEffect(() => {
+    refreshHs();
+    const B = window.tfBridge;
+    if (!B || !B.progress || !B.progress.connect) return;
+    const onLog = (line) => { setLog(l => (l + line).slice(-6000)); setMissions(ms => ms.map((m, i) => { if (i !== 0) return m; let ph = m.phase || 0; const low = ('' + line).toLowerCase(); HMARKERS.forEach(([mk, idx]) => { if (low.indexOf(mk) >= 0 && idx > ph) ph = idx; }); const done = /terminada \(exit/.test(line); return { ...m, phase: done ? 4 : ph, pct: done ? 100 : Math.max(m.pct, 15 + ph * 20), st: done ? 'listo' : m.st }; })); };
+    B.progress.connect(onLog);
+    return () => { try { B.progress.disconnect(onLog); } catch (e) {} };
+  }, []);
   const launch = () => {
     if (!real || !power) return;
-    if (!op.available) { alert('Instala Hermes Agent para usar el Operator.'); return; }
-    const brief = prompt('Describe la misión (ej: «2 variantes Envato de landing dental, stack Astro»):');
-    if (!brief) return;
-    window.tfBridge.launch_mission(brief);
-    setMissions(ms => [{ id: 'm' + ms.length, name: brief.slice(0, 60), agent: 'claude', st: 'corriendo', pct: 10, phase: 0, eta: 'Hermes…' }, ...ms]);
+    if (!hs.available && !op.available) { alert('Instala Hermes Agent para usar el Operator.'); return; }
+    if (!brief.trim()) { alert('Escribe el brief de la misión.'); return; }
+    setLog('');
+    if (window.tfBridge.launch_mission_opts) window.tfBridge.launch_mission_opts(brief, prov, variants);
+    else window.tfBridge.launch_mission(brief);
+    setMissions(ms => [{ id: 'm' + ms.length, name: brief.slice(0, 60), agent: prov, st: 'corriendo', pct: 10, phase: 0, eta: variants + 'x' }, ...ms]);
   };
   const running = missions.filter(m => m.pct < 100).length;
-  const tabs = [['mision', '🎯 Misión'], ['chat', '💬 Chat'], ['admin', '⚙ Admin']];
+  const tabs = [['mision', '🎯 Misión'], ...HSTUBS.map(s => [s[0], s[1]]), ['chat', '💬 Chat'], ['admin', '⚙ Admin']];
+  const chip = (ok, l) => <span style={{ color: ok == null ? 'var(--tx-dim)' : (ok ? 'var(--accent)' : 'var(--p3)') }}>● {l}</span>;
+  const stub = HSTUBS.find(s => s[0] === tab);
   return (
     <div className="page fade">
       <h2 className="sec">⌬ Mission Control <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>司令室</span>
-        <button className="btn" style={{ float: 'right', color: power ? 'var(--accent)' : 'var(--p3)', borderColor: power ? 'var(--accent)' : 'var(--p3)' }} onClick={() => setPower(p => !p)} disabled={!op.available}>⏻ {power ? 'Hermes ON' : 'Hermes OFF'}</button></h2>
-      <div className="stats" style={{ marginBottom: 16 }}>
-        {[['▶', String(running), 'activas'], ['◫', String(missions.length), 'total'], ['◈', op.available ? (op.version || 'on') : 'off', 'hermes']].map(([e, n, l]) => (
-          <div className="stat" key={l}><div className="em">{e}</div><div className="n">{n}</div><div className="l">{l}</div></div>
-        ))}
+        <button className="btn" style={{ float: 'right', color: power ? 'var(--accent)' : 'var(--p3)', borderColor: power ? 'var(--accent)' : 'var(--p3)' }} onClick={() => setPower(p => !p)} disabled={!hs.available}>⏻ {power ? 'Hermes ON' : 'Hermes OFF'}</button></h2>
+      <div className="panelc" style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14, fontFamily: 'var(--term)', fontSize: 12.5, flexWrap: 'wrap' }}>
+        {chip(hs.available, hs.available ? ('Hermes ' + (hs.version || '')) : 'Hermes no instalado')}
+        {chip(hs.mcp, hs.mcp ? 'MCP themeforge' : 'MCP sin registrar')}
+        {chip(hs.provider || hs.model ? true : null, (hs.provider || hs.model) ? ((hs.provider || '?') + ' · ' + (hs.model || '?')) : 'modelo sin configurar')}
+        <button className="btn" style={{ marginLeft: 'auto', padding: '4px 10px' }} onClick={refreshHs}>↻</button>
       </div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {tabs.map(([k, l]) => <button key={k} className={'fchip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}
       </div>
       {tab === 'mision' && <>
-        <button className="btn pri" style={{ marginBottom: 16 }} onClick={launch} disabled={!power}>▶ Lanzar misión</button>
+        <div className="panelc" style={{ marginBottom: 14 }}>
+          <textarea className="ta" value={brief} onChange={e => setBrief(e.target.value)} placeholder='Brief de la misión — ej: "landing Envato para clínica dental, stack Astro"' />
+          <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center', flexWrap: 'wrap', fontFamily: 'var(--term)', fontSize: 12.5 }}>
+            <label>variantes <input type="number" min={1} max={6} value={variants} onChange={e => setVariants(+e.target.value)} className="ta" style={{ minHeight: 0, width: 56, padding: '5px 8px' }} /></label>
+            <label>agente <select className="ta" value={prov} onChange={e => setProv(e.target.value)} style={{ minHeight: 0, padding: '5px 8px' }}>{['codex', 'opencode', 'claude-api', 'gemini'].map(p => <option key={p} value={p}>{p}</option>)}</select></label>
+            <button className="btn pri" style={{ marginLeft: 'auto' }} onClick={launch} disabled={!power}>▶ Lanzar misión</button>
+          </div>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-          {missions.length ? missions.map(m => {
+          {missions.map(m => {
             const a = AGENTS[m.agent] || { color: 'var(--accent)', em: '◆' };
             return (
               <div className="panelc" key={m.id} style={{ padding: '15px 20px' }}>
@@ -551,9 +584,11 @@ function Operator() {
                 <div className="bar2" style={{ marginTop: 10 }}><i style={{ width: m.pct + '%' }} /></div>
               </div>
             );
-          }) : <div className="panelc" style={{ padding: 30, textAlign: 'center', color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// sin misiones — pulsa «Lanzar misión» {op.available ? '' : '(requiere Hermes)'}</div>}
+          })}
         </div>
+        {log && <div className="panelc" style={{ marginTop: 14, fontFamily: 'var(--term)', fontSize: 12, color: 'var(--tx-dim)', whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto' }}>{log}</div>}
       </>}
+      {stub && <div className="panelc" style={{ textAlign: 'center', padding: 40 }}><div style={{ fontSize: 28, marginBottom: 10 }}>{stub[1].split(' ')[0]}</div><b style={{ fontFamily: 'var(--display)', fontSize: 18 }}>{stub[1]}</b><div style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)', fontSize: 13, maxWidth: 520, margin: '12px auto 0', lineHeight: 1.6 }}>{stub[2]}</div><span className="tag" style={{ marginTop: 16, display: 'inline-block', color: 'var(--accent)', borderColor: 'var(--accent)' }}>⏳ {stub[3]}</span></div>}
       {tab === 'chat' && (power ? <HermesFrame kind="hermes-chat" start="start_hermes_chat" /> : <div className="panelc" style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// enciende Hermes para el chat</div>)}
       {tab === 'admin' && (power ? <HermesFrame kind="hermes-admin" start="hermes_admin" /> : <div className="panelc" style={{ color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>// enciende Hermes para el dashboard</div>)}
     </div>

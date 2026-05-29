@@ -1290,6 +1290,35 @@ class ThemeForgeBridge(QObject):
         self._procs.append(proc)
         return json.dumps({"ok": True, "running": True})
 
+    @pyqtSlot(str, str, int, result=str)
+    def launch_mission_opts(self, brief: str, provider: str, variants: int) -> str:
+        """Igual que launch_mission pero con N variantes + provider preferido
+        (como la MissionTab nativa: el brief incluye «N variantes» y el provider)."""
+        b = (brief or "").strip()
+        if not b:
+            return json.dumps({"ok": False, "error": "brief vacío"})
+        n = max(1, min(int(variants or 1), 6))
+        full = b
+        if n > 1:
+            full = f"Genera {n} variantes Envato-ready de: {b}"
+        if provider:
+            full += f"\n\n(Usa el agente «{provider}» para construir.)"
+        return self.launch_mission(full)
+
+    @pyqtSlot(result=str)
+    def hermes_status(self) -> str:
+        """Estado de Hermes para el status strip: versión · MCP themeforge
+        registrado · provider·modelo configurados (igual que la tira nativa)."""
+        try:
+            from hermes_panel import hermes_version, _mcp_themeforge_registered, _hermes_model_info
+            ver = hermes_version()
+            prov, model = _hermes_model_info()
+            return json.dumps({"available": bool(ver), "version": ver or "",
+                               "mcp": bool(_mcp_themeforge_registered()),
+                               "provider": prov or "", "model": model or ""})
+        except Exception as e:
+            return json.dumps({"available": False, "error": str(e)})
+
     @pyqtSlot(str, result=str)
     def suggest_stack(self, description: str) -> str:
         """Pre-fill Vibe real (motor de sugerencia de ThemeForge) — ASÍNCRONO en
