@@ -248,6 +248,7 @@ img { max-width: 100%; border-radius: 6px; }
     <div class="toc"><ul><ul>
 <li><a href="#table-of-contents">Table of contents</a></li>
 <li><a href="#1-what-is-themeforge">1. What is ThemeForge</a></li>
+<li><a href="#the-web-ui-neo-tokyo-matrix-kawaii">The Web UI (Neo-Tokyo · Matrix · Kawaii)</a></li>
 <li><a href="#2-system-requirements">2. System requirements</a></li>
 <li><a href="#3-installation">3. Installation</a></li>
 <li><a href="#4-initial-setup">4. Initial setup</a></li>
@@ -417,7 +418,8 @@ system, and troubleshooting.</p>
 <hr />
 <h2 id="table-of-contents">Table of contents<a class="anchor" href="#table-of-contents" title="Link to this section">#</a></h2>
 <ol>
-<li><a href="#1-what-is-themeforge">What is ThemeForge</a></li>
+<li><a href="#1-what-is-themeforge">What is ThemeForge</a>
+   - <a href="#the-web-ui-neo-tokyo--matrix--kawaii">The Web UI (Neo-Tokyo · Matrix · Kawaii)</a></li>
 <li><a href="#2-system-requirements">System requirements</a></li>
 <li><a href="#3-installation">Installation</a></li>
 <li><a href="#4-initial-setup">Initial setup</a></li>
@@ -470,6 +472,31 @@ parts of starting a new template project:</p>
 <p>ThemeForge does <strong>not</strong> generate the actual code of your templates —
 the AI agent does. ThemeForge prepares the ground so the agent starts
 with maximum context and minimum boilerplate.</p>
+<hr />
+<h2 id="the-web-ui-neo-tokyo-matrix-kawaii">The Web UI (Neo-Tokyo · Matrix · Kawaii)<a class="anchor" href="#the-web-ui-neo-tokyo-matrix-kawaii" title="Link to this section">#</a></h2>
+<p>Since <strong>v1.6.0</strong> ThemeForge runs by default in a <strong>web interface</strong> rendered
+inside QtWebEngine and connected to the same Python backend via a <code>QWebChannel</code>
+bridge — so every screen below works exactly like the classic UI (real
+scaffolding, preview, cost, licensing, Operator… nothing is mocked).</p>
+<ul>
+<li><strong>Three themes</strong>, switchable in <strong>Settings → Themes</strong>, each with its own boot
+  splash: <strong>Neo-Tokyo</strong> (cyberpunk, default), <strong>Matrix</strong> (green terminal),
+  <strong>Kawaii</strong> (pastel). Web themes recolor instantly; choosing a <em>classic</em>
+  theme restarts the app into the native QWidget UI.</li>
+<li><strong>Switching UI mode</strong>: <code>THEMEFORGE_CLASSIC=1 themeforge</code> forces the classic
+  native UI; <code>THEMEFORGE_WEB=1</code> forces the web UI. The choice is saved in
+  <code>~/.config/themeforge/app_prefs.json</code> (<code>ui_mode</code>).</li>
+<li><strong>Opening a project</strong> pops it in its <strong>own window/modal</strong> (like the native
+  ProjectWindow) — it doesn't replace the gallery. When you forge a new
+  project, the <strong>setup runs in a real terminal</strong> (the <em>Setup</em> tab) and the view
+  switches to the <strong>Agent</strong> tab automatically when it finishes.</li>
+<li><strong>Add your own theme</strong>: drop a JSON in <code>webui/themes/&lt;slug&gt;.json</code> (live
+  recolor), or convert a Claude Design CSS export with
+  <code>python tools/import_web_theme.py</code>.</li>
+</ul>
+<p>All the features documented below (project modes, reference analysis,
+ProjectWindow, Gallery, Cost, Compare, Market, Settings, Operator/Hermes)
+are available identically in the web UI and the classic UI.</p>
 <hr />
 <h2 id="2-system-requirements">2. System requirements<a class="anchor" href="#2-system-requirements" title="Link to this section">#</a></h2>
 <table>
@@ -677,9 +704,36 @@ stacks are supported including (non-exhaustive):</p>
   SolidStart, React-Vite, Vue 3-Vite, Angular, plain HTML+Tailwind /
   Bootstrap.</li>
 <li><strong>Frontend libraries</strong>: Storybook (React).</li>
-<li><strong>CMS</strong>: WordPress Block Theme (theme.json + MCP-adapter), WordPress
-  Plugin (with abilities API), Payload CMS, Strapi, Medusa, Sanity
-  Studio, Directus, Docusaurus, VitePress, Starlight, Hugo, Eleventy.</li>
+<li><strong>CMS · WordPress</strong> (6 stacks since v1.4.0):</li>
+<li><code>wordpress-block</code> — FSE block theme (theme.json + templates/parts/
+    patterns). Free pack: GenerateBlocks, Spectra, ACF free, Pods,
+    Royal MCP, Novamira (free).</li>
+<li><code>wordpress-bricks</code> — Bricks Builder child theme (you supply Bricks
+    via <code>wp_packs.json</code>). Free pack: GreenShift, ACF, Pods, Royal MCP,
+    Novamira (free).</li>
+<li><code>wordpress-elementor</code> — Hello Elementor child theme. Free pack:
+    Elementor (free), Essential Addons Lite, ACF, Pods, Royal MCP,
+    Novamira (free) — plus auto-installs Hello Elementor as parent.</li>
+<li><code>wordpress-divi</code> — Divi child theme (you supply Divi via
+    <code>wp_packs.json</code>). Free pack: ACF, Pods, Royal MCP, Novamira (free).</li>
+<li><code>wordpress-breakdance</code> — Breakdance plugin on Kadence base. Free
+    pack: Kadence, Breakdance (free), ACF, Pods, Royal MCP, Novamira
+    (free).</li>
+<li><code>wordpress-plugin</code> — PHP 8.2 plugin scaffold (PSR-4 + Composer +
+    optional Vite/Vue admin UI). No Docker WP provisioning.</li>
+</ul>
+<p>Every WordPress theme stack auto-provisions WordPress + MariaDB in
+  Docker, installs WP (admin/admin), drops a localhost autologin
+  mu-plugin, installs the free pack via wp-cli, wires the Automattic
+  WordPress MCP bridge in <code>.mcp.json</code>, and lays down <code>WORDPRESS-DEV.md</code>
+  + <code>WORDPRESS-LEGAL.md</code> + a <code>./wp</code> wp-cli helper. Premium plugins or
+  parent themes you have licensed are installed if and only if you
+  declare a path or URL in <code>~/.config/themeforge/wp_packs.json</code>
+  (gitignored, local-only). See <a href="WORDPRESS.md"><code>docs/WORDPRESS.md</code></a> for
+  the full pipeline.</p>
+<ul>
+<li><strong>CMS · other</strong>: Payload CMS, Strapi, Medusa, Sanity Studio,
+  Directus, Docusaurus, VitePress, Starlight, Hugo, Eleventy.</li>
 <li><strong>Backend</strong>: Hono (Bun / Cloudflare), NestJS + Prisma, FastAPI,
   Django + Tailwind, Phoenix LiveView, Rails + Tailwind, Bun-Elysia,
   Deno-Fresh, Spring Boot, Ktor, Go-Fiber, Rust-Axum.</li>
@@ -690,8 +744,76 @@ stacks are supported including (non-exhaustive):</p>
 <li><strong>Game-dev</strong> (Vite + TypeScript): Phaser, PixiJS, React Three Fiber.</li>
 <li><strong>Email templates</strong>: react-email.</li>
 <li><strong>Browser extensions</strong>: Plasmo, WXT.</li>
-<li><strong>Shopify</strong>: Liquid (Dawn theme).</li>
+<li><strong>Shopify</strong> (3 stacks since v1.5.0):</li>
+<li><code>shopify-liquid</code> — Online Store 2.0 theme. Clones the official
+    <a href="https://github.com/Shopify/dawn">Dawn</a> (MIT) as a starting point
+    and adds <code>package.json</code> with the Liquid prettier plugin,
+    <code>.prettierrc.json</code>, a strict <code>.theme-check.yml</code> (16 KB JS cap from
+    the official Theme Store budget, parser-blocking checks, deprecated
+    filters, template length), a GitHub Actions workflow using the
+    official <code>shopify/lighthouse-ci-action@v1</code>, and <code>.mcp.json</code> wired to
+    <strong>3 official Shopify MCPs</strong> — <code>shopify-dev</code> (STDIO, includes Polaris),
+    <code>shopify-storefront</code> (HTTP, zero-auth) and <code>shopify-storefront-catalog</code>
+    (HTTP, UCP, natural-language catalog search). ⚠️ Themes derived from
+    Dawn are INELIGIBLE for the Shopify Theme Store (official rule); they
+    are perfectly fine for <strong>ThemeForest</strong> or <strong>Partner builds</strong>. See
+    <a href="SHOPIFY.md"><code>docs/SHOPIFY.md</code></a> for the full workflow.</li>
+<li><code>shopify-hydrogen</code> (NEW in v1.5.0) — headless storefront with
+    <strong>Remix v3 + React 19 + Oxygen + Tailwind</strong>. Scaffold via
+    <code>@shopify/create-hydrogen</code>. For catalogs &gt; 500 SKUs, multi-market
+    builds, and the ThemeForest "Hydrogen" category (higher ticket).</li>
+<li><code>shopify-polaris-app</code> (NEW in v1.5.0) — embedded Shopify Admin app
+    with <strong>Polaris + App Bridge 4 + Remix + Prisma</strong>. Scaffold via
+    <code>@shopify/create-app --template remix</code>. Targets the <strong>Shopify App
+    Store</strong> or custom apps with theme/checkout/customer-account/admin/
+    POS/Flow/Functions extensions.</li>
+<li><code>shopify-liquid-blank</code> (NEW in v1.5.0) — Online Store 2.0 theme
+    from scratch (no Dawn clone) — eligible for the <strong>Shopify Theme
+    Store</strong> since Dawn-derived themes are auto-rejected.</li>
+<li><code>shopify-functions</code> (NEW in v1.5.0) — Rust + Wasm extensions for
+    custom server-side logic (discounts, payment/delivery
+    customization, cart validations, fulfillment constraints). Runs
+    inside Shopify infra with a ≤ 5 ms budget.</li>
+<li><code>shopify-storefront-webcomponents</code> (NEW in v1.5.0) — embedded
+    commerce in non-Shopify sites (blogs, landings, WordPress,
+    Webflow). Vanilla HTML + Shopify CDN-hosted Web Components.</li>
+<li><code>shopify-checkout-extension</code> (NEW in v1.5.0) — UI extension inside
+    the hosted Shopify checkout. <strong>Shopify Plus only.</strong> $50-500/mo
+    typical pricing.</li>
+<li><strong>E-commerce — non-Shopify</strong> (NEW in v1.5.0, all under the unified
+  <code>E-commerce</code> category in the picker):</li>
+<li><code>magento-hyva</code> — Magento 2.4.8+ child theme on top of <strong>Hyvä</strong>
+    (Tailwind v4 + Alpine.js). Hyvä went open-source on 2025-11-10
+    under OSL 3.0 + AFL 3.0. The scaffold also auto-installs the
+    <strong>Freento MCP</strong> module (MIT) so the agent can query orders,
+    products, customers, etc. against the store. Marketplaces: Adobe
+    Commerce Marketplace + ThemeForest.</li>
+<li><code>saleor-nextjs</code> — official Saleor Storefront (Next.js 15 App
+    Router + GraphQL Codegen + Tailwind, BSD-3). Backend = Saleor
+    Cloud / self-hosted / public demo.</li>
+<li><code>vendure</code> — MIT headless commerce backend (NestJS + GraphQL +
+    TypeORM/Postgres) with embedded Angular admin. Optional Next.js
+    storefront chosen during the <code>@vendure/create</code> scaffold.</li>
+<li><code>bigcommerce-stencil</code> — BigCommerce theme based on the official
+    <strong>Cornerstone</strong> (MIT) + Stencil CLI (Handlebars + SCSS Citadel /
+    Foundation 5.5). 2nd theme store after Shopify by volume;
+    Cornerstone-derived themes are ineligible for the BigCommerce
+    Theme Store.</li>
+<li><code>medusa</code> — existing stack since v1.x; MIT (Node + Next.js).</li>
+<li><code>prestashop-theme</code> — PrestaShop 9 child theme inheriting from
+    <code>classic</code> (OSL 3.0). Smarty templates + assets pipeline. Markets:
+    PrestaShop Addons (2k+ templates, €40-150) + ThemeForest.</li>
+<li><code>opencart-theme</code> — OpenCart 4.x theme packaged as an extension
+    (GPL). Twig templates. OCMod was removed in OC 4 — only events
+    are supported. Markets: OpenCart Marketplace + ThemeForest (1.5k+).</li>
+<li><code>sylius</code> — Sylius 2.x full commerce framework (MIT) on Symfony
+    7.4. Doctrine ORM 3 + Twig 3 + API Platform 3, multi-channel
+    native. SyliusThemeBundle for custom themes.</li>
 </ul>
+<p>All 15 e-commerce stacks live under the single <strong>E-commerce</strong>
+  category in the stack picker. Full walk-through with prereqs,
+  scaffold steps, activation and distribution channels in
+  <a href="ECOMMERCE.md"><code>docs/ECOMMERCE.md</code></a>.</p>
 <p>Each stack has:
 - A <code>scaffold</code> command list run via bash.
 - A <code>skills</code> list (Anthropic / Vercel / WordPress / Shopify skill

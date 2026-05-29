@@ -5,9 +5,28 @@ All notable changes to ThemeForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.0] - 2026-05-29
 
-### Added — E-commerce expansion (queued for v1.5.0)
+### Added — Web UI (Neo-Tokyo · Matrix · Kawaii)
+
+- **ThemeForge ahora tiene una UI web** renderizada en `QWebEngineView` + puente `QWebChannel` (`window.tfBridge`): los prototipos React/HTML son la interfaz principal. Por defecto arranca en modo web; `THEMEFORGE_CLASSIC=1` (o Ajustes → Temas → un tema clásico) vuelve a la UI nativa de QWidgets. Implementación en `web_shell.py` (+40 slots de puente) y `webui/`.
+- **3 temas web completos**, cada uno con su propio splash de arranque: **Neo-Tokyo** (cyberpunk cian/magenta, por defecto), **Matrix** (terminal verde fósforo) y **Kawaii** (pastel). Se cambian en Ajustes → Temas. Los temas **web** recolorean la UI en vivo (CSS vars); los **clásicos** reinician la app para cargar la UI nativa.
+- **Temas web enchufables**: suelta un JSON en `webui/themes/<slug>.json` y aparece como tema nuevo (recolor en vivo). Importador `tools/import_web_theme.py` convierte un tema de Claude Design (CSS) → pack JSON.
+- **Todas las pantallas con datos/acciones REALES** (cero mock), a paridad con la app nativa, en los 3 temas:
+  - **Galería** — proyectos en vivo + favoritos ★ · tags · archivar/restaurar · eliminar · filtros · búsqueda.
+  - **New project** — 4 modos (desde cero / recreate referencia / adopt local / repo existente), análisis de referencia con IA + «Examinar», extras (PostgreSQL · licensing pcreative + repo gh + forzar), toggles autoskills/UI-UX Pro/MCP/docs, nicho, stacks por categoría plegable, nombre.
+  - **Ventana de proyecto** — se abre en **ventana/modal aparte**; el **setup corre en un terminal real (node-pty/PTY)** y al terminar salta solo a la pestaña del agente; pestañas de terminal **Setup · Agente · Shell · Hermes · Office**; **preview** con sondeo de puerto + seguir la URL real del dev server + log en vivo + viewport (360/768/1280/1920/full) + 📸 screenshot + dropdown de sub-proyectos (mono-repo); **barra MCP** que lee/edita el `.mcp.json` real; toolbar Folder · VSCode · Terminal ext. · Operator · Pre-flight · ZIP · GitHub · Push · Deploy.
+  - **AI Cost** — donut por proveedor + barras 30 días + tabla por modelo + totales + Re-scan.
+  - **Compare** — el mismo prompt en cada IA en su terminal real lado a lado, con checkboxes para elegir agentes + limpiar.
+  - **Market** — 6 análisis (general/stacks/predicción/nicho/marketplace/comparar-2) + copiar + exportar `.md` + «crear proyecto desde análisis».
+  - **Licensing** — sistema anti-nulled real (estado del backend + licencias + crear + Productos/Gumroad/Tools).
+  - **Settings** — estado del sistema (github/agentes/runtimes/tools) + diálogos nativos reales (credenciales con login OAuth/instalar CLI · dependencias · onboarding · editor de temas · import Figma) + skills por stack + atajos.
+  - **Operator / Hermes** — power on/off + status strip (versión · MCP · modelo) + misión con fases (Plan→Crear→Build→QA→Empaquetar)/variantes/agente/log en vivo + Chat + Admin (dashboard web embebido) + pestañas Agentes/Crear/Memoria/Kanban/Cron.
+  - **Command Palette** (⌘/Ctrl+K).
+- **Preview robusto** (compartido por la UI web y la nativa): sondeo del puerto del dev server (sin delays fijos → adiós `ERR_CONNECTION_REFUSED`), seguimiento de la URL real del stdout (si el framework coge otro puerto), detección de sub-proyectos en mono-repos. El **setup** se ejecuta con TTY real (los scaffolders interactivos como `create-next-app` ya funcionan).
+- **Capas Neo-Tokyo nativas** (para `THEMEFORGE_CLASSIC=1`): tema built-in Neo-Tokyo, splash de secuencia de arranque, atmósfera (grid + glows) y la pestaña **Operator → Hermes** con su shell de 8 sub-pestañas.
+
+### Added — E-commerce expansion
 
 - **NEW unified "E-commerce" category** in the stack picker. All 15 ecommerce stacks (the 7 Shopify variants plus the 8 below) are now grouped under a single `E-commerce` category, replacing the previous per-platform `CMS · Shopify`, `CMS · Magento`, etc. sub-categories.
 - **NEW stack `magento-hyva`** — Magento 2.4.8+ child theme on **Hyvä Theme** (OSL 3.0 + AFL 3.0, open-source since 2025-11-10). 19-step scaffold: `composer require hyva-themes/magento2-default-theme + magento2-theme-module`, `composer require freento/module-mcp` (the MIT Freento MCP plug-in that turns the store into a queryable MCP server), `bin/magento module:enable Freento_Mcp + setup:upgrade + cache:flush`, full child-theme structure under `app/design/frontend/Pcreative/<slug>/` with `theme.xml` parent=`Hyva/default`, `composer.json` of type `magento2-theme` licence `OSL-3.0`, Tailwind v4 + Alpine config (`web/tailwind/{package.json,tailwind.config.js,tailwind-source.css}` with the Hyvä preset), `Magento_Theme/layout/default.xml` override, `.mcp.json` wired to the Freento MCP with placeholders, and `README-MAGENTO.md` covering build/deploy + MCP setup workflow.
@@ -22,7 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docs/USER_GUIDE.md` §7 expanded** with the full E-commerce non-Shopify block (8 stacks) and pointer to `docs/ECOMMERCE.md`.
 - **`README.md` navbar** adds a link to the new `docs/ECOMMERCE.md` guide.
 
-### Added — Licensing system for Shopify (queued for v1.5.0)
+## [1.5.0] - 2026-05-28
+
+### Added — Licensing system for Shopify
 
 - **Full pcreative licensing scaffold for the 7 Shopify stacks**. Mirrors the WordPress pattern: 6-layer anti-nulled (online activation → offline RS256 JWT verify with browser-native `SubtleCrypto` or `jose` on Node → domain binding → 24 h heartbeat → visible watermark on unlicensed installs → invisible `watermark_id` claim for piracy tracing). Implemented per family in `templates/licensing/`:
   - `shopify-liquid/` (used by `shopify-liquid` + `shopify-liquid-blank`) — `assets/pcreative-license.js` (vanilla, zero-deps), `snippets/license-gate.liquid`, `snippets/license-watermark.liquid`, `config/license-section.json` (add to settings_schema), `README.licensing.md`. Auto-injects the `<script>` and `{% render 'license-watermark' %}` into `layout/theme.liquid` via `sed`.
@@ -33,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`licensing_scaffold.py` STACK_FAMILIES extended** with the 5 missing WordPress builder variants (`wordpress-bricks`, `-elementor`, `-divi`, `-breakdance` already mapped via family `wordpress`) and the 7 Shopify entries mapped to 5 families (`shopify-liquid`/`liquid-blank` → `shopify-liquid`; `shopify-checkout-extension` shares the `shopify-polaris-app` family; the other four have their own family). Five new `_scaffold_shopify_*` dispatcher functions wire each into the setup script.
 - **`licensing_panel.py` fix** — the `_create_license()` button in the Licensing tab was reading `data.get('key')` but the backend returns `{license: {key, type, …}}` wrapped, so the success dialog always showed the whole JSON dump. Now parses `data.license.key` correctly.
 
-### Added — Shopify stacks (already covered above for v1.5.0)
+### Added — Shopify stacks (foundation: hydrogen + polaris-app + Liquid 2026 context)
 
 - **3 Shopify stacks** in the selector:
   - `shopify-liquid` — Online Store 2.0 theme, clones [Dawn](https://github.com/Shopify/dawn) (MIT) as the starting point. Now scaffolds **`package.json`** + **`.prettierrc.json`** with `@shopify/prettier-plugin-liquid`, **`.theme-check.yml`** (strict: 16 KB JS cap, parser-blocking checks, deprecated filters, template length), **`.github/workflows/lighthouse-ci.yml`** using the official `shopify/lighthouse-ci-action@v1`. Free Dawn warning: themes derived from Dawn/Horizon are INELIGIBLE for the Shopify Theme Store (rebuild from scratch for that route).
@@ -66,7 +87,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Updated `NOTICE.md` Shopify section**: Shopify CLI, Dawn, Hydrogen template, Polaris, App Bridge, create-app template, Liquid Prettier plugin, Prettier, Lighthouse CI action — all auto-installed at scaffold time from official sources; nothing bundled in this repo.
 - **Updated `TRADEMARKS.md` Shopify ecosystem section**: Shopify, Liquid, Online Store 2.0, Dawn, Hydrogen, Oxygen, Polaris, App Bridge, Shopify CLI, Shopify App Store — declared under nominative fair use with no implied affiliation.
 
-### Added — WordPress expansion (released as v1.4.0 — 2026-05-28)
+## [1.4.0] - 2026-05-28
+
+### Added — WordPress expansion
 
 - **5 WordPress stacks** in the selector: `wordpress-block` (FSE), `wordpress-bricks` (Bricks Builder child theme), `wordpress-elementor` (Hello Elementor child theme), `wordpress-divi`, `wordpress-breakdance`. Auto-installs the FREE plugin/theme pack per stack from WordPress.org via wp-cli, plus Novamira free from its official GitHub release (AGPL v3). Premium plugins/themes (Bricks, Elementor Pro, Divi, Breakdance Pro, JetEngine, Novamira Pro, ACF Pro, Motion.page, etc.) are referenced by name only — never bundled — and auto-install if and only if the user supplies a path in `~/.config/themeforge/wp_packs.json` (gitignored, local-only).
 - **Market analysis tab** ("Market" between Compare and Operator) — six AI-driven analyses via OpenRouter (Gemini 2.5 Pro by default + 7 alternative models): `🌍 Mercado 2026 (general)`, `📊 Análisis de stacks`, `🎯 Por nicho concreto`, `⚖️ Comparar 2 nichos`, `🏪 Por marketplace`, `🔮 Predicción 2027`. Output rendered as markdown, persistent history at `~/.config/themeforge/market_analyses/`, "🚀 Crear proyecto desde este análisis" button that feeds the analysis into a new scratch project's `CLAUDE.md`. Yellow banner if `OPENROUTER_API_KEY` is missing, with deep-link to Settings → Credentials.
@@ -80,7 +103,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Market analyzer `urllib` encoding fix.** The X-Title HTTP header used an em-dash (U+2014) that broke the latin-1 codec inside `urllib.request`. Replaced with ASCII hyphen.
 - **Preview detector no longer attempts the deprecated `wp-env` profile.** Block themes were incorrectly matched by `has_wp_env()`, causing a flash of broken wp-env attempts before the real WordPress (Docker) profile took over.
 
+## [1.3.4] - 2026-05-28
 
+### Fixed
+- **Reference analyzer no longer classifies WordPress themes/plugins as `design-export`** (any folder whose `style.css` has `Theme Name:` or root `.php` has `Plugin Name:` → WordPress detector).
+
+## [1.3.3] - 2026-05-28
+
+### Added
+- **WordPress auto-login on `localhost`** (ThemeForge mu-plugin) + real **Start/Stop** buttons for the Docker WordPress preview (start/stop containers without losing data).
+
+## [1.3.2] - 2026-05-28
+
+### Fixed
+- Removed the obsolete `WordPress (wp-env)` profile from the preview detector.
+
+## [1.3.1] - 2026-05-28
+
+### Fixed
+- **Auto-detect the WordPress stack on `recreate`** from a theme/plugin folder without needing to run the AI analysis first.
+
+## [1.3.0] - 2026-05-27
+
+### Added
+- **Self-provisioned WordPress dev environment in Docker** — ThemeForge brings up WordPress + MariaDB, installs WP (admin/admin) and mounts the project under `wp-content/{themes,plugins}/<slug>` before setup. The preview points straight at the live container (`no_server` profile); a `./wp` helper runs wp-cli inside the container. `wp-env` was dropped in favour of this.
+- **WordPress MCP** (official Automattic bridge) auto-wired in `.mcp.json` for native control of the WP core from the agent.
+- **Licensing client v2** (anti-nulled): RS256-signed JWT, offline verification with the embedded public key, gated auto-updater, and a `demo-installer`. Replaces the v1 client.
+- **§B Envato checklist per product format** in the generated `CLAUDE.md` (Site Template vs Script/App vs WordPress vs Mobile), so the agent applies the right marketplace rules.
+
+### Fixed
+- wp-cli inside Docker: DB env + file permissions.
 
 ## [1.2.4] - 2026-05-26
 

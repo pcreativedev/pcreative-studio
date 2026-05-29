@@ -16,6 +16,7 @@ system, and troubleshooting.
 ## Table of contents
 
 1. [What is ThemeForge](#1-what-is-themeforge)
+   - [The Web UI (Neo-Tokyo · Matrix · Kawaii)](#the-web-ui-neo-tokyo--matrix--kawaii)
 2. [System requirements](#2-system-requirements)
 3. [Installation](#3-installation)
 4. [Initial setup](#4-initial-setup)
@@ -70,6 +71,34 @@ parts of starting a new template project:
 ThemeForge does **not** generate the actual code of your templates —
 the AI agent does. ThemeForge prepares the ground so the agent starts
 with maximum context and minimum boilerplate.
+
+---
+
+## The Web UI (Neo-Tokyo · Matrix · Kawaii)
+
+Since **v1.6.0** ThemeForge runs by default in a **web interface** rendered
+inside QtWebEngine and connected to the same Python backend via a `QWebChannel`
+bridge — so every screen below works exactly like the classic UI (real
+scaffolding, preview, cost, licensing, Operator… nothing is mocked).
+
+- **Three themes**, switchable in **Settings → Themes**, each with its own boot
+  splash: **Neo-Tokyo** (cyberpunk, default), **Matrix** (green terminal),
+  **Kawaii** (pastel). Web themes recolor instantly; choosing a *classic*
+  theme restarts the app into the native QWidget UI.
+- **Switching UI mode**: `THEMEFORGE_CLASSIC=1 themeforge` forces the classic
+  native UI; `THEMEFORGE_WEB=1` forces the web UI. The choice is saved in
+  `~/.config/themeforge/app_prefs.json` (`ui_mode`).
+- **Opening a project** pops it in its **own window/modal** (like the native
+  ProjectWindow) — it doesn't replace the gallery. When you forge a new
+  project, the **setup runs in a real terminal** (the *Setup* tab) and the view
+  switches to the **Agent** tab automatically when it finishes.
+- **Add your own theme**: drop a JSON in `webui/themes/<slug>.json` (live
+  recolor), or convert a Claude Design CSS export with
+  `python tools/import_web_theme.py`.
+
+All the features documented below (project modes, reference analysis,
+ProjectWindow, Gallery, Cost, Compare, Market, Settings, Operator/Hermes)
+are available identically in the web UI and the classic UI.
 
 ---
 

@@ -213,8 +213,16 @@ python themeforge.py
 
 ## Highlights
 
-- **60+ stacks** — Next.js, Astro, Laravel, WordPress (block themes
-  and plugins with MCP-adapter), Shopify Liquid, Flutter, Expo, Ionic,
+- **Web UI (Neo-Tokyo · Matrix · Kawaii)** — ThemeForge ships a full
+  web interface (rendered in QtWebEngine) with three switchable themes,
+  each with its own boot splash. Every screen is wired to the same real
+  backend as the classic UI. Switch in Settings → Themes; set
+  `THEMEFORGE_CLASSIC=1` for the native QWidget UI. See [Web UI](#web-ui).
+- **60+ stacks** — Next.js, Astro, Laravel, WordPress (5 builder packs
+  with MCP-adapter), **15 e-commerce stacks** (7 Shopify variants +
+  Magento/Hyvä, Saleor, Vendure, BigCommerce, PrestaShop, OpenCart,
+  Sylius — see [docs/ECOMMERCE.md](docs/ECOMMERCE.md) &
+  [docs/SHOPIFY.md](docs/SHOPIFY.md)), Flutter, Expo, Ionic,
   Tauri, Electron, Spring Boot, Ktor, Phaser, R3F, and more.
 - **Multi-stack mono-repo detection** — automatic sub-project
   dropdown for projects like `Files/Laravel/` + `Files/Flutter/`.
@@ -235,6 +243,35 @@ python themeforge.py
   AI session indicator + command palette (Ctrl+K).
 - **Pixel Office visualizer** (optional) — your active Claude Code
   sessions as pixel-art avatars in a virtual office.
+
+## Web UI
+
+Since **v1.6.0** ThemeForge ships a full **web interface** rendered inside
+QtWebEngine and wired to the Python backend through a `QWebChannel` bridge.
+It is the default UI; nothing is mocked — every screen drives the same real
+scaffolder, preview, cost tracker, licensing and Operator as the classic UI.
+
+- **Three themes**, each with its own boot splash, switchable in
+  **Settings → Themes**:
+  - **Neo-Tokyo** — cyberpunk cyan/magenta (default).
+  - **Matrix** — phosphor-green terminal.
+  - **Kawaii** — pastel/rounded.
+  Web themes recolor the UI live; classic (QWidget) themes restart the app.
+- **Plug-and-play web theme packs** — drop a JSON in `webui/themes/<slug>.json`
+  for a live recolor; `tools/import_web_theme.py` converts a Claude Design CSS
+  export into a pack.
+- **Screens** (all real): Gallery (favorites/tags/archive/delete), New project
+  (4 modes + reference analysis + extras), Project window (opens in its own
+  window; setup runs in a real PTY terminal then auto-switches to the agent;
+  terminal tabs Setup/Agent/Shell/Hermes/Office; preview with port-polling +
+  real-URL follow + viewport + screenshot + sub-projects; live `.mcp.json`
+  editor), Cost, Compare, Market, Licensing, Settings (system status + native
+  credential/dependency/onboarding/theme-editor/Figma dialogs), Operator/Hermes
+  (power · mission phases · Chat · Admin dashboard), and a Command Palette
+  (⌘/Ctrl+K).
+- **Toggle**: `THEMEFORGE_CLASSIC=1 themeforge` forces the native QWidget UI;
+  `THEMEFORGE_WEB=1` forces the web UI. The choice persists in
+  `~/.config/themeforge/app_prefs.json` (`ui_mode`).
 
 ## License
 
