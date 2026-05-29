@@ -133,7 +133,7 @@ function MarketScreen() {
 }
 
 /* ---------------- SETTINGS / THEME EDITOR ---------------- */
-const APP_THEMES = [
+const _MOCK_APP_THEMES = [
   { k: 'neotokyo', label: 'Neo-Tokyo', jp: 'ネオ東京', bg: '#04060c', acc: '#00f0ff', acc2: '#ff2e88' },
   { k: 'tokyonight', label: 'Tokyo Night', jp: '東京夜', bg: '#1a1b26', acc: '#7aa2f7', acc2: '#bb9af7' },
   { k: 'dracula', label: 'Dracula', jp: '吸血鬼', bg: '#282a36', acc: '#bd93f9', acc2: '#ff79c6' },
@@ -142,8 +142,12 @@ const APP_THEMES = [
   { k: 'brutalism', label: 'Brutalism', jp: '粗野', bg: '#0a0a0a', acc: '#ffff00', acc2: '#ff0000' },
 ];
 
+// Temas REALES de ThemeForge (inyectados por el shell) con fallback al mock.
+const _TFD = (typeof window !== 'undefined' && window.__TF_DATA__) || {};
+const APP_THEMES = (_TFD.themes && _TFD.themes.length) ? _TFD.themes : _MOCK_APP_THEMES;
+
 function SettingsScreen() {
-  const [theme, setTheme] = useState('neotokyo');
+  const [theme, setTheme] = useState(_TFD.current_theme || 'neotokyo');
   const [sub, setSub] = useState('themes');
   const subs = [['themes', 'Temas', '🎨'], ['creds', 'Credenciales', '🔑'], ['mcp', 'MCP servers', '📡'], ['office', 'Pixel Office', '🎮']];
   const cur = APP_THEMES.find(t => t.k === theme);
@@ -171,7 +175,7 @@ function SettingsScreen() {
           <div className="eyebrow" style={{ marginBottom: 16 }}>TEMAS BUILT-IN · テーマ <span className="faint">· 8 + editor + Figma DTCG</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {APP_THEMES.map(t => (
-              <button key={t.k} onClick={() => setTheme(t.k)}
+              <button key={t.k} onClick={() => { setTheme(t.k); if (window.tfBridge) window.tfBridge.set_theme(t.k); }}
                 className={theme === t.k ? 'neon-edge' : ''}
                 style={{ cursor: 'pointer', padding: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid ' + (theme === t.k ? 'rgba(var(--accent-rgb),0.5)' : 'var(--line)'), background: 'transparent' }}>
                 <div style={{ height: 64, background: t.bg, position: 'relative', padding: 10 }}>

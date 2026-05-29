@@ -32,7 +32,7 @@ from platform_compat import app_config_dir  # noqa: E402
 PRESETS_DIR = Path(__file__).parent / "presets"
 USER_THEMES_DIR = app_config_dir() / "themes"
 SETTINGS_PATH = app_config_dir() / "settings.json"
-DEFAULT_THEME_NAME = "themeforge-dark"
+DEFAULT_THEME_NAME = "neotokyo"
 
 
 @dataclass

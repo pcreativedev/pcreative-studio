@@ -7404,7 +7404,23 @@ def main():
 
     app.aboutToQuit.connect(cleanup)
 
-    w = ThemeForgeApp()
+    # UI principal: por defecto la interfaz Neo-Tokyo (web prototype exacto
+    # renderizado en WebEngine con datos reales vía puente). La UI clásica de
+    # widgets sigue disponible con THEMEFORGE_CLASSIC=1 (acceso a todo lo que
+    # aún no está cableado en la web).
+    w = None
+    if os.environ.get("THEMEFORGE_CLASSIC") != "1":
+        try:
+            from web_shell import WebShell
+            w = WebShell()
+            w.resize(1320, 860)
+            w.setWindowTitle("ThemeForge // Neo-Tokyo")
+        except Exception as e:
+            print(f"[webshell] UI web no disponible, uso la clásica: {e}",
+                  file=sys.stderr)
+            w = None
+    if w is None:
+        w = ThemeForgeApp()
 
     def _enter_app():
         # Primer arranque: asistente de bienvenida completo (deps +

@@ -1,6 +1,6 @@
 /* ================= NEO-TOKYO · mock data ================= */
 
-const PROJECTS = [
+const _MOCK_PROJECTS = [
   {
     id: 'aurora-saas', name: 'Aurora SaaS', jp: 'オーロラ',
     type: 'SaaS Landing', stack: 'Next.js 15', stackKey: 'next',
@@ -51,7 +51,7 @@ const PROJECTS = [
   },
 ];
 
-const STACKS = [
+const _MOCK_STACKS = [
   { key: 'next', label: 'Next.js 15', jp: '次世代', cat: 'React', n: 'TS' },
   { key: 'astro', label: 'Astro', jp: '星', cat: 'MPA', n: 'JS' },
   { key: 'laravel', label: 'Laravel', jp: '帆', cat: 'PHP', n: 'PHP' },
@@ -61,6 +61,12 @@ const STACKS = [
   { key: 'sveltekit', label: 'SvelteKit', jp: '滑', cat: 'Svelte', n: 'TS' },
   { key: 'flutter', label: 'Flutter', jp: '蝶', cat: 'Mobile', n: 'Dart' },
 ];
+
+// Datos REALES inyectados por el shell nativo (window.__TF_DATA__) con
+// fallback a los mocks de arriba cuando se abre el prototipo suelto.
+const _TF = (typeof window !== 'undefined' && window.__TF_DATA__) || {};
+const PROJECTS = (_TF.projects && _TF.projects.length) ? _TF.projects : _MOCK_PROJECTS;
+const STACKS = (_TF.stacks && _TF.stacks.length) ? _TF.stacks : _MOCK_STACKS;
 
 const STATUS = {
   live:     { label: 'LIVE',     color: '#9dff3c' },
