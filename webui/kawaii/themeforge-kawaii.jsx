@@ -609,6 +609,14 @@ function RealTerm({ path, fresh }) {
   const [active, setActive] = useState(first);
   const [seen, setSeen] = useState({ [first]: true });
   const open = (k) => { setActive(k); setSeen(s => ({ ...s, [k]: true })); };
+  // Al terminar el setup → cambia solo a la pestaña Agente ♡.
+  useEffect(() => {
+    const B = window.tfBridge;
+    if (!fresh || !B || !B.setup_done || !B.setup_done.connect) return;
+    const onDone = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path === path) { setSeen(s => ({ ...s, agent: true })); setActive('agent'); } };
+    B.setup_done.connect(onDone);
+    return () => { try { B.setup_done.disconnect(onDone); } catch (e) {} };
+  }, [path, fresh]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ display: 'flex', gap: 5, marginBottom: 8, flexWrap: 'wrap' }}>

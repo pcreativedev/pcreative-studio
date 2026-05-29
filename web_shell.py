@@ -484,6 +484,8 @@ class ThemeForgeBridge(QObject):
     suggest_result = pyqtSignal(str)
     # Pide al WebShell recargar el prototipo activo (cambio de diseño web).
     reload_requested = pyqtSignal()
+    # El setup (pestaña Setup) terminó: JSON {path} → la UI pasa a la pestaña Agente.
+    setup_done = pyqtSignal(str)
 
     @pyqtSlot(str, result=str)
     def use_web_theme(self, slug: str) -> str:
@@ -652,16 +654,46 @@ class ThemeForgeBridge(QObject):
     def start_setup(self, path: str) -> str:
         """Pestaña «Setup»: ejecuta el setup REAL (scaffold + npm install +
         autoskills + UI/UX Pro) en un terminal con PTY (node-pty) y deja una
-        shell interactiva al terminar — idéntico al tab «Setup» de la app nativa."""
+        shell interactiva al terminar — idéntico al tab «Setup» de la app nativa.
+        Al acabar el script toca un fichero-marca y el bridge emite `setup_done`
+        para que la UI cambie sola a la pestaña Agente."""
         import shlex
+        from pathlib import Path
         script = self._setup_scripts.get(path)
         if not script:
             self.terminal_ready.emit(json.dumps({"path": path, "kind": "setup", "error": "sin setup pendiente (proyecto ya creado)"}))
             return json.dumps({"ok": False, "error": "sin setup"})
+        marker = Path(path) / ".tf_setup_done"
+        try:
+            if marker.exists():
+                marker.unlink()
+        except Exception:
+            pass
         wrapper = (f"clear; echo '─── ThemeForge: ejecutando setup ───'; "
                    f"bash {shlex.quote(script)}; "
-                   f"echo ''; echo '─── setup terminado. Shell lista. ───'; exec bash -i")
-        return self._start_terminal(path, "bash", ["-lc", wrapper], "setup")
+                   f"echo ''; echo '─── setup terminado. Shell lista. ───'; "
+                   f"touch {shlex.quote(str(marker))} 2>/dev/null; exec bash -i")
+        out = self._start_terminal(path, "bash", ["-lc", wrapper], "setup")
+        # Vigila el fichero-marca → emite setup_done (la UI pasa a Agente).
+        timer = QTimer(self)
+        timer.setInterval(1500)
+        ticks = {"n": 0}
+
+        def _poll():
+            ticks["n"] += 1
+            if marker.exists():
+                try:
+                    marker.unlink()
+                except Exception:
+                    pass
+                self.setup_done.emit(json.dumps({"path": path}))
+                timer.stop()
+            elif ticks["n"] > 1200:  # ~30 min de guarda
+                timer.stop()
+
+        timer.timeout.connect(_poll)
+        timer.start()
+        return out
 
     def _start_terminal(self, path: str, cmd: str, args, kind: str) -> str:
         import shutil
