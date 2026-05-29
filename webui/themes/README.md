@@ -48,3 +48,16 @@ extract its colors/fonts into one JSON here and it just works.
 4. Launch ThemeForge → Settings → Temas → your theme appears. Click → applied.
 
 That's it — no editing React, no bridge wiring, no restart.
+
+## Importador automático (uso interno)
+
+Cuando te pasen un tema de Claude Design, en vez de escribir el JSON a mano:
+
+```bash
+python3 tools/import_web_theme.py <css|carpeta-del-prototipo> --name "Nombre"
+```
+
+Extrae los CSS custom properties del `:root` del prototipo, resuelve los
+`var()`, y mapea a nuestras vars (`--bg-void/--accent/...`) por passthrough +
+heurística (texto/fondo/borde reclaman antes que el accent). Escribe el pack en
+`webui/themes/<slug>.json` e imprime qué quedó sin mapear para revisarlo.
