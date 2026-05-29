@@ -1074,23 +1074,22 @@ function App() {
 
   const nav = (id) => { setProject(null); setRoute(id); };
   window.tfNav = nav;
-  const openProject = (p) => { setProject(p); setRoute('project'); };
-  // Crear proyecto REAL: abre YA la ventana mostrando el SETUP (scaffold +
-  // autoskills + UI/UX Pro + MCP) en vivo; al terminar (build_done) pasa a la IA.
+  const openProject = (p) => { setProject(p); };  // modal/ventana aparte (no reemplaza la galería)
+  // Crear proyecto REAL: abre el proyecto en una VENTANA/MODAL aparte (como la
+  // ProjectWindow nativa) mostrando el SETUP en vivo; al terminar pasa a la IA.
   const launch = (cfg) => {
     window.__tfLastAgent = cfg.agent;
     if (!(window.tfBridge && window.tfBridge.create_project)) {
-      setProject({ ...cfg, id: cfg.name, status: 'live', fresh: true, jp: '制作' }); setRoute('project'); return;
+      setProject({ ...cfg, id: cfg.name, status: 'live', fresh: true, jp: '制作' }); return;
     }
     if (!window.__tfWired) {
       window.__tfWired = true;
       if (window.tfBridge.build_done && window.tfBridge.build_done.connect)
         window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', fresh: r.fresh || (prev && prev.fresh), jp: '制作' }));
-          setRoute('project'); });
+          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', fresh: r.fresh || (prev && prev.fresh), jp: '制作' })); });
     }
     window.tfBridge.create_project(JSON.stringify(cfg)).then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-      if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'live', fresh: true, jp: '制作' }); setRoute('project'); }
+      if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'live', fresh: true, jp: '制作' }); }
       else if (r && r.ok === false) alert('Error al crear: ' + (r.error || '')); });
   };
   const titles = { gallery: '▤ Galería', new: '+ Nuevo proyecto', cost: '$ Coste de IA', compare: '⇄ Comparar agentes', operator: '⌬ Mission Control', market: '⊞ Market Analyzer', licensing: '⚿ Licencias', settings: '⚙ Ajustes', project: '▸ ' + (project ? project.name : '') };
@@ -1129,8 +1128,14 @@ function App() {
         {route === 'market' && <Market />}
         {route === 'licensing' && <Licensing />}
         {route === 'settings' && <Settings />}
-        {route === 'project' && <ProjectWindow p={project || PROJECTS[0]} onBack={() => nav('gallery')} onDeploy={() => setModal('deploy')} onBuild={() => setModal('build')} buildLog={buildLog} />}
       </div>
+
+      {/* Proyecto en VENTANA/MODAL aparte (como la ProjectWindow nativa) */}
+      {project && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'var(--bg2, #040804)', display: 'flex', flexDirection: 'column', padding: 20, overflow: 'auto' }}>
+          <ProjectWindow p={project} onBack={() => setProject(null)} onDeploy={() => setModal('deploy')} onBuild={() => setModal('build')} buildLog={buildLog} />
+        </div>
+      )}
 
       {modal === 'deploy' && <DeployModal onClose={() => setModal(null)} />}
       {modal === 'build' && <BuildModal onClose={() => setModal(null)} />}

@@ -148,9 +148,10 @@ function App() {
   window.tfNav = nav;
   const openProject = (p) => {
     if (p && p.__new) { setRoute('new'); return; }
-    // Todo en el diseño web Neo-Tokyo: navegamos al project screen, que
-    // embebe la terminal REAL (xterm+node-pty) vía el puente.
-    setProject(p); setRoute('project');
+    // El proyecto se abre en una VENTANA/MODAL aparte (como la ProjectWindow
+    // nativa) — no reemplaza la galería. Solo seteamos `project`; el overlay
+    // se renderiza encima de la UI actual.
+    setProject(p);
   };
   const launch = (cfg) => {
     // Crear proyecto REAL: abre YA la ProjectWindow en estado «building» con el
@@ -158,18 +159,17 @@ function App() {
     // (build_done) pasa a la IA (terminal real) + preview.
     window.__tfLastAgent = cfg.agent;
     if (!(window.tfBridge && window.tfBridge.create_project)) {
-      setProject({ ...cfg, id: cfg.name, status: 'live', fresh: true, jp: '制作', accent: 'var(--accent)' }); setRoute('project'); return;
+      setProject({ ...cfg, id: cfg.name, status: 'live', fresh: true, jp: '制作', accent: 'var(--accent)' }); return;
     }
     if (!window.__tfProgWired) {
       window.__tfProgWired = true;
       if (window.tfBridge.build_done && window.tfBridge.build_done.connect)
         window.tfBridge.build_done.connect((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', fresh: r.fresh || (prev && prev.fresh), jp: '制作', accent: 'var(--accent)' }));
-          setRoute('project'); });
+          setProject(prev => ({ ...(prev || {}), id: r.slug || (prev && prev.id), name: r.name || (prev && prev.name), path: r.path || (prev && prev.path), agent: window.__tfLastAgent || 'claude', status: r.ok ? 'live' : 'draft', fresh: r.fresh || (prev && prev.fresh), jp: '制作', accent: 'var(--accent)' })); });
     }
     try {
       window.tfBridge.create_project(JSON.stringify(cfg)).then((j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
-        if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'live', fresh: true, jp: '制作', accent: 'var(--accent)' }); setRoute('project'); }
+        if (r && r.ok && r.path) { setProject({ id: r.slug, name: cfg.name, path: r.path, agent: cfg.agent, status: 'live', fresh: true, jp: '制作', accent: 'var(--accent)' }); }
         else if (r && r.ok === false) tfToast('Error al crear: ' + (r.error || ''), '#ff2e88'); });
     } catch (e) { console.error('create_project', e); }
   };
@@ -188,7 +188,6 @@ function App() {
           <Atmosphere />
           {route === 'gallery' && <GalleryScreen onOpen={openProject} />}
           {route === 'new' && <NewProjectScreen onLaunch={launch} onAnalyze={() => setModal('ref')} />}
-          {route === 'project' && <ProjectWindow project={project || PROJECTS[0]} onBack={() => nav('gallery')} onDeploy={() => setModal('deploy')} onBuild={() => setModal('build')} buildLog={buildLog} />}
           {route === 'cost' && <CostScreen />}
           {route === 'compare' && <CompareScreen />}
           {route === 'operator' && <OperatorScreen />}
@@ -197,6 +196,13 @@ function App() {
           {route === 'settings' && <SettingsScreen />}
         </div>
       </div>
+
+      {/* Proyecto en VENTANA/MODAL aparte (como la ProjectWindow nativa) */}
+      {project && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'var(--bg-void, #04060c)', display: 'flex', flexDirection: 'column' }}>
+          <ProjectWindow project={project} onBack={() => setProject(null)} onDeploy={() => setModal('deploy')} onBuild={() => setModal('build')} buildLog={buildLog} />
+        </div>
+      )}
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNav={nav}
         projects={PROJECTS} onOpenProject={openProject} />
