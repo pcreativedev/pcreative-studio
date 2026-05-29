@@ -24,8 +24,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import threading
+import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -622,6 +624,7 @@ class ThemeForgeBridge(QObject):
         super().__init__(parent)
         self._procs = []  # mantener vivas las QProcess en vuelo
         self._preview_procs = {}  # path -> (QProcess, url) del dev server de preview
+        self._preview_states = {}  # path -> dict de estado del sondeo de preview
         self._setup_scripts = {}  # path -> ruta del setup script pendiente (pestaña Setup)
         self._last_reference_analysis = None  # (value, texto) del último análisis IA
 
@@ -759,20 +762,27 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, result=str)
     def start_preview(self, path: str) -> str:
-        """Arranca el dev server real del proyecto (detección de preview.py) y
-        emite `preview_ready` con la URL para embeber por iframe."""
+        """Arranca el dev server real (subproject-aware) y **sondea el puerto**
+        hasta que escuche antes de cargar el iframe (igual que la app nativa) —
+        nada de delays fijos. Sigue la URL real del stdout por si el framework
+        coge otro puerto. Emite `preview_ready` {path,url}|{path,error}|{path,log}."""
         try:
             from preview import apply_port, get_port_for_project
             import platform_compat as pc
             import shlex
             from pathlib import Path
             proj = Path(path)
-            # Detección subproject-aware (mono-repo / app en subdir), como la nativa.
             prof, root = _active_preview(proj)
             if not prof:
                 self.preview_ready.emit(json.dumps(
                     {"path": path, "error": "sin preview detectable (¿deps instaladas? ¿está en un subdir?)"}))
                 return json.dumps({"ok": False, "error": "sin preview"})
+            # Perfil sin servidor (WordPress en Docker): URL directa, sin sondeo.
+            if prof.get("no_server"):
+                url = prof.get("url") or ""
+                self._preview_procs[path] = (None, url)
+                self.preview_ready.emit(json.dumps({"path": path, "url": url}))
+                return json.dumps({"ok": True, "url": url, "no_server": True})
             port = get_port_for_project(root.name, prof.get("default_port", 5173))
             cmd, env_extra, url = apply_port(prof, port)
             proc = QProcess(self)
@@ -784,22 +794,99 @@ class ThemeForgeBridge(QObject):
             for k, v in (env_extra or {}).items():
                 env.insert(k, str(v))
             proc.setProcessEnvironment(env)
+            st = {"proc": proc, "url": url, "detected": False,
+                  "deadline": time.monotonic() + 60.0,
+                  "detached": bool(prof.get("stop"))}
+            self._preview_states[path] = st
+            proc.readyReadStandardOutput.connect(lambda: self._preview_out(path))
             cmd_str = " ".join(shlex.quote(c) for c in cmd)
             sh, args = pc.shell_program_and_args(cmd_str)
             proc.start(sh, args)
             self._procs.append(proc)
             self._preview_procs[path] = (proc, url)
-            QTimer.singleShot(4800, lambda: self.preview_ready.emit(
-                json.dumps({"path": path, "url": url})))
+            self.preview_ready.emit(json.dumps({"path": path, "log": f"$ {' '.join(cmd)}  (puerto {port})\n"}))
+            QTimer.singleShot(400, lambda: self._preview_wait(path))
             return json.dumps({"ok": True, "starting": True, "url": url})
         except Exception as e:
             self.preview_ready.emit(json.dumps({"path": path, "error": str(e)}))
             return json.dumps({"ok": False, "error": str(e)})
 
+    _DEV_URL_RE = re.compile(r"https?://(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d+)", re.IGNORECASE)
+
+    def _preview_out(self, path: str):
+        """Lee stdout del dev server: lo manda al log del frontend y SIGUE la URL
+        real que imprime el server (Vite/Next/Astro pueden coger otro puerto)."""
+        st = self._preview_states.get(path)
+        if not st or not st.get("proc"):
+            return
+        try:
+            data = bytes(st["proc"].readAllStandardOutput()).decode(errors="replace")
+        except Exception:
+            return
+        if not data:
+            return
+        self.preview_ready.emit(json.dumps({"path": path, "log": data}))
+        if st.get("detected"):
+            return
+        m = self._DEV_URL_RE.search(data)
+        if not m:
+            return
+        st["detected"] = True
+        new_port = int(m.group(1))
+        try:
+            from PyQt6.QtCore import QUrl
+            cur = QUrl(st["url"]).port()
+        except Exception:
+            cur = None
+        if new_port and new_port != cur:
+            st["url"] = f"http://localhost:{new_port}/"
+            self._preview_procs[path] = (st["proc"], st["url"])
+            st["deadline"] = time.monotonic() + 60.0
+            self._preview_wait(path)
+
+    def _preview_wait(self, path: str):
+        """Sondea el puerto del dev server; carga el iframe SOLO cuando escucha.
+        Si el proceso muere (y no es detached) avisa; si no responde en 60s carga
+        igualmente para que el usuario pueda recargar."""
+        st = self._preview_states.get(path)
+        if not st:
+            return
+        proc = st.get("proc")
+        proc_dead = (proc is None or proc.state() == QProcess.ProcessState.NotRunning)
+        if proc_dead and not st.get("detached"):
+            self.preview_ready.emit(json.dumps(
+                {"path": path, "error": "el dev server terminó (revisa que el setup instaló las deps)"}))
+            return
+        try:
+            from PyQt6.QtCore import QUrl
+            u = QUrl(st["url"])
+            host = u.host() or "127.0.0.1"
+            port = u.port() or 0
+        except Exception:
+            host, port = "127.0.0.1", 0
+        if port and self._port_is_open(host, port):
+            QTimer.singleShot(400, lambda: self.preview_ready.emit(
+                json.dumps({"path": path, "url": st["url"]})))
+            return
+        if time.monotonic() < st.get("deadline", 0):
+            QTimer.singleShot(500, lambda: self._preview_wait(path))
+        else:
+            self.preview_ready.emit(json.dumps(
+                {"path": path, "url": st["url"], "slow": True}))
+
+    @staticmethod
+    def _port_is_open(host: str, port: int, timeout: float = 0.4) -> bool:
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except OSError:
+            return False
+
     @pyqtSlot(str, result=str)
     def stop_preview(self, path: str) -> str:
         """Para el dev server de preview de un proyecto (sin borrar datos)."""
         try:
+            self._preview_states.pop(path, None)  # corta el sondeo en curso
             entry = self._preview_procs.pop(path, None)
             if not entry:
                 return json.dumps({"ok": True, "already": True})

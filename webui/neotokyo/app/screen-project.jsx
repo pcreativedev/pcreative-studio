@@ -162,15 +162,17 @@ function RealPreview({ path, accent, narrow }) {
   const [err, setErr] = useState(null);
   const [status, setStatus] = useState('idle');
   const [k, setK] = useState(0);
+  const [log, setLog] = useState('');
   useEffect(() => {
     if (!B || !B.preview_ready || !B.preview_ready.connect) return;
     const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== path) return;
+      if (r.log !== undefined) { setLog(l => (l + r.log).slice(-4000)); return; }
       if (r.stopped) { setUrl(null); setStatus('stopped'); return; }
       if (r.url) { setUrl(r.url); setErr(null); setStatus('up'); } else if (r.error) { setErr(r.error); setStatus('error'); } };
     B.preview_ready.connect(onReady);
     return () => { try { B.preview_ready.disconnect(onReady); } catch (e) {} };
   }, [path]);
-  const start = () => { if (B && B.start_preview && path) { setErr(null); setStatus('starting'); B.start_preview(path); } };
+  const start = () => { if (B && B.start_preview && path) { setErr(null); setLog(''); setStatus('starting'); B.start_preview(path); } };
   const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
   const reload = () => setK(x => x + 1);
   const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
@@ -196,7 +198,7 @@ function RealPreview({ path, accent, narrow }) {
       <div style={{ flex: 1, display: 'grid', placeItems: 'stretch', minHeight: 0, overflow: 'auto', background: '#070b16' }}>
         {err ? <div className="mono faint" style={{ placeSelf: 'center', padding: 24 }}>// preview: {err}</div>
           : status === 'stopped' ? <div className="mono faint" style={{ placeSelf: 'center', padding: 24 }}>■ preview detenido — pulsa ▶ Start</div>
-          : !url ? <div className="mono faint" style={{ placeSelf: 'center', padding: 24 }}>// arrancando dev server real…</div>
+          : !url ? <div className="mono faint" style={{ alignSelf: 'stretch', width: '100%', overflow: 'auto', padding: 14, fontSize: 11.5, whiteSpace: 'pre-wrap' }}>{'// arrancando dev server (sondeando puerto)…\n' + (log || '')}</div>
           : <iframe key={k} src={url} style={{ width: narrow ? 320 : '100%', maxWidth: '100%', height: '100%', minHeight: 320, border: 'none', background: '#fff', justifySelf: 'center' }} />}
       </div>
     </div>

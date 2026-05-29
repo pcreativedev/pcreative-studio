@@ -635,15 +635,17 @@ function RealPreview({ path, narrow }) {
   const B = window.tfBridge;
   const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
   const [status, setStatus] = useState('idle'); const [k, setK] = useState(0);
+  const [log, setLog] = useState('');
   useEffect(() => {
     if (!B || !B.preview_ready || !B.preview_ready.connect) return;
     const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.path !== path) return;
+      if (r.log !== undefined) { setLog(l => (l + r.log).slice(-4000)); return; }
       if (r.stopped) { setUrl(null); setStatus('stopped'); return; }
       if (r.url) { setUrl(r.url); setErr(null); setStatus('up'); } else if (r.error) { setErr(r.error); setStatus('error'); } };
     B.preview_ready.connect(onReady);
     return () => { try { B.preview_ready.disconnect(onReady); } catch (e) {} };
   }, [path]);
-  const start = () => { if (B && B.start_preview && path) { setErr(null); setStatus('starting'); B.start_preview(path); } };
+  const start = () => { if (B && B.start_preview && path) { setErr(null); setLog(''); setStatus('starting'); B.start_preview(path); } };
   const stop = () => { if (B && B.stop_preview && path) { B.stop_preview(path); setUrl(null); setStatus('stopped'); } };
   const reload = () => setK(x => x + 1);
   const openExt = () => { if (B && B.open_preview_external && path) B.open_preview_external(path); };
@@ -669,7 +671,7 @@ function RealPreview({ path, narrow }) {
         {!B || !path ? <Slot id={'pw'} cls="" radius={16} ph="preview de tu tema ♡" />
           : err ? <div style={{ color: 'var(--tx-dim)', fontWeight: 600, placeSelf: 'center' }}>preview: {err} 🥺</div>
           : status === 'stopped' ? <div style={{ color: 'var(--tx-dim)', fontWeight: 600, placeSelf: 'center' }}>■ preview detenido — pulsa ▶ Start ♡</div>
-          : !url ? <div style={{ color: 'var(--tx-dim)', fontWeight: 600, placeSelf: 'center' }}>✨ arrancando dev server real… ♡</div>
+          : !url ? <div style={{ alignSelf: 'stretch', width: '100%', overflow: 'auto', fontFamily: 'var(--font)', fontSize: 11.5, color: 'var(--tx-dim)', fontWeight: 600, whiteSpace: 'pre-wrap', padding: 6 }}>{'✨ arrancando dev server (sondeando puerto)… ♡\n' + (log || '')}</div>
           : <iframe key={k} src={url} style={{ width: narrow ? 320 : '100%', maxWidth: '100%', height: '100%', minHeight: 280, border: 'none', borderRadius: 16, background: '#fff', justifySelf: 'center' }} />}
       </div>
     </div>
