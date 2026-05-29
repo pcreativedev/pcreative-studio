@@ -242,6 +242,38 @@ class ThemeForgeBridge(QObject):
     terminal_ready = pyqtSignal(str)
     # Preview (dev server) listo: JSON {path, url} o {path, error}.
     preview_ready = pyqtSignal(str)
+    # Análisis de mercado terminado: JSON {niche, markdown} o {error}.
+    market_result = pyqtSignal(str)
+
+    @pyqtSlot(str, result=str)
+    def analyze_market(self, niche: str) -> str:
+        """Análisis de mercado REAL (OpenRouter) para un nicho — async en un
+        hilo para no congelar la UI; emite `market_result` con el markdown."""
+        import threading
+        try:
+            from market_analyzer import (build_request, call_openrouter,
+                                         get_openrouter_key, DEFAULT_MODEL)
+        except Exception as e:
+            self.market_result.emit(json.dumps({"error": f"import: {e}"}))
+            return json.dumps({"ok": False, "error": str(e)})
+        key = get_openrouter_key()
+        if not key:
+            self.market_result.emit(json.dumps(
+                {"error": "Configura tu OpenRouter API key en Settings → Credenciales."}))
+            return json.dumps({"ok": False, "error": "sin OpenRouter key"})
+
+        def _work():
+            try:
+                kind = "niche" if (niche or "").strip() else "general"
+                req = build_request(kind, DEFAULT_MODEL,
+                                    {"niche": niche} if kind == "niche" else None)
+                md = call_openrouter(req, key)
+                self.market_result.emit(json.dumps({"niche": niche, "markdown": md}))
+            except Exception as e:
+                self.market_result.emit(json.dumps({"error": str(e)}))
+
+        threading.Thread(target=_work, daemon=True).start()
+        return json.dumps({"ok": True, "running": True})
 
     def __init__(self, parent=None):
         super().__init__(parent)

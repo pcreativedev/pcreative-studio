@@ -66,7 +66,23 @@ function MarketScreen() {
   const [niche, setNiche] = useState('');
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
-  const run = () => { setLoading(true); setDone(false); setTimeout(() => { setLoading(false); setDone(true); }, 1400); };
+  const [md, setMd] = useState('');
+  const real = !!(window.tfBridge && window.tfBridge.analyze_market);
+  useEffect(() => {
+    if (!real || !window.tfBridge.market_result || !window.tfBridge.market_result.connect) return;
+    const onResult = (j) => {
+      let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      setLoading(false);
+      if (r.error) { setMd('⚠ ' + r.error); setDone(true); }
+      else { setMd(r.markdown || ''); setDone(true); }
+    };
+    window.tfBridge.market_result.connect(onResult);
+    return () => { try { window.tfBridge.market_result.disconnect(onResult); } catch (e) {} };
+  }, []);
+  const run = () => {
+    if (real) { setLoading(true); setDone(false); setMd(''); window.tfBridge.analyze_market(niche); return; }
+    setLoading(true); setDone(false); setTimeout(() => { setLoading(false); setDone(true); }, 1400);
+  };
   const rows = [
     ['Dental clinic landing', '$39', '★ 4.8', '1,240', 'alta'],
     ['Medical / health WP', '$59', '★ 4.6', '890', 'media'],
@@ -88,9 +104,17 @@ function MarketScreen() {
         <Btn variant="primary" icon="search" onClick={run}>{loading ? 'Analizando…' : 'Analizar'}</Btn>
       </div>
 
-      {loading && <div className="mono" style={{ color: 'var(--accent)', fontSize: 13, padding: 30, textAlign: 'center' }}><span style={{ animation: 'blink 0.8s infinite' }}>◢◣◤◥</span> consultando ThemeForest · Creative Market · Gumroad…</div>}
+      {loading && <div className="mono" style={{ color: 'var(--accent)', fontSize: 13, padding: 30, textAlign: 'center' }}><span style={{ animation: 'blink 0.8s infinite' }}>◢◣◤◥</span> analizando mercado con IA (OpenRouter) — puede tardar…</div>}
 
-      {done && (
+      {/* Análisis REAL: markdown del motor de ThemeForge (OpenRouter). */}
+      {done && real && (
+        <div className="fade-in panel" style={{ padding: 24 }}>
+          <div className="eyebrow" style={{ marginBottom: 12 }}>ANÁLISIS · {niche || 'general'} · 判定</div>
+          <pre className="mono" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12.5, lineHeight: 1.7, color: 'var(--tx)', margin: 0 }}>{md}</pre>
+        </div>
+      )}
+
+      {done && !real && (
         <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
           <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
