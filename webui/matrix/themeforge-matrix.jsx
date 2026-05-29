@@ -162,20 +162,42 @@ function Gallery({ onOpen }) {
   );
 }
 
-/* ---- New project (vibe scaffolder) ---- */
-function NewProject() {
+/* ---- New project (vibe scaffolder · 4 modos + extras, paridad con el normal) ---- */
+const M_MODES = [
+  { k: 'scratch', label: 'Desde cero', jp: '新規', desc: 'Scaffold oficial del stack + agente IA desde cero.' },
+  { k: 'recreate', label: 'Recreate ref', jp: '再現', desc: 'Carpeta / .zip / URL / Figma — la IA estudia y reimplementa.' },
+  { k: 'adopt', label: 'Adopt local', jp: '採用', desc: 'Export de claude.ai/design, v0.dev o Figma Make.' },
+  { k: 'repo', label: 'Existing repo', jp: '既存', desc: 'Continúa un repo de GitHub existente.' },
+];
+const M_REF_KINDS = [['folder', 'Carpeta local'], ['zip', 'Archivo .zip'], ['url', 'URL de demo'], ['figma', 'Figma (frame)']];
+function MToggle({ on, onClick }) {
+  return <button onClick={onClick} style={{ cursor: 'pointer', width: 38, height: 22, borderRadius: 99, padding: 2, border: 'none', background: on ? 'var(--accent)' : 'rgba(255,255,255,0.12)', boxShadow: on ? '0 0 10px var(--accent)' : 'none', transition: 'all .18s' }}><span style={{ display: 'block', width: 18, height: 18, borderRadius: 99, background: on ? '#040804' : '#7d8f80', transform: on ? 'translateX(16px)' : 'none', transition: 'transform .18s' }} /></button>;
+}
+function MCheck({ label, sub, on, onToggle }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}><div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontFamily: 'var(--term)' }}>{label}</div>{sub && <div style={{ fontSize: 11.5, marginTop: 3, color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>{sub}</div>}</div><MToggle on={on} onClick={onToggle} /></div>;
+}
+function NewProject({ onAnalyze }) {
   const [vibe, setVibe] = useState('');
   const [pname, setPname] = useState('');
   const [stack, setStack] = useState((typeof STACKS !== 'undefined' && STACKS[0]) ? STACKS[0].k : 'next');
   const [agent, setAgent] = useState('claude');
+  const [type, setType] = useState('SaaS Landing');
+  const [mode, setMode] = useState('scratch');
+  const [refKind, setRefKind] = useState('folder');
+  const [refVal, setRefVal] = useState('');
+  const [repoId, setRepoId] = useState('');
   const [thinking, setThinking] = useState(false);
   const [done, setDone] = useState(false);
   const [genPrompt, setGenPrompt] = useState('');
+  const [openCats, setOpenCats] = useState({});
+  const [opts, setOpts] = useState({ autoskills: true, uipro: true, mcp: true, docs: true, postgres: false, licensing: false, licensing_gh: false, licensing_force: false });
+  const tog = (k) => setOpts(o => ({ ...o, [k]: !o[k] }));
   const go = () => {
     setThinking(true); setDone(false);
     if (window.tfBridge && window.tfBridge.suggest_stack && (vibe || '').trim()) {
       const onRes = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
         if (r.stack && STACKS.find(s => s.k === r.stack)) setStack(r.stack);
+        if (r.template_type) setType(r.template_type);
         setGenPrompt(r.prompt || r.dev_prompt || ('Build: ' + vibe));
         setThinking(false); setDone(true);
         try { window.tfBridge.suggest_result.disconnect(onRes); } catch (e) {} };
@@ -184,25 +206,41 @@ function NewProject() {
     }
     setTimeout(() => { setThinking(false); setDone(true); }, 1300);
   };
-  const forge = () => {
-    const name = (pname || '').trim() || (vibe || '').trim().slice(0, 42) || 'Untitled Forge';
-    if (window.tfBridge && window.tfBridge.create_project) {
-      window.tfBridge.create_project(JSON.stringify({ name, stack, agent, type: 'Template', mode: 'scratch', niche: vibe, opts: { autoskills: true, uipro: true, mcp: true } }));
-      alert('⚙ Creando «' + name + '» — el setup corre en segundo plano y aparecerá en la galería.');
-    }
+  const examine = () => {
+    if (!window.tfBridge) return;
+    const picker = refKind === 'zip' ? window.tfBridge.pick_file : window.tfBridge.pick_folder;
+    if (!picker) return;
+    picker().then(j => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (!r.path) return; setRefVal(r.path);
+      if (window.tfBridge.detect_ref_stack) window.tfBridge.detect_ref_stack(r.path).then(dj => { let d = {}; try { d = JSON.parse(dj); } catch (e) {} if (d.stack && STACKS.find(s => s.k === d.stack)) setStack(d.stack); }); });
   };
+  const forge = () => {
+    if (!(window.tfBridge && window.tfBridge.create_project)) return;
+    if (mode === 'repo') {
+      const rid = (repoId || '').trim();
+      if (!rid || rid.indexOf('/') < 0) { alert('Indica el repo como owner/repo o una URL de GitHub.'); return; }
+      const repoName = rid.replace(/\.git$/, '').replace(/\/$/, '').split('/').pop();
+      window.tfBridge.create_project(JSON.stringify({ name: repoName, stack: 'none', agent, type, mode: 'existing', niche: vibe, existing_repo: rid, opts }));
+      alert('⚙ Continuando repo «' + repoName + '» — clonando y preparando en segundo plano.'); return;
+    }
+    const name = (pname || '').trim() || (vibe || '').trim().slice(0, 42) || type || 'Untitled Forge';
+    if (!(pname || '').trim() && !confirm('Sin nombre — se usará «' + name + '». ¿Continuar?')) return;
+    window.tfBridge.create_project(JSON.stringify({ name, stack, agent, type, mode, niche: vibe, reference: refVal, reference_kind: refKind, opts }));
+    alert('⚙ Creando «' + name + '» — el setup corre en segundo plano y aparecerá en la galería.');
+  };
+  const groups = {}; STACKS.forEach(s => { const c = s.cat || 'Otros'; (groups[c] = groups[c] || []).push(s); });
+  const selCat = (STACKS.find(s => s.k === stack) || {}).cat;
   return (
-    <div className="page fade" style={{ maxWidth: 920 }}>
+    <div className="page fade" style={{ maxWidth: 980 }}>
       <h2 className="sec">{'>'} Vibe Scaffolder <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>新規制作</span></h2>
       <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 16 }}>
         <div className="panelc">
           <div style={{ fontWeight: 600, marginBottom: 10, fontFamily: 'var(--term)' }}>$ describe el objetivo</div>
           <textarea className="ta" value={vibe} onChange={e => setVibe(e.target.value)} placeholder='Ej: "Landing premium para clínica dental en Madrid, paleta cálida…"' />
           <button className="btn pri" style={{ marginTop: 14 }} onClick={go}>{thinking ? '> procesando…' : '> Pre-rellenar con IA'}</button>
-          {thinking && <span style={{ marginLeft: 10, color: 'var(--accent)', fontFamily: 'var(--term)' }}>{AGENTS[agent].em} analizando…</span>}
+          {thinking && <span style={{ marginLeft: 10, color: 'var(--accent)', fontFamily: 'var(--term)' }}>{(AGENTS[agent] || {}).em} analizando…</span>}
           {done && (
             <div className="fade" style={{ marginTop: 16, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4, padding: 14, fontSize: 13, lineHeight: 1.65, fontFamily: 'var(--term)' }}>
-              <b style={{ color: 'var(--accent)' }}>[ prompt generado ]</b><br />Build a production-ready landing usando <b style={{ color: 'var(--accent)' }}>Next.js</b>. {vibe || 'Estética hacker/terminal, verde fósforo sobre negro, monoespaciada.'} Sistema de diseño coherente, accesible, imágenes del nicho, deploy-ready.
+              <b style={{ color: 'var(--accent)' }}>[ prompt generado ]</b><br />{genPrompt || ('Build a production-ready ' + type + ' usando ' + (STACKS.find(s => s.k === stack) || { label: stack }).label + '. ' + (vibe || 'Estética coherente, accesible, imágenes del nicho, deploy-ready.'))}
             </div>
           )}
         </div>
@@ -215,24 +253,97 @@ function NewProject() {
               </button>
             ))}
           </div>
+          <div style={{ fontWeight: 600, margin: '16px 0 8px', fontFamily: 'var(--term)' }}>tipo de template 種類</div>
+          <input className="ta" value={type} onChange={e => setType(e.target.value)} placeholder="SaaS Landing · E-commerce · Dashboard…" style={{ minHeight: 0, height: 38 }} />
         </div>
       </div>
-      <h2 className="sec" style={{ margin: '26px 0 14px' }}>{'#'} Stack <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>基盤</span></h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10 }}>
-        {STACKS.map(s => (
-          <button key={s.k} className={'tile' + (stack === s.k ? ' on' : '')} onClick={() => setStack(s.k)}>
-            <div style={{ fontSize: 20, fontFamily: 'var(--term)', color: 'var(--accent)' }}>{s.em}</div>
-            <div style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>{s.label}</div>
-            <div style={{ fontFamily: 'var(--term)', fontSize: 11, color: 'var(--tx-dim)' }}>{s.jp}</div>
+
+      {/* MODO */}
+      <h2 className="sec" style={{ margin: '26px 0 14px' }}>{'~'} Modo <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>方式</span></h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
+        {M_MODES.map(m => (
+          <button key={m.k} className={'tile' + (mode === m.k ? ' on' : '')} onClick={() => setMode(m.k)} style={{ textAlign: 'left' }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{m.label} <span style={{ fontFamily: 'var(--term)', fontSize: 11, color: 'var(--tx-dim)' }}>{m.jp}</span></div>
+            <div style={{ fontSize: 12, marginTop: 4, color: 'var(--tx-dim)', fontFamily: 'var(--term)', lineHeight: 1.5 }}>{m.desc}</div>
           </button>
         ))}
       </div>
-      <div className="panelc" style={{ marginTop: 22 }}>
+      {(mode === 'recreate' || mode === 'adopt') && (
+        <div className="panelc fade" style={{ marginTop: 12 }}>
+          <div style={{ fontWeight: 600, marginBottom: 12, fontFamily: 'var(--term)' }}>referencia 参照</div>
+          {mode === 'recreate' && (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+              {M_REF_KINDS.map(([k, l]) => <button key={k} className="tag" style={{ cursor: 'pointer', color: refKind === k ? 'var(--accent)' : 'var(--tx-dim)', borderColor: refKind === k ? 'var(--accent)' : 'var(--line)' }} onClick={() => setRefKind(k)}>{l}</button>)}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input className="ta" style={{ minHeight: 0, height: 38, flex: 1 }} value={refVal} onChange={e => setRefVal(e.target.value)} placeholder={refKind === 'url' ? 'https://demo-template.com' : refKind === 'figma' ? 'figma.com/file/…?node-id=' : 'Ruta o examinar…'} />
+            {refKind !== 'url' && refKind !== 'figma' && <button className="btn" onClick={examine}>📂 Examinar</button>}
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button className="btn pri" onClick={() => { window.__tfRef = { value: refVal, kind: refKind }; onAnalyze && onAnalyze(); }}>{'>'} Analizar con IA</button>
+            <span style={{ fontSize: 11.5, color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>{refKind === 'figma' ? 'Lee el frame vía MCP figma-context (es tu diseño).' : 'Detecta stack + estudia layout/paleta/tipo, multi-turno.'}</span>
+          </div>
+        </div>
+      )}
+      {mode === 'repo' && (
+        <div className="panelc fade" style={{ marginTop: 12 }}>
+          <div style={{ fontWeight: 600, marginBottom: 10, fontFamily: 'var(--term)' }}>repositorio github</div>
+          <input className="ta" style={{ minHeight: 0, height: 38 }} value={repoId} onChange={e => setRepoId(e.target.value)} placeholder="owner/repo o https://github.com/owner/repo" />
+          <div style={{ fontSize: 11, marginTop: 8, color: 'var(--tx-dim)', fontFamily: 'var(--term)' }}>No hace falta nombre: se usa el de la repo. gh repo clone con historial intacto.</div>
+        </div>
+      )}
+
+      {/* STACK (oculto en modo repo, que no usa stack) */}
+      {mode !== 'repo' && <>
+      <h2 className="sec" style={{ margin: '26px 0 14px' }}>{'#'} Stack <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>基盤 · {STACKS.length}</span></h2>
+      {Object.keys(groups).map(cat => {
+        const open = openCats[cat] !== undefined ? openCats[cat] : (cat === selCat);
+        return (
+          <div key={cat} style={{ marginBottom: 10 }}>
+            <button onClick={() => setOpenCats(o => ({ ...o, [cat]: !open }))} style={{ width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4, padding: '9px 12px', color: 'var(--tx-dim)', textAlign: 'left' }}>
+              <span style={{ color: 'var(--accent)', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .15s', display: 'inline-block', width: 12 }}>▸</span>
+              <span style={{ fontFamily: 'var(--term)', fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase', flex: 1 }}>{cat}</span>
+              <span className="tag">{groups[cat].length}</span>
+              {groups[cat].some(s => s.k === stack) && <span style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--accent)', boxShadow: '0 0 6px var(--accent)' }} />}
+            </button>
+            {open && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10, padding: '10px 2px 4px' }}>
+                {groups[cat].map(s => (
+                  <button key={s.k} className={'tile' + (stack === s.k ? ' on' : '')} onClick={() => setStack(s.k)}>
+                    <div style={{ fontSize: 20, fontFamily: 'var(--term)', color: 'var(--accent)' }}>{s.em}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>{s.label}</div>
+                    <div style={{ fontFamily: 'var(--term)', fontSize: 11, color: 'var(--tx-dim)' }}>{s.jp}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div className="panelc" style={{ marginTop: 14 }}>
         <div style={{ fontWeight: 600, marginBottom: 8, fontFamily: 'var(--term)' }}>$ nombre del proyecto <span style={{ color: 'var(--tx-dim)' }}>名前</span></div>
         <input className="ta" value={pname} onChange={e => setPname(e.target.value)} placeholder="Ej: Aurora Dental · ~/Proyectos/themes/<slug>" style={{ minHeight: 0, height: 40 }} />
       </div>
-      <div className="panelc" style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--term)' }}>
-        <span style={{ color: 'var(--tx-dim)' }}><b style={{ color: 'var(--accent)' }}>{(STACKS.find(s => s.k === stack) || { label: stack }).label}</b> · {(AGENTS[agent] || { label: agent }).label}</span>
+      </>}
+
+      {/* SETUP + EXTRAS */}
+      <h2 className="sec" style={{ margin: '26px 0 14px' }}>{'='} Setup & Extras <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>基礎</span></h2>
+      <div className="panelc" style={{ padding: '6px 20px 14px' }}>
+        <MCheck label="npx autoskills 技能" sub="auto-instala skills del stack (a11y/SEO/design) en .claude/skills/" on={opts.autoskills} onToggle={() => tog('autoskills')} />
+        <MCheck label="UI/UX Pro Max 高級UI" sub="shadcn/ui · Aceternity · Magic UI + sistema de diseño" on={opts.uipro} onToggle={() => tog('uipro')} />
+        <MCheck label="Pre-configurar MCP servers 接続" sub="genera .mcp.json (filesystem · github · playwright · figma · themeforge…)" on={opts.mcp} onToggle={() => tog('mcp')} />
+        <MCheck label="Documentación 文書" sub="documentation/ con guía de instalación + changelog" on={opts.docs} onToggle={() => tog('docs')} />
+        <MCheck label="🐘 PostgreSQL en Docker DB" sub="contenedor postgres:17 + DATABASE_URL en .env (requiere Docker)" on={opts.postgres} onToggle={() => tog('postgres')} />
+        <MCheck label="🔑 Licencias (pcreative anti-nulled) 認可" sub="verify-license + setup wizard según la familia del stack" on={opts.licensing} onToggle={() => tog('licensing')} />
+        {opts.licensing && <div style={{ paddingLeft: 16, borderLeft: '2px solid var(--accent)', marginLeft: 6 }}>
+          <MCheck label="└─ Crear repo gh <org>/<slug>" sub="gh repo create privado tras el scaffold (org en licensing.json)" on={opts.licensing_gh} onToggle={() => tog('licensing_gh')} />
+          <MCheck label="└─ Forzar también en adopt / existing 強制" sub="por defecto licensing solo corre en scratch/recreate" on={opts.licensing_force} onToggle={() => tog('licensing_force')} />
+        </div>}
+      </div>
+
+      <div className="panelc" style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--term)', borderColor: 'var(--accent)' }}>
+        <span style={{ color: 'var(--tx-dim)' }}><b style={{ color: 'var(--accent)' }}>{mode === 'repo' ? 'repo' : (STACKS.find(s => s.k === stack) || { label: stack }).label}</b> · {(M_MODES.find(m => m.k === mode) || { label: mode }).label} · {(AGENTS[agent] || { label: agent }).label}</span>
         <button className="btn pri" onClick={forge}>▶ Forjar proyecto</button>
       </div>
     </div>
@@ -637,6 +748,40 @@ function Modal({ title, jp, onClose, children, w = 560 }) {
     </div>
   );
 }
+// Análisis de referencia REAL (reference_analyzer + IA, streaming por reference_progress).
+function ReferenceAnalysisModal({ onClose }) {
+  const real = !!(window.tfBridge && window.tfBridge.analyze_reference);
+  const [lines, setLines] = useState([]);
+  const [status, setStatus] = useState('⏳ iniciando…');
+  const [done, setDone] = useState(false);
+  const boxRef = useRef(null);
+  useEffect(() => {
+    if (!real) { setDone(true); setStatus('sin puente'); return; }
+    const ref = (window.__tfRef && window.__tfRef.value) || prompt('Ruta de la referencia a analizar (carpeta o .zip):') || '';
+    if (!ref) { setDone(true); return; }
+    const kind = (window.__tfRef && window.__tfRef.kind) || 'folder';
+    const onProg = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {}
+      if (r.status) setStatus(r.status);
+      if (r.text !== undefined) setLines(ls => [...ls, r.text]);
+      if (r.done) { if (r.error) setLines(ls => [...ls, '\n⚠ ' + r.error]); setStatus(r.error ? '⚠ error' : '✓ Análisis IA listo — se inyectará en CLAUDE.md al crear el proyecto.'); setDone(true); } };
+    if (window.tfBridge.reference_progress && window.tfBridge.reference_progress.connect) window.tfBridge.reference_progress.connect(onProg);
+    window.tfBridge.analyze_reference(ref, kind);
+    return () => { try { window.tfBridge.reference_progress.disconnect(onProg); } catch (e) {} };
+  }, []);
+  useEffect(() => { if (boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight; }, [lines]);
+  return (
+    <Modal title="Análisis de referencia · Claude Code" jp="参照分析" onClose={onClose} w={820}>
+      <div ref={boxRef} style={{ padding: 16, fontFamily: 'var(--term)', fontSize: 12.5, lineHeight: 1.8, maxHeight: '52vh', overflowY: 'auto', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 4 }}>
+        <div style={{ color: 'var(--tx-dim)', whiteSpace: 'pre-wrap' }}>{lines.join('')}</div>
+        {!done && <div style={{ color: 'var(--accent)', marginTop: 8 }}><span>▊</span> {status}</div>}
+      </div>
+      {done && <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 4, background: 'rgba(0,255,65,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontSize: 12.5, fontFamily: 'var(--term)' }}>✓ Análisis IA listo — se inyectará en <b>CLAUDE.md</b> al crear el proyecto (modo recreate).</div>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button className="btn pri" style={{ marginLeft: 'auto' }} onClick={onClose}>💾 Guardar</button>
+      </div>
+    </Modal>
+  );
+}
 function DeployModal({ onClose }) {
   const [t, setT] = useState('netlify'); const [phase, setPhase] = useState('idle'); const [log, setLog] = useState([]);
   const go = () => { setPhase('go'); setLog([]); const steps = ['> npm run build …', '[OK] build · 1.2 MB', `> subiendo a ${t} …`, '[OK] desplegado', '◤ LIVE']; let i = 0; const tick = () => { if (i >= steps.length) { setPhase('done'); return; } setLog(l => [...l, steps[i]]); i++; setTimeout(tick, 550); }; tick(); };
@@ -818,7 +963,7 @@ function App() {
           <button className="btn pri" onClick={() => nav('new')}>+ Nuevo</button>
         </div>
         {route === 'gallery' && <Gallery onOpen={openProject} />}
-        {route === 'new' && <NewProject />}
+        {route === 'new' && <NewProject onAnalyze={() => setModal('ref')} />}
         {route === 'cost' && <Cost />}
         {route === 'compare' && <Compare />}
         {route === 'operator' && <Operator />}
@@ -830,6 +975,7 @@ function App() {
 
       {modal === 'deploy' && <DeployModal onClose={() => setModal(null)} />}
       {modal === 'build' && <BuildModal onClose={() => setModal(null)} />}
+      {modal === 'ref' && <ReferenceAnalysisModal onClose={() => setModal(null)} />}
       <Palette open={palette} onClose={() => setPalette(false)} onNav={nav} onOpenProject={openProject} />
 
       <TweaksPanel title="Tweaks">
