@@ -473,30 +473,453 @@ function Compare() {
   );
 }
 
-/* ---- Operator (Hermes real) ---- */
+/* ---- Operator (Hermes real · 12 pestañas completas) ---- */
+
+/* helpers de puente kawaii */
+function callB(name, ...args) {
+  const B = window.tfBridge;
+  if (!B || !B[name]) return Promise.resolve({ ok: false, error: 'sin puente' });
+  try { return B[name](...args).then(j => { try { return JSON.parse(j); } catch (e) { return { ok: false, error: 'json' }; } }); }
+  catch (e) { return Promise.resolve({ ok: false, error: '' + e }); }
+}
+function useHermesEvent(handler, deps) {
+  useEffect(() => {
+    const B = window.tfBridge;
+    if (!B || !B.hermes_event || !B.hermes_event.connect) return;
+    const cb = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} handler(r); };
+    B.hermes_event.connect(cb);
+    return () => { try { B.hermes_event.disconnect(cb); } catch (e) {} };
+  }, deps || []);
+}
+/* campos pastel kawaii */
+const K_FLD = { background: 'var(--bg2)', border: '2px solid var(--line)', borderRadius: 14, padding: '7px 12px', color: 'var(--tx)', fontFamily: 'var(--font)', fontSize: 13, outline: 'none', fontWeight: 600 };
+const K_SBTN = { cursor: 'pointer', padding: '7px 16px', borderRadius: 99, fontSize: 13, fontFamily: 'var(--font)', fontWeight: 700, background: 'linear-gradient(135deg,var(--accent),var(--accent2))', border: 'none', color: '#fff', boxShadow: '0 4px 14px -4px rgba(255,143,199,0.5)' };
+const K_GBTN = { cursor: 'pointer', padding: '7px 14px', borderRadius: 99, fontSize: 13, fontFamily: 'var(--font)', fontWeight: 700, background: 'var(--card)', border: '2px solid var(--line)', color: 'var(--tx-dim)' };
+function KOut({ text }) {
+  if (!text) return null;
+  return <div className="panelc" style={{ padding: 12, marginTop: 12, fontSize: 12, color: 'var(--tx-dim)', fontWeight: 600, whiteSpace: 'pre-wrap', maxHeight: 260, overflow: 'auto', fontFamily: 'var(--font)', background: 'var(--bg2)' }}>{text}</div>;
+}
+function KSec({ title, children }) {
+  return <div className="panelc" style={{ marginBottom: 16 }}>
+    <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', color: 'var(--accent)', marginBottom: 12, textTransform: 'uppercase' }}>{title}</div>{children}</div>;
+}
+
+/* ♡ Proveedor */
+function KProviderTab() {
+  const [data, setData] = useState(null);
+  const [key, setKey] = useState('');
+  const [model, setModel] = useState('');
+  const [sel, setSel] = useState('');
+  const [out, setOut] = useState('');
+  const [login, setLogin] = useState(false);
+  const load = () => callB('hermes_providers').then(r => {
+    if (r.ok) { setData(r); const cur = r.current_provider || (r.providers[0] && r.providers[0].key); setSel(cur); setModel(r.current_model || ''); }
+  });
+  useEffect(() => { load(); }, []);
+  useHermesEvent(r => { if (r.op === 'test_brain' && r.done) setOut(o => o + '\n' + (r.out || (r.ok ? 'OK ♡' : 'fallo 🥺'))); });
+  if (!data) return <div style={{ padding: 20, color: 'var(--tx-dim)', fontWeight: 600 }}>✨ cargando proveedores… ♡</div>;
+  const spec = data.providers.find(p => p.key === sel) || data.providers[0];
+  return <div>
+    <KSec title="Estado actual 🐾">
+      <div style={{ fontSize: 13, fontWeight: 700 }}>cerebro: <b style={{ color: 'var(--accent)' }}>{data.current_provider || '—'}</b> · <b>{data.current_model || '—'}</b></div>
+    </KSec>
+    <KSec title="Configurar cerebro 💝">
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx-dim)' }}>proveedor{' '}
+          <select value={sel} onChange={e => { setSel(e.target.value); setModel(''); }} style={K_FLD}>
+            {data.providers.map(p => <option key={p.key} value={p.key}>{p.label}{p.has_auth ? ' ♡' : ''}</option>)}
+          </select></label>
+        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx-dim)' }}>modelo{' '}
+          <input list="kp-models" value={model} onChange={e => setModel(e.target.value)} placeholder="modelo…" style={{ ...K_FLD, width: 220 }} />
+          <datalist id="kp-models">{(spec.models || []).map(m => <option key={m} value={m} />)}</datalist></label>
+      </div>
+      <div style={{ fontSize: 12, marginTop: 8, color: 'var(--tx-dim)', fontWeight: 600, lineHeight: 1.5 }}>{spec.note}</div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        {spec.auth === 'api'
+          ? <><input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder={'API key de ' + spec.key} style={{ ...K_FLD, width: 260 }} />
+            <button style={K_GBTN} onClick={() => callB('hermes_save_key', spec.key, key).then(r => { setOut(o => o + '\n' + (r.out || (r.ok ? 'key guardada ♡' : r.error))); setKey(''); load(); })}>Guardar key</button></>
+          : <button style={K_GBTN} onClick={() => { setLogin(true); callB('hermes_login', spec.key); }}>🔐 Login OAuth</button>}
+        <button style={K_SBTN} onClick={() => callB('hermes_set_model', spec.key, model).then(r => { setOut(o => o + '\n' + (r.out || (r.ok ? 'modelo aplicado ♡' : r.error))); load(); })}>Usar este modelo</button>
+        <button style={K_GBTN} onClick={() => { setOut(o => o + '\n▶ probando…'); callB('hermes_test_brain'); }}>Probar</button>
+        <button style={K_GBTN} onClick={load}>↻</button>
+      </div>
+    </KSec>
+    {login && <HermesFrame kind="hermes-login" onStart={() => {}} />}
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Imágenes */
+function KImagesTab() {
+  const [st, setSt] = useState(null);
+  const [key, setKey] = useState('');
+  const [arch, setArch] = useState('');
+  const [q, setQ] = useState('');
+  const [models, setModels] = useState([]);
+  const [air, setAir] = useState('');
+  const [prompt, setPrompt] = useState('kawaii pastel landscape, sakura petals, soft light');
+  const [img, setImg] = useState('');
+  const [out, setOut] = useState('');
+  const load = () => callB('runware_status').then(setSt);
+  useEffect(() => { load(); }, []);
+  useHermesEvent(r => {
+    if (r.op === 'runware_search' && r.done) { setModels(r.models || []); setOut(o => o + '\n' + (r.ok ? (r.models || []).length + ' modelos ♡' : r.error)); }
+    if (r.op === 'runware_test' && r.done) { if (r.url) setImg(r.url); setOut(o => o + '\n' + (r.ok ? '✨ imagen generada ♡' : '🥺 ' + r.error)); }
+  });
+  if (!st) return <div style={{ padding: 20, color: 'var(--tx-dim)', fontWeight: 600 }}>✨ cargando… ♡</div>;
+  if (!st.ok) return <div className="panelc" style={{ color: '#ff8fa3', fontWeight: 600 }}>🥺 Runware no disponible: {st.error}</div>;
+  return <div>
+    <KSec title="API key Runware 🔑">
+      <div style={{ fontSize: 13, fontWeight: 700, color: st.has_key ? 'var(--p3)' : 'var(--tx-dim)' }}>● {st.has_key ? 'key configurada ♡' : 'sin key'}</div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+        <input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder="RUNWARE_API_KEY" style={{ ...K_FLD, width: 280 }} />
+        <button style={K_GBTN} onClick={() => callB('runware_save_key', key).then(() => { setKey(''); load(); })}>Guardar</button>
+      </div>
+    </KSec>
+    <KSec title="Buscar modelo 🔍">
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={arch} onChange={e => setArch(e.target.value)} style={K_FLD}><option value="">arquitectura…</option>{(st.architectures || []).map(a => <option key={a} value={a}>{a}</option>)}</select>
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="ej: flux kawaii" style={{ ...K_FLD, width: 220 }} />
+        <button style={K_SBTN} onClick={() => { setOut(o => o + '\n▶ buscando…'); callB('runware_search', q, arch); }}>Buscar</button>
+      </div>
+      {models.length > 0 && <div className="panelc" style={{ marginTop: 10, maxHeight: 180, overflow: 'auto', padding: 6, background: 'var(--bg2)' }}>
+        {models.map(m => <div key={m.air} onClick={() => setAir(m.air)} style={{ cursor: 'pointer', padding: '6px 10px', borderRadius: 12, fontSize: 12.5, fontWeight: 600, background: air === m.air ? 'linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,var(--card)),color-mix(in srgb,var(--accent2) 18%,var(--card)))' : 'transparent', color: air === m.air ? 'var(--accent)' : 'var(--tx)' }}>
+          {m.name} <span style={{ color: 'var(--tx-dim)', fontSize: 11 }}>· {m.architecture}</span></div>)}
+      </div>}
+      <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--tx-dim)' }}>defecto: {st.default || '—'}{air ? ' → ' + air : ''}</span>
+        <button style={K_GBTN} disabled={!air} onClick={() => callB('runware_set_default', air).then(load)}>Usar por defecto</button>
+      </div>
+    </KSec>
+    <KSec title="Probar generación ✨">
+      <div style={{ display: 'flex', gap: 10 }}>
+        <input value={prompt} onChange={e => setPrompt(e.target.value)} style={{ ...K_FLD, flex: 1 }} />
+        <button style={K_SBTN} onClick={() => { setOut(o => o + '\n▶ generando…'); callB('runware_test', prompt, air); }}>Probar</button>
+      </div>
+      {img && <img src={img} alt="" style={{ marginTop: 12, maxWidth: '100%', borderRadius: 18, border: '3px solid var(--line)', boxShadow: '0 8px 24px -8px rgba(255,143,199,0.4)' }} />}
+    </KSec>
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Agentes */
+function KAgentsTab() {
+  const [skills, setSkills] = useState([]);
+  const [webonly, setWebonly] = useState(false);
+  const [detail, setDetail] = useState('');
+  const [q, setQ] = useState('');
+  const [iid, setIid] = useState('');
+  const [out, setOut] = useState('');
+  const [pack, setPack] = useState(null);
+  const [picked, setPicked] = useState({});
+  const load = () => callB('hermes_skills', webonly).then(r => { if (r.ok) setSkills(r.skills); });
+  useEffect(() => { load(); }, [webonly]);
+  useHermesEvent(r => {
+    if (r.op === 'skills_search' && r.done) setOut(o => o + '\n' + (r.out || ''));
+    if (r.op === 'install_skill') { if (r.line) setOut(o => (o + r.line).slice(-6000)); if (r.done) { setOut(o => o + '\n♡ instalación terminada'); load(); } }
+    if (r.op === 'install_pack') { if (r.line) setOut(o => (o + r.line).slice(-6000)); if (r.done) { setOut(o => o + '\n♡ pack instalado'); load(); } }
+  });
+  const openPack = () => callB('hermes_skill_pack').then(r => { setPack(r.groups || []); const p = {}; (r.groups || []).forEach(g => g.items.forEach(it => p[it.id] = true)); setPicked(p); });
+  return <div>
+    <KSec title="Agentes instalados 🤖">
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx-dim)' }}><input type="checkbox" checked={webonly} onChange={e => setWebonly(e.target.checked)} /> solo web/diseño</label>
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="buscar en el registro… ♡" style={{ ...K_FLD, width: 220 }} />
+        <button style={K_GBTN} onClick={() => { setOut(o => o + '\n▶ buscando «' + q + '»…'); callB('hermes_skills_search', q); }}>Buscar registro</button>
+        <button style={K_GBTN} onClick={() => callB('hermes_seed_web_agents').then(r => { setOut(o => o + '\n' + (r.ok ? 'sembrados: ' + (r.names || []).join(', ') : r.error)); load(); })}>Sembrar web</button>
+        <button style={K_GBTN} onClick={openPack}>📦 Pack web</button>
+        <button style={K_GBTN} onClick={load}>↻</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="panelc" style={{ maxHeight: 240, overflow: 'auto', padding: 8, background: 'var(--bg2)' }}>
+          {skills.length ? skills.map(s => <div key={s.path} onClick={() => callB('hermes_skill_detail', s.path).then(r => setDetail(r.text || ''))} style={{ cursor: 'pointer', padding: '8px 10px', borderRadius: 12, fontSize: 13, fontWeight: 600 }}>
+            {s.tf ? '⭐ ' : ''}<b>{s.name}</b><div style={{ fontSize: 11, color: 'var(--tx-dim)', marginTop: 2 }}>{s.category}</div></div>)
+            : <div style={{ padding: 16, color: 'var(--tx-dim)', fontWeight: 600 }}>sin skills aún ♡</div>}
+        </div>
+        <div className="panelc" style={{ maxHeight: 240, overflow: 'auto', padding: 10, fontSize: 11.5, whiteSpace: 'pre-wrap', color: 'var(--tx-dim)', fontWeight: 600, background: 'var(--bg2)', fontFamily: 'var(--font)' }}>{detail || '// selecciona un agente ♡'}</div>
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+        <input value={iid} onChange={e => setIid(e.target.value)} placeholder="id/url a instalar — ej: official/devops/docker" style={{ ...K_FLD, flex: 1 }} />
+        <button style={K_SBTN} onClick={() => { setOut(o => o + '\n▶ instalando…'); callB('hermes_install_skill', iid); }}>Instalar</button>
+      </div>
+    </KSec>
+    {pack && <KSec title="Pack curado 📦">
+      <div style={{ maxHeight: 220, overflow: 'auto' }}>
+        {pack.map(g => <div key={g.domain} style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', marginBottom: 4 }}>{g.domain}</div>
+          {g.items.map(it => <label key={it.id} style={{ display: 'block', fontSize: 13, fontWeight: 600, padding: '2px 0' }}>
+            <input type="checkbox" checked={!!picked[it.id]} onChange={e => setPicked(p => ({ ...p, [it.id]: e.target.checked }))} /> {it.label}</label>)}
+        </div>)}
+      </div>
+      <button style={{ ...K_SBTN, marginTop: 10 }} onClick={() => { const ids = Object.keys(picked).filter(k => picked[k]).join(','); setOut(o => o + '\n▶ instalando pack…'); callB('hermes_install_pack', ids); setPack(null); }}>📥 Instalar seleccionadas</button>
+    </KSec>}
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Crear agente */
+function KCreateTab() {
+  const [name, setName] = useState('');
+  const [stacks, setStacks] = useState('');
+  const [spec, setSpec] = useState('');
+  const [body, setBody] = useState('');
+  const [out, setOut] = useState('');
+  useHermesEvent(r => { if (r.op === 'draft_skill' && r.done) { if (r.ok && r.out) setBody(r.out); setOut(o => o + '\n' + (r.ok ? '✨ redactado ♡' : '🥺 ' + (r.out || ''))); } });
+  return <div>
+    <KSec title="Nuevo agente ✨">
+      <div style={{ display: 'grid', gap: 10 }}>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="nombre — ej: shopify-kawaii" style={K_FLD} />
+        <input value={stacks} onChange={e => setStacks(e.target.value)} placeholder="stacks base (separados por coma)" style={K_FLD} />
+        <input value={spec} onChange={e => setSpec(e.target.value)} placeholder="especialidad — qué hace y cuándo usarlo" style={K_FLD} />
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+        <button style={K_GBTN} onClick={() => callB('hermes_skill_template', name, stacks, spec).then(r => { if (r.ok) setBody(r.template); })}>Plantilla</button>
+        <button style={K_GBTN} onClick={() => { setOut(o => o + '\n▶ Hermes redactando…'); callB('hermes_skill_draft_ai', name, stacks, spec); }}>Redactar con IA</button>
+        <button style={K_SBTN} onClick={() => callB('hermes_skill_save', name, body).then(r => setOut(o => o + '\n' + (r.ok ? '✨ guardado en ' + r.path : '🥺 ' + r.error)))}>Guardar skill</button>
+      </div>
+    </KSec>
+    <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="El SKILL.md aparecerá aquí (editable) ♡" style={{ ...K_FLD, width: '100%', minHeight: 280, fontSize: 12.5, lineHeight: 1.5 }} />
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Memoria */
+function KMemFile({ label, value, max, onSave }) {
+  const [v, setV] = useState(value || '');
+  const [msg, setMsg] = useState('');
+  return <div className="panelc" style={{ flex: 1 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
+      <span style={{ fontSize: 11, fontWeight: 700, color: v.length > max ? '#ff8fa3' : 'var(--tx-dim)' }}>{v.length}/{max}</span>
+    </div>
+    <textarea value={v} onChange={e => setV(e.target.value)} style={{ ...K_FLD, width: '100%', minHeight: 160, marginTop: 4 }} />
+    <button style={{ ...K_GBTN, marginTop: 8 }} onClick={() => onSave(v).then(r => { setMsg(r.ok ? '✨ guardado ♡' : '🥺 ' + r.error); setTimeout(() => setMsg(''), 2000); })}>Guardar {msg}</button>
+  </div>;
+}
+function KMemoryTab() {
+  const [d, setD] = useState(null);
+  const [note, setNote] = useState('');
+  const load = () => callB('hermes_memory').then(setD);
+  useEffect(() => { load(); }, []);
+  if (!d) return <div style={{ padding: 20, color: 'var(--tx-dim)', fontWeight: 600 }}>✨ cargando memoria… ♡</div>;
+  if (!d.ok) return <div className="panelc" style={{ color: '#ff8fa3', fontWeight: 600 }}>🥺 {d.error}</div>;
+  const lim = d.limits || {};
+  return <div>
+    <div style={{ display: 'flex', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
+      <KMemFile label="MEMORY.md · agente" value={d.memory} max={lim['MEMORY.md'] || 2200} onSave={v => callB('hermes_memory_save', 'MEMORY.md', v)} />
+      <KMemFile label="USER.md · usuario" value={d.user} max={lim['USER.md'] || 1375} onSave={v => callB('hermes_memory_save', 'USER.md', v)} />
+    </div>
+    <KSec title="Notas por proyecto 🗒️">
+      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 12 }}>
+        <div className="panelc" style={{ maxHeight: 200, overflow: 'auto', padding: 6, background: 'var(--bg2)' }}>
+          {(d.projects || []).length ? d.projects.map(p => <div key={p.path} onClick={() => callB('hermes_project_note', p.path).then(r => setNote(r.text || ''))} style={{ cursor: 'pointer', padding: '7px 10px', borderRadius: 12, fontSize: 13, fontWeight: 600 }}>{p.name}</div>)
+            : <div style={{ padding: 12, color: 'var(--tx-dim)', fontWeight: 600 }}>sin .hermes.md ♡</div>}
+        </div>
+        <div className="panelc" style={{ maxHeight: 200, overflow: 'auto', padding: 10, fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--tx-dim)', fontWeight: 600, background: 'var(--bg2)', fontFamily: 'var(--font)' }}>{note || '// selecciona un proyecto ♡'}</div>
+      </div>
+    </KSec>
+    <KSec title="Sesiones 🌸"><div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'pre-wrap', color: 'var(--tx-dim)' }}>{d.sessions || '—'}</div></KSec>
+  </div>;
+}
+
+/* ♡ Kanban */
+function KKanbanTab() {
+  const [boards, setBoards] = useState([]);
+  const [board, setBoard] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [nt, setNt] = useState({ title: '', body: '', priority: '', skill: '' });
+  const [out, setOut] = useState('');
+  useEffect(() => { callB('kanban_boards').then(r => { if (r.ok) { setBoards(r.boards); if (r.boards[0]) setBoard(r.boards[0]); } }); }, []);
+  const loadTasks = (b) => callB('kanban_tasks', b || board).then(r => { if (r.ok) setTasks(r.tasks); });
+  useEffect(() => { if (board) loadTasks(board); }, [board]);
+  useHermesEvent(r => { if (r.op === 'kanban_dispatch') { if (r.line) setOut(o => (o + r.line).slice(-6000)); if (r.done) { setOut(o => o + '\n♡ dispatch terminado'); loadTasks(); } } });
+  return <div>
+    <KSec title="Tablero 📊">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select value={board} onChange={e => setBoard(e.target.value)} style={K_FLD}>{boards.length ? boards.map(b => <option key={b} value={b}>{b}</option>) : <option value="">(sin tableros)</option>}</select>
+        <button style={K_SBTN} onClick={() => { setOut(o => o + '\n▶ dispatch…'); callB('kanban_dispatch', board); }}>▶ Dispatch</button>
+        <button style={K_GBTN} onClick={() => loadTasks()}>↻</button>
+      </div>
+      <div className="panelc" style={{ marginTop: 10, padding: 0, overflow: 'hidden', background: 'var(--bg2)' }}>
+        {tasks.length ? tasks.map(t => <div key={t.id} style={{ display: 'flex', gap: 10, padding: '9px 14px', borderBottom: '2px dashed var(--line)', fontSize: 13, fontWeight: 600 }}>
+          <span style={{ width: 60, color: 'var(--tx-dim)', fontSize: 11.5 }}>{t.id}</span>
+          <span style={{ flex: 1 }}>{t.title}</span>
+          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{t.status}</span>
+          <span style={{ width: 90, textAlign: 'right', color: 'var(--tx-dim)' }}>{t.assignee}</span>
+          <span style={{ width: 60, textAlign: 'right', color: 'var(--tx-dim)', fontSize: 12 }}>{t.priority}</span>
+        </div>) : <div style={{ padding: 16, color: 'var(--tx-dim)', fontWeight: 600 }}>sin tareas ♡</div>}
+      </div>
+    </KSec>
+    <KSec title="Nueva tarea ✨">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <input value={nt.title} onChange={e => setNt({ ...nt, title: e.target.value })} placeholder="título" style={K_FLD} />
+        <select value={nt.priority} onChange={e => setNt({ ...nt, priority: e.target.value })} style={K_FLD}><option value="">prioridad…</option>{['low', 'medium', 'high', 'urgent'].map(p => <option key={p} value={p}>{p}</option>)}</select>
+        <input value={nt.skill} onChange={e => setNt({ ...nt, skill: e.target.value })} placeholder="skill (opcional)" style={K_FLD} />
+        <input value={nt.body} onChange={e => setNt({ ...nt, body: e.target.value })} placeholder="detalle (opcional)" style={K_FLD} />
+      </div>
+      <button style={{ ...K_SBTN, marginTop: 10 }} onClick={() => callB('kanban_create', board, nt.title, nt.body, nt.priority, nt.skill).then(r => { setOut(o => o + '\n' + (r.ok ? '✨ creada ♡' : '🥺 ' + (r.out || r.error))); setNt({ title: '', body: '', priority: '', skill: '' }); loadTasks(); })}>Crear tarea</button>
+    </KSec>
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Cron */
+function KCronTab() {
+  const [jobs, setJobs] = useState([]);
+  const [sel, setSel] = useState('');
+  const [f, setF] = useState({ schedule: '', prompt: '', skill: '', deliver: 'local', name: '' });
+  const [out, setOut] = useState('');
+  const load = () => callB('cron_jobs').then(r => { if (r.ok) setJobs(r.jobs); });
+  useEffect(() => { load(); }, []);
+  const op = (a) => { if (!sel) return; if (a === 'remove' && !confirm('¿Eliminar el job? 🥺')) return; callB('cron_op', a, sel).then(r => { setOut(o => o + '\n' + (r.ok ? '♡ ' + a : '🥺 ' + r.out)); load(); }); };
+  return <div>
+    <KSec title="Misiones programadas ⏰">
+      <div className="panelc" style={{ padding: 0, overflow: 'hidden', background: 'var(--bg2)' }}>
+        {jobs.length ? jobs.map(j => <div key={j.id} onClick={() => setSel(j.id)} style={{ cursor: 'pointer', display: 'flex', gap: 10, padding: '9px 14px', borderBottom: '2px dashed var(--line)', fontSize: 13, fontWeight: 600, background: sel === j.id ? 'linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--card)),color-mix(in srgb,var(--accent2) 10%,var(--card)))' : 'transparent' }}>
+          <span>{j.paused ? '⏸' : '▶'}</span>
+          <span style={{ width: 120, fontFamily: 'var(--font)' }}>{j.schedule}</span>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.name || j.prompt}</span>
+          <span style={{ width: 120, textAlign: 'right', color: 'var(--tx-dim)' }}>{j.next}</span>
+        </div>) : <div style={{ padding: 16, color: 'var(--tx-dim)', fontWeight: 600 }}>sin jobs ♡</div>}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button style={K_GBTN} onClick={() => op('pause')}>⏸ Pausar</button>
+        <button style={K_GBTN} onClick={() => op('resume')}>▶ Reanudar</button>
+        <button style={K_GBTN} onClick={() => op('run')}>⚡ Ejecutar</button>
+        <button style={{ ...K_GBTN, color: '#ff8fa3' }} onClick={() => op('remove')}>🗑️ Eliminar</button>
+        <button style={{ ...K_GBTN, marginLeft: 'auto' }} onClick={load}>↻</button>
+      </div>
+    </KSec>
+    <KSec title="Programar 🌷">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <input value={f.schedule} onChange={e => setF({ ...f, schedule: e.target.value })} placeholder="cuándo — every 1d · 30m · 0 9 * * 1-5" style={K_FLD} />
+        <input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="nombre (opcional)" style={K_FLD} />
+        <input value={f.skill} onChange={e => setF({ ...f, skill: e.target.value })} placeholder="skill — ej: themeforge-operator" style={K_FLD} />
+        <select value={f.deliver} onChange={e => setF({ ...f, deliver: e.target.value })} style={K_FLD}>{['local', 'origin', 'telegram', 'discord', 'slack', 'email', 'all'].map(d => <option key={d} value={d}>{d}</option>)}</select>
+      </div>
+      <textarea value={f.prompt} onChange={e => setF({ ...f, prompt: e.target.value })} placeholder="tarea / prompt… ♡" style={{ ...K_FLD, width: '100%', minHeight: 70, marginTop: 10 }} />
+      <button style={{ ...K_SBTN, marginTop: 10 }} onClick={() => callB('cron_create', f.schedule, f.prompt, f.skill, f.deliver, f.name).then(r => { setOut(o => o + '\n' + (r.ok ? '✨ programada ♡' : '🥺 ' + (r.out || r.error))); if (r.ok) setF({ schedule: '', prompt: '', skill: '', deliver: 'local', name: '' }); load(); })}>Programar</button>
+    </KSec>
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Remoto (gateway) */
+function KRemoteTab() {
+  const [plats, setPlats] = useState([]);
+  const [plat, setPlat] = useState('');
+  const [target, setTarget] = useState('');
+  const [msg, setMsg] = useState('');
+  const [pcode, setPcode] = useState({ plat: '', code: '' });
+  const [out, setOut] = useState('');
+  const [setup, setSetup] = useState(false);
+  useEffect(() => { callB('gateway_platforms').then(r => { if (r.ok) { setPlats(r.platforms); if (r.platforms[0]) setPlat(r.platforms[0].key); } }); }, []);
+  useHermesEvent(r => { if (r.op === 'gateway_send' && r.done) setOut(o => o + '\n' + (r.ok ? '✨ enviado ♡' : '🥺 ' + r.out)); });
+  const run = (slot, ...a) => callB(slot, ...a).then(r => setOut(o => (o + '\n' + (r.out || (r.ok ? 'ok ♡' : r.error))).slice(-6000)));
+  const hint = (plats.find(p => p.key === plat) || {}).hint;
+  return <div>
+    <KSec title="Servicio gateway 📲">
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button style={K_SBTN} onClick={() => setSetup(true)}>⚙️ Configurar plataformas</button>
+        <button style={K_GBTN} onClick={() => run('gateway_op', 'status')}>Estado</button>
+        <button style={K_GBTN} onClick={() => run('gateway_op', 'install')}>Instalar servicio</button>
+        <button style={K_GBTN} onClick={() => run('gateway_op', 'start')}>Arrancar</button>
+        <button style={K_GBTN} onClick={() => run('gateway_op', 'stop')}>Parar</button>
+      </div>
+      {setup && <HermesFrame kind="hermes-gateway" onStart={() => callB('gateway_setup')} />}
+    </KSec>
+    <KSec title="Enviar mensaje 💌">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select value={plat} onChange={e => setPlat(e.target.value)} style={K_FLD}>{plats.map(p => <option key={p.key} value={p.key}>{p.key}</option>)}</select>
+        <button style={K_GBTN} onClick={() => run('gateway_targets')}>Ver targets</button>
+      </div>
+      {hint && <div style={{ fontSize: 12, marginTop: 6, color: 'var(--tx-dim)', fontWeight: 600 }}>{hint}</div>}
+      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+        <input value={target} onChange={e => setTarget(e.target.value)} placeholder="destino — telegram · discord:#ops · slack:#eng" style={{ ...K_FLD, width: 240 }} />
+        <input value={msg} onChange={e => setMsg(e.target.value)} placeholder="mensaje de prueba ♡" style={{ ...K_FLD, flex: 1 }} />
+        <button style={K_SBTN} onClick={() => { setOut(o => o + '\n▶ enviando…'); callB('gateway_send', target, msg); }}>Enviar</button>
+      </div>
+    </KSec>
+    <KSec title="Pairing 🤝">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button style={K_GBTN} onClick={() => run('pairing_list')}>Ver pairings</button>
+        <input value={pcode.plat} onChange={e => setPcode({ ...pcode, plat: e.target.value })} placeholder="plataforma" style={{ ...K_FLD, width: 120 }} />
+        <input value={pcode.code} onChange={e => setPcode({ ...pcode, code: e.target.value })} placeholder="código" style={{ ...K_FLD, width: 120 }} />
+        <button style={K_SBTN} onClick={() => run('pairing_approve', pcode.plat, pcode.code)}>Aprobar</button>
+      </div>
+    </KSec>
+    <KOut text={out} />
+  </div>;
+}
+
+/* ♡ Avanzado */
+function KAdvancedTab() {
+  const [sec, setSec] = useState({ backend: 'local', mode: 'smart' });
+  const [out, setOut] = useState('');
+  const [fb, setFb] = useState(false);
+  useEffect(() => { callB('hermes_security').then(r => { if (r.ok) setSec({ backend: r.backend, mode: r.mode }); }); }, []);
+  useHermesEvent(r => { if (r.op === 'insights' && r.done) setOut(o => o + '\n' + (r.out || '')); });
+  const run = (slot, ...a) => callB(slot, ...a).then(r => setOut(o => (o + '\n' + (r.out || (r.ok ? 'ok ♡' : r.error))).slice(-6000)));
+  return <div>
+    <KSec title="Aislamiento y seguridad 🛡️">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx-dim)' }}>backend{' '}
+          <select value={sec.backend} onChange={e => setSec({ ...sec, backend: e.target.value })} style={K_FLD}>{['local', 'docker', 'ssh', 'modal', 'daytona', 'singularity'].map(b => <option key={b} value={b}>{b}</option>)}</select></label>
+        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx-dim)' }}>aprobaciones{' '}
+          <select value={sec.mode} onChange={e => setSec({ ...sec, mode: e.target.value })} style={K_FLD}>{['manual', 'smart', 'off'].map(m => <option key={m} value={m}>{m}</option>)}</select></label>
+        <button style={K_SBTN} onClick={() => run('hermes_security_apply', sec.backend, sec.mode)}>Aplicar seguridad</button>
+      </div>
+    </KSec>
+    <KSec title="Portal de herramientas 🧰">
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button style={K_GBTN} onClick={() => run('hermes_portal', 'status')}>Estado del portal</button>
+        <button style={K_GBTN} onClick={() => run('hermes_portal', 'tools')}>Herramientas</button>
+      </div>
+    </KSec>
+    <KSec title="Perfil y bundle 🎀">
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button style={K_GBTN} onClick={() => run('hermes_profile_create')}>Crear perfil themeforge</button>
+        <button style={K_GBTN} onClick={() => run('hermes_bundle_create')}>Crear bundle /themeforge</button>
+        <button style={K_GBTN} onClick={() => run('hermes_profile_list')}>Listar perfiles</button>
+      </div>
+    </KSec>
+    <KSec title="Coste y fallback 💰">
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button style={K_GBTN} onClick={() => { setOut(o => o + '\n▶ insights…'); callB('hermes_insights', 30); }}>Insights (30d)</button>
+        <button style={K_GBTN} onClick={() => run('hermes_fallback_list')}>Ver fallback</button>
+        <button style={K_GBTN} onClick={() => setFb(true)}>Añadir fallback</button>
+      </div>
+      {fb && <HermesFrame kind="hermes-fallback" onStart={() => callB('hermes_fallback_add')} />}
+    </KSec>
+    <KOut text={out} />
+  </div>;
+}
+
+/* HermesFrame kawaii — acepta onStart (callback) o start (nombre de slot) */
 const PHASES = ['Plan', 'Crear', 'Build', 'QA', 'Empaquetar'];
-function HermesFrame({ kind, start }) {
+function HermesFrame({ kind, start, onStart }) {
   const [url, setUrl] = useState(null); const [err, setErr] = useState(null);
   useEffect(() => {
     const B = window.tfBridge;
     if (!B || !B.terminal_ready || !B.terminal_ready.connect) { setErr('sin puente'); return; }
     const onReady = (j) => { let r = {}; try { r = JSON.parse(j); } catch (e) {} if (r.kind === kind) { if (r.url) setUrl(r.url); else if (r.error) setErr(r.error); } };
     B.terminal_ready.connect(onReady);
-    if (B[start]) B[start]();
+    if (onStart) onStart(); else if (B[start]) B[start]();
     return () => { try { B.terminal_ready.disconnect(onReady); } catch (e) {} };
   }, [kind]);
-  if (err) return <div className="panelc" style={{ color: 'var(--p3)', fontWeight: 600 }}>{err} 🥺</div>;
+  if (err) return <div className="panelc" style={{ color: '#ff8fa3', fontWeight: 600 }}>{err} 🥺</div>;
   if (!url) return <div className="panelc" style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>✨ iniciando {kind === 'hermes-admin' ? 'dashboard' : 'chat'} de Hermes… ♡</div>;
   return <iframe src={url} style={{ width: '100%', height: '68vh', border: 'none', borderRadius: 16, background: '#1b1020' }} />;
 }
+
 const HMARKERS = [['plan', 0], ['scaffold', 1], ['creando', 1], ['create_project', 1], ['building', 2], ['run_agent_build', 2], ['preflight', 3], ['qa', 3], ['build_zip', 4], ['.zip', 4], ['packaged', 4]];
-const HSTUBS = [
-  ['agentes', '🤖 Agentes', 'Galería de agentes especializados por familia de stack (Shopify · Hydrogen · WordPress · Magento+Hyvä · Frontend · Mobile…). Elige, edita o mira lo aprendido. ♡', 'Fase B'],
-  ['crear', '➕ Crear', 'Crea tu propio agente: nombre + stacks base + especialidad. Hermes redacta el SKILL.md por ti y aprende con cada proyecto. ♡', 'Fase E'],
-  ['memoria', '🧠 Memoria', 'Lo que Hermes ha aprendido: memorias globales + notas por proyecto (.hermes.md). Cada misión añade lo que funcionó. ♡', 'Fase H'],
-  ['kanban', '📊 Kanban', 'Misiones en paralelo (varias variantes) con workers → verificador → sintetizador, cada worker en su git worktree. Progreso en vivo. ♡', 'Fase F'],
-  ['cron', '⏰ Cron', 'Misiones programadas: «cada lunes 9am genera la landing del nicho top y mándame el zip». Sobre el scheduler nativo de Hermes. ♡', 'Fase G'],
+const HTABS_K = [
+  ['mision', '🎯 Misión'], ['proveedor', '🔌 Proveedor'], ['imagenes', '🎨 Imágenes'],
+  ['agentes', '🤖 Agentes'], ['crear', '➕ Crear'], ['memoria', '🧠 Memoria'],
+  ['kanban', '📊 Kanban'], ['cron', '⏰ Cron'], ['remoto', '📲 Remoto'],
+  ['avanzado', '🛡️ Avanzado'], ['chat', '💬 Chat'], ['admin', '⚙️ Admin'],
 ];
+
 function Operator() {
   const op = (window.__TF_DATA__ && window.__TF_DATA__.operator) || {};
   const real = !!(window.tfBridge && window.tfBridge.launch_mission);
@@ -527,22 +950,34 @@ function Operator() {
     setMissions(ms => [{ id: 'm' + ms.length, name: brief.slice(0, 60), agent: prov, st: 'corriendo', pct: 10, phase: 0, eta: variants + 'x' }, ...ms]);
   };
   const running = missions.filter(m => m.pct < 100).length;
-  const tabs = [['mision', '🎯 Misión'], ...HSTUBS.map(s => [s[0], s[1]]), ['chat', '💬 Chat'], ['admin', '⚙️ Admin']];
+  const off = <div className="panelc" style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>enciende Hermes para usar esta pestaña ♡</div>;
   const chip = (ok, l) => <span style={{ fontWeight: 700, color: ok == null ? 'var(--tx-dim)' : (ok ? 'var(--p3)' : '#ff8fa3') }}>● {l}</span>;
-  const stub = HSTUBS.find(s => s[0] === tab);
   return (
     <div className="page fade">
       <h2 className="sec">🚀 Mission Control <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>司令室</span>
-        <button className="btn" style={{ float: 'right', color: power ? 'var(--p3)' : 'var(--tx-dim)' }} onClick={() => setPower(p => !p)} disabled={!hs.available}>⏻ {power ? 'Hermes ON' : 'Hermes OFF'}</button></h2>
-      <div className="panelc" style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14, fontSize: 12.5, flexWrap: 'wrap' }}>
+        <button className="btn" style={{ float: 'right', color: power ? 'var(--p3)' : 'var(--tx-dim)' }} onClick={() => setPower(p => !p)} disabled={!hs.available}>⏻ {power ? 'Hermes ON ♡' : 'Hermes OFF'}</button></h2>
+      <div className="panelc" style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14, fontSize: 13, fontWeight: 700, flexWrap: 'wrap' }}>
         {chip(hs.available, hs.available ? ('Hermes ' + (hs.version || '')) : 'Hermes no instalado')}
         {chip(hs.mcp, hs.mcp ? 'MCP themeforge' : 'MCP sin registrar')}
         {chip(hs.provider || hs.model ? true : null, (hs.provider || hs.model) ? ((hs.provider || '?') + ' · ' + (hs.model || '?')) : 'modelo sin configurar')}
         <button className="btn" style={{ marginLeft: 'auto', padding: '4px 12px' }} onClick={refreshHs}>↻</button>
       </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-        {tabs.map(([k, l]) => <button key={k} className={'fchip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}
+        {HTABS_K.map(([k, l]) => <button key={k} className={'fchip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}
       </div>
+
+      {tab === 'proveedor' && <KProviderTab />}
+      {tab === 'imagenes' && <KImagesTab />}
+      {tab === 'agentes' && <KAgentsTab />}
+      {tab === 'crear' && <KCreateTab />}
+      {tab === 'memoria' && <KMemoryTab />}
+      {tab === 'kanban' && (power ? <KKanbanTab /> : off)}
+      {tab === 'cron' && <KCronTab />}
+      {tab === 'remoto' && <KRemoteTab />}
+      {tab === 'avanzado' && <KAdvancedTab />}
+      {tab === 'chat' && (power ? <HermesFrame kind="hermes-chat" start="start_hermes_chat" /> : off)}
+      {tab === 'admin' && (power ? <HermesFrame kind="hermes-admin" start="hermes_admin" /> : off)}
+
       {tab === 'mision' && <>
         <div className="panelc" style={{ marginBottom: 14 }}>
           <textarea className="ta" value={brief} onChange={e => setBrief(e.target.value)} placeholder='Brief de la misión — ej: "landing kawaii para clínica dental, stack Astro" 🌷' />
@@ -573,9 +1008,6 @@ function Operator() {
         </div>
         {log && <div className="panelc" style={{ marginTop: 14, fontFamily: 'var(--font)', fontSize: 12, color: 'var(--tx-dim)', fontWeight: 600, whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto' }}>{log}</div>}
       </>}
-      {stub && <div className="panelc" style={{ textAlign: 'center', padding: 40 }}><div style={{ fontSize: 30, marginBottom: 10 }}>{stub[1].split(' ')[0]}</div><b style={{ fontSize: 18 }}>{stub[1]}</b><div style={{ color: 'var(--tx-dim)', fontWeight: 600, fontSize: 13.5, maxWidth: 520, margin: '12px auto 0', lineHeight: 1.6 }}>{stub[2]}</div><span className="tag" style={{ marginTop: 16, display: 'inline-block', color: 'var(--accent)' }}>⏳ {stub[3]}</span></div>}
-      {tab === 'chat' && (power ? <HermesFrame kind="hermes-chat" start="start_hermes_chat" /> : <div className="panelc" style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>enciende Hermes para el chat ♡</div>)}
-      {tab === 'admin' && (power ? <HermesFrame kind="hermes-admin" start="hermes_admin" /> : <div className="panelc" style={{ color: 'var(--tx-dim)', fontWeight: 600 }}>enciende Hermes para el dashboard ♡</div>)}
     </div>
   );
 }

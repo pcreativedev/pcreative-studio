@@ -541,6 +541,9 @@ class ThemeForgeBridge(QObject):
     setup_done = pyqtSignal(str)
     # Pide al WebShell abrir el proyecto en una VENTANA NUEVA (como el nativo): (path, fresh).
     open_window_requested = pyqtSignal(str, bool)
+    # Eventos de operaciones Hermes async (instalar skill, dispatch, draft IA,
+    # enviar mensaje, insights, test del cerebro…). JSON {op, line?|done?|ok?|out?|text?}.
+    hermes_event = pyqtSignal(str)
 
     @pyqtSlot(str, result=str)
     def use_web_theme(self, slug: str) -> str:
@@ -2088,6 +2091,583 @@ class ThemeForgeBridge(QObject):
         aparte con el mismo tema apuntando a #proj=<path>."""
         self.open_window_requested.emit(path, bool(fresh))
         return json.dumps({"ok": True})
+
+    # ════════════════ Hermes — paridad con el panel nativo ════════════════
+    # Wrappers finos sobre `hermes <args>` (la lógica vive en hermes_panel.py).
+    # Operaciones rápidas → slot síncrono que devuelve JSON. Operaciones lentas
+    # (red/IA/streaming) → async: emiten `hermes_event` {op,...}. Los flujos
+    # interactivos (OAuth, gateway setup, fallback add) → terminal embebida.
+    def _h_exe(self):
+        import shutil
+        from pathlib import Path
+        c = shutil.which("hermes")
+        if c:
+            return c
+        p = Path.home() / ".local" / "bin" / "hermes"
+        return str(p) if p.is_file() else None
+
+    def _h_run(self, args, timeout=25):
+        try:
+            from hermes_panel import run_hermes
+            return run_hermes(list(args), timeout=timeout)
+        except Exception as e:  # noqa: BLE001
+            return 1, str(e)
+
+    def _h_async(self, op, args, timeout=120):
+        """Corre `hermes <args>` en un hilo y emite hermes_event al terminar."""
+        import threading
+
+        def _w():
+            rc, out = self._h_run(args, timeout=timeout)
+            self.hermes_event.emit(json.dumps({"op": op, "done": True,
+                                               "ok": rc == 0, "out": out}))
+        threading.Thread(target=_w, daemon=True).start()
+
+    def _h_spawn(self, op, args):
+        """Corre `hermes <args>` async (QProcess) con streaming por hermes_event."""
+        exe = self._h_exe()
+        if not exe:
+            self.hermes_event.emit(json.dumps({"op": op, "done": True, "ok": False,
+                                               "out": "Hermes no instalado"}))
+            return
+        proc = QProcess(self)
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.readyReadStandardOutput.connect(
+            lambda: self.hermes_event.emit(json.dumps({"op": op, "line":
+                bytes(proc.readAllStandardOutput()).decode(errors="replace")})))
+        proc.finished.connect(
+            lambda code, _s: self.hermes_event.emit(json.dumps(
+                {"op": op, "done": True, "ok": code == 0, "code": code})))
+        proc.start(exe, list(args))
+        self._procs.append(proc)
+
+    # ── 🔌 Proveedor (cerebro de Hermes) ──────────────────────────────────
+    @pyqtSlot(result=str)
+    def hermes_providers(self) -> str:
+        try:
+            from hermes_panel import (HERMES_PROVIDERS, _hermes_model_info,
+                                      _provider_has_auth, _cached_models)
+            kwmap = {"google-gemini-cli": ["gemini"], "gemini": ["gemini"],
+                     "xai-oauth": ["grok"], "qwen-oauth": ["qwen"]}
+            cur_p, cur_m = _hermes_model_info()
+            provs = []
+            for p in HERMES_PROVIDERS:
+                kws = kwmap.get(p["key"])
+                live = _cached_models(kws) if kws else []
+                provs.append({"key": p["key"], "auth": p["auth"], "label": p["label"],
+                              "note": p.get("note", ""),
+                              "models": (live or p.get("models", [])),
+                              "has_auth": _provider_has_auth(p["key"])})
+            return json.dumps({"ok": True, "providers": provs,
+                               "current_provider": cur_p or "",
+                               "current_model": cur_m or ""})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, result=str)
+    def hermes_set_model(self, provider: str, model: str) -> str:
+        if not provider or not model:
+            return json.dumps({"ok": False, "error": "provider/model vacío"})
+        base = "https://openrouter.ai/api/v1" if provider == "openrouter" else ""
+        outs = []
+        for kv in (["config", "set", "model.provider", provider],
+                   ["config", "set", "model.default", model],
+                   ["config", "set", "model.base_url", base]):
+            _rc, o = self._h_run(kv, timeout=20)
+            if o:
+                outs.append(o)
+        return json.dumps({"ok": True, "out": "\n".join(outs)})
+
+    @pyqtSlot(str, str, result=str)
+    def hermes_save_key(self, provider: str, key: str) -> str:
+        if not provider or not key:
+            return json.dumps({"ok": False, "error": "provider/key vacío"})
+        rc, out = self._h_run(["auth", "add", provider, "--api-key", key], timeout=25)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(str, result=str)
+    def hermes_login(self, provider: str) -> str:
+        """Login OAuth del cerebro en terminal embebida (flujo de navegador)."""
+        from pathlib import Path
+        exe = self._h_exe()
+        if not exe:
+            self.terminal_ready.emit(json.dumps({"kind": "hermes-login", "error": "Hermes no instalado"}))
+            return json.dumps({"ok": False, "error": "Hermes no instalado"})
+        return self._start_terminal(str(Path.home()), exe,
+                                    ["auth", "add", provider, "--type", "oauth"], "hermes-login")
+
+    @pyqtSlot(result=str)
+    def hermes_test_brain(self) -> str:
+        self._h_async("test_brain", ["-z", "ping: responde OK"], timeout=90)
+        return json.dumps({"ok": True, "running": True})
+
+    # ── 🎨 Imágenes (Runware) ─────────────────────────────────────────────
+    @pyqtSlot(result=str)
+    def runware_status(self) -> str:
+        try:
+            import runware_images as ri
+            return json.dumps({"ok": True, "has_key": bool(ri.get_api_key()),
+                               "default": ri.get_default_model() or "",
+                               "categories": list(ri.CATEGORIES),
+                               "architectures": list(ri.ARCHITECTURES)})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def runware_save_key(self, key: str) -> str:
+        try:
+            import ai_providers as aip
+            aip.save_key("runware", (key or "").strip())
+            return json.dumps({"ok": True})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, result=str)
+    def runware_search(self, query: str, architecture: str) -> str:
+        import threading
+
+        def _w():
+            try:
+                import runware_images as ri
+                res = ri.search_models(query or "", architecture=architecture or "", limit=40)
+                self.hermes_event.emit(json.dumps({"op": "runware_search", "done": True,
+                                                   "ok": bool(res.get("ok")),
+                                                   "models": res.get("models", []),
+                                                   "error": res.get("error", "")}))
+            except Exception as e:  # noqa: BLE001
+                self.hermes_event.emit(json.dumps({"op": "runware_search", "done": True,
+                                                   "ok": False, "error": str(e)}))
+        threading.Thread(target=_w, daemon=True).start()
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, result=str)
+    def runware_set_default(self, air: str) -> str:
+        try:
+            import runware_images as ri
+            ri.set_default_model(air)
+            return json.dumps({"ok": True})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, result=str)
+    def runware_test(self, prompt: str, air: str) -> str:
+        import threading
+
+        def _w():
+            try:
+                import runware_images as ri
+                res = ri.generate(prompt or "neon tokyo street, cyberpunk",
+                                  width=768, height=512, model=(air or None))
+                url = (res.get("urls") or [""])[0] if res.get("ok") else ""
+                self.hermes_event.emit(json.dumps({"op": "runware_test", "done": True,
+                                                   "ok": bool(res.get("ok")), "url": url,
+                                                   "error": res.get("error", "")}))
+            except Exception as e:  # noqa: BLE001
+                self.hermes_event.emit(json.dumps({"op": "runware_test", "done": True,
+                                                   "ok": False, "error": str(e)}))
+        threading.Thread(target=_w, daemon=True).start()
+        return json.dumps({"ok": True, "running": True})
+
+    # ── 🤖 Agentes (skills) ───────────────────────────────────────────────
+    def _scan_skills(self):
+        from hermes_panel import SKILLS_DIR, _parse_frontmatter
+        out = []
+        if not SKILLS_DIR.is_dir():
+            return out
+        for md in sorted(SKILLS_DIR.glob("*/*/SKILL.md")) + sorted(SKILLS_DIR.glob("*/SKILL.md")):
+            try:
+                text = md.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                continue
+            fm = _parse_frontmatter(text)
+            rel = md.relative_to(SKILLS_DIR)
+            category = rel.parts[0] if len(rel.parts) >= 2 else "(raíz)"
+            out.append({"name": fm.get("name") or md.parent.name,
+                        "description": fm.get("description", ""),
+                        "category": fm.get("category") or category,
+                        "path": str(md), "tf": category == "themeforge"})
+        return out
+
+    @pyqtSlot(bool, result=str)
+    def hermes_skills(self, webonly: bool) -> str:
+        try:
+            skills = self._scan_skills()
+            if webonly:
+                skills = [s for s in skills if s["tf"]]
+            skills = sorted(skills, key=lambda s: (not s["tf"], s["name"]))
+            return json.dumps({"ok": True, "skills": skills})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def hermes_skill_detail(self, path: str) -> str:
+        try:
+            from pathlib import Path
+            return json.dumps({"ok": True, "text": Path(path).read_text(encoding="utf-8", errors="replace")})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(result=str)
+    def hermes_skill_pack(self) -> str:
+        try:
+            from hermes_skill_pack import pack_by_domain
+            groups = pack_by_domain()
+            return json.dumps({"ok": True, "groups": [
+                {"domain": dom, "items": [{"id": sid, "label": lbl} for sid, lbl in items]}
+                for dom, items in groups.items()]})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e), "groups": []})
+
+    @pyqtSlot(result=str)
+    def hermes_seed_web_agents(self) -> str:
+        try:
+            from hermes_web_agents import seed_web_agents
+            return json.dumps({"ok": True, "names": list(seed_web_agents(force=True))})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def hermes_skills_search(self, query: str) -> str:
+        self._h_async("skills_search", ["skills", "search", query or ""], timeout=40)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, result=str)
+    def hermes_install_skill(self, skill_id: str) -> str:
+        if not (skill_id or "").strip():
+            return json.dumps({"ok": False, "error": "id vacío"})
+        self._h_spawn("install_skill", ["skills", "install", skill_id.strip(), "--force"])
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, result=str)
+    def hermes_install_pack(self, ids_csv: str) -> str:
+        ids = [x.strip() for x in (ids_csv or "").split(",") if x.strip()]
+        if not ids:
+            return json.dumps({"ok": False, "error": "sin ids"})
+        import threading
+
+        def _w():
+            for i in ids:
+                self.hermes_event.emit(json.dumps({"op": "install_pack", "line": f"\n▶ {i}…\n"}))
+                _rc, out = self._h_run(["skills", "install", i, "--force"], timeout=120)
+                self.hermes_event.emit(json.dumps({"op": "install_pack", "line": (out or "") + "\n"}))
+            self.hermes_event.emit(json.dumps({"op": "install_pack", "done": True, "ok": True}))
+        threading.Thread(target=_w, daemon=True).start()
+        return json.dumps({"ok": True, "running": True})
+
+    # ── ➕ Crear agente (SKILL.md) ────────────────────────────────────────
+    @pyqtSlot(str, str, str, result=str)
+    def hermes_skill_template(self, name: str, stacks: str, desc: str) -> str:
+        nm = ((name or "agente").strip().lower().replace(" ", "-")) or "agente"
+        title = (name or "Agente").strip()
+        d = (desc or "").strip() or "Describe qué hace y cuándo usarlo."
+        tags = ", ".join([s.strip() for s in (stacks or "").split(",") if s.strip()][:6]) or "themeforge"
+        tmpl = (f"---\nname: {nm}\ndescription: {d}\nversion: 1.0.0\n"
+                f"metadata:\n  hermes:\n    category: themeforge\n    tags: [{tags}]\n---\n\n"
+                f"# {title}\n\n## Cuándo usar\n{d}\n\n## Stacks base\n{stacks or '-'}\n\n"
+                f"## Procedimiento\n1. Lee el contexto del proyecto (CLAUDE.md/AGENTS.md).\n2. …\n")
+        return json.dumps({"ok": True, "template": tmpl})
+
+    @pyqtSlot(str, str, str, result=str)
+    def hermes_skill_draft_ai(self, name: str, stacks: str, desc: str) -> str:
+        if not (name or "").strip() or not (desc or "").strip():
+            return json.dumps({"ok": False, "error": "nombre y especialidad requeridos"})
+        prompt = ("Write a Hermes SKILL.md for a ThemeForge specialized agent. Output ONLY "
+                  "the file content (YAML frontmatter + markdown body, in Spanish). "
+                  f"name: {name}. base stacks: {stacks}. specialty: {desc}.")
+        self._h_async("draft_skill", ["-z", prompt], timeout=120)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(str, str, result=str)
+    def hermes_skill_save(self, name: str, body: str) -> str:
+        try:
+            from hermes_panel import TF_SKILLS_DIR
+            nm = (name or "").strip().lower().replace(" ", "-")
+            if not nm:
+                return json.dumps({"ok": False, "error": "nombre vacío"})
+            if not (body or "").strip():
+                return json.dumps({"ok": False, "error": "cuerpo vacío"})
+            d = TF_SKILLS_DIR / nm
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "SKILL.md").write_text(body, encoding="utf-8")
+            return json.dumps({"ok": True, "path": str(d / "SKILL.md")})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    # ── 🧠 Memoria ────────────────────────────────────────────────────────
+    @pyqtSlot(result=str)
+    def hermes_memory(self) -> str:
+        try:
+            from hermes_panel import MEMORIES_DIR, MEMORY_LIMITS, run_hermes
+            from operator_panel import PROJECTS_DIR
+            from pathlib import Path
+
+            def _rd(p):
+                try:
+                    return Path(p).read_text(encoding="utf-8")
+                except Exception:
+                    return ""
+            projs = []
+            pd = Path(PROJECTS_DIR)
+            if pd.is_dir():
+                for d in sorted(pd.iterdir()):
+                    note = d / ".hermes.md"
+                    if note.is_file():
+                        projs.append({"name": d.name, "path": str(note)})
+            _rc, sess = run_hermes(["sessions", "stats"], timeout=15)
+            return json.dumps({"ok": True,
+                               "memory": _rd(MEMORIES_DIR / "MEMORY.md"),
+                               "user": _rd(MEMORIES_DIR / "USER.md"),
+                               "limits": MEMORY_LIMITS, "projects": projs,
+                               "sessions": sess})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, result=str)
+    def hermes_memory_save(self, fname: str, text: str) -> str:
+        try:
+            from hermes_panel import MEMORIES_DIR, MEMORY_LIMITS
+            if fname not in MEMORY_LIMITS:
+                return json.dumps({"ok": False, "error": "archivo no permitido"})
+            MEMORIES_DIR.mkdir(parents=True, exist_ok=True)
+            (MEMORIES_DIR / fname).write_text(text or "", encoding="utf-8")
+            return json.dumps({"ok": True})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def hermes_project_note(self, path: str) -> str:
+        try:
+            from pathlib import Path
+            return json.dumps({"ok": True, "text": Path(path).read_text(encoding="utf-8", errors="replace")})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    # ── 📊 Kanban ─────────────────────────────────────────────────────────
+    def _kanban_json(self, args):
+        _rc, out = self._h_run(args, timeout=20)
+        try:
+            return json.loads(out)
+        except Exception:
+            return None
+
+    @pyqtSlot(result=str)
+    def kanban_boards(self) -> str:
+        data = self._kanban_json(["kanban", "boards", "list", "--json"])
+        boards = []
+        src = data.get("boards") if isinstance(data, dict) else data
+        if isinstance(src, list):
+            boards = [b.get("name") if isinstance(b, dict) else str(b) for b in src]
+        return json.dumps({"ok": True, "boards": [b for b in boards if b]})
+
+    @pyqtSlot(str, result=str)
+    def kanban_tasks(self, board: str) -> str:
+        if not board:
+            return json.dumps({"ok": True, "tasks": []})
+        data = self._kanban_json(["kanban", "--board", board, "list", "--json"])
+        raw = data if isinstance(data, list) else (data.get("tasks") if isinstance(data, dict) else [])
+        norm = []
+        for t in (raw or []):
+            if not isinstance(t, dict):
+                continue
+            norm.append({"id": str(t.get("id", "")),
+                         "title": t.get("title") or t.get("task") or "",
+                         "status": t.get("status", ""),
+                         "assignee": t.get("assignee") or t.get("assigned") or "",
+                         "priority": t.get("priority", "")})
+        return json.dumps({"ok": True, "tasks": norm})
+
+    @pyqtSlot(str, str, str, str, str, result=str)
+    def kanban_create(self, board: str, title: str, body: str, priority: str, skill: str) -> str:
+        if not board or not title:
+            return json.dumps({"ok": False, "error": "board/título vacío"})
+        args = ["kanban", "--board", board, "create", title]
+        if body:
+            args += ["--body", body]
+        if priority:
+            args += ["--priority", priority]
+        if skill:
+            args += ["--skill", skill]
+        rc, out = self._h_run(args, timeout=25)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(str, result=str)
+    def kanban_dispatch(self, board: str) -> str:
+        if not board:
+            return json.dumps({"ok": False, "error": "board vacío"})
+        self._h_spawn("kanban_dispatch", ["kanban", "--board", board, "dispatch"])
+        return json.dumps({"ok": True, "running": True})
+
+    # ── ⏰ Cron ───────────────────────────────────────────────────────────
+    @pyqtSlot(result=str)
+    def cron_jobs(self) -> str:
+        try:
+            from hermes_panel import CRON_JOBS
+            jobs = []
+            if CRON_JOBS.is_file():
+                d = json.loads(CRON_JOBS.read_text(encoding="utf-8"))
+                raw = d.get("jobs") if isinstance(d, dict) else d
+                for jb in (raw or []):
+                    if not isinstance(jb, dict):
+                        continue
+                    paused = (bool(jb.get("paused")) or jb.get("status") == "paused"
+                              or not jb.get("enabled", True))
+                    jobs.append({"id": str(jb.get("id") or jb.get("name") or ""),
+                                 "name": jb.get("name", ""),
+                                 "schedule": jb.get("schedule") or jb.get("cron") or "",
+                                 "prompt": (jb.get("prompt") or jb.get("task") or "")[:120],
+                                 "paused": paused,
+                                 "next": jb.get("next_run") or jb.get("next") or ""})
+            return json.dumps({"ok": True, "jobs": jobs})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, str, str, str, result=str)
+    def cron_create(self, schedule: str, prompt: str, skill: str, deliver: str, name: str) -> str:
+        if not schedule or not prompt:
+            return json.dumps({"ok": False, "error": "cuándo/tarea vacío"})
+        args = ["cron", "create", schedule, prompt]
+        if skill:
+            args += ["--skill", skill]
+        if deliver and deliver != "local":
+            args += ["--deliver", deliver]
+        if name:
+            args += ["--name", name]
+        rc, out = self._h_run(args, timeout=25)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(str, str, result=str)
+    def cron_op(self, action: str, jid: str) -> str:
+        if action not in ("pause", "resume", "run", "remove") or not jid:
+            return json.dumps({"ok": False, "error": "acción/id inválido"})
+        rc, out = self._h_run(["cron", action, jid], timeout=25)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    # ── 📲 Remoto (gateway / mensajería) ──────────────────────────────────
+    @pyqtSlot(result=str)
+    def gateway_platforms(self) -> str:
+        try:
+            from hermes_panel import GATEWAY_PLATFORMS
+            return json.dumps({"ok": True, "platforms": [
+                {"key": k, "env": e, "hint": h} for (k, e, h) in GATEWAY_PLATFORMS]})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, result=str)
+    def gateway_op(self, op: str) -> str:
+        if op not in ("status", "install", "start", "stop"):
+            return json.dumps({"ok": False, "error": "op inválida"})
+        rc, out = self._h_run(["gateway", op], timeout=30)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(result=str)
+    def gateway_setup(self) -> str:
+        from pathlib import Path
+        exe = self._h_exe()
+        if not exe:
+            self.terminal_ready.emit(json.dumps({"kind": "hermes-gateway", "error": "Hermes no instalado"}))
+            return json.dumps({"ok": False, "error": "Hermes no instalado"})
+        return self._start_terminal(str(Path.home()), exe, ["gateway", "setup"], "hermes-gateway")
+
+    @pyqtSlot(result=str)
+    def gateway_targets(self) -> str:
+        rc, out = self._h_run(["send", "--list"], timeout=20)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(str, str, result=str)
+    def gateway_send(self, target: str, msg: str) -> str:
+        if not target or not msg:
+            return json.dumps({"ok": False, "error": "destino/mensaje vacío"})
+        self._h_async("gateway_send", ["send", "--to", target, msg], timeout=40)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(result=str)
+    def pairing_list(self) -> str:
+        rc, out = self._h_run(["pairing", "list"], timeout=20)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(str, str, result=str)
+    def pairing_approve(self, plat: str, code: str) -> str:
+        if not plat or not code:
+            return json.dumps({"ok": False, "error": "plataforma/código vacío"})
+        rc, out = self._h_run(["pairing", "approve", plat, code], timeout=20)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    # ── 🛡️ Avanzado ──────────────────────────────────────────────────────
+    @pyqtSlot(result=str)
+    def hermes_security(self) -> str:
+        try:
+            from hermes_panel import HERMES_HOME
+            backend, mode = "local", "smart"
+            cfg = HERMES_HOME / "config.yaml"
+            if cfg.is_file():
+                for ln in cfg.read_text(encoding="utf-8", errors="replace").splitlines():
+                    s = ln.strip()
+                    if s.startswith("backend:"):
+                        backend = s.split(":", 1)[1].strip() or backend
+                    elif s.startswith("mode:"):
+                        mode = s.split(":", 1)[1].strip() or mode
+            return json.dumps({"ok": True, "backend": backend, "mode": mode})
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"ok": False, "error": str(e)})
+
+    @pyqtSlot(str, str, result=str)
+    def hermes_security_apply(self, backend: str, mode: str) -> str:
+        outs = []
+        for kv in (["config", "set", "terminal.backend", backend],
+                   ["config", "set", "approvals.mode", mode]):
+            _rc, o = self._h_run(kv, timeout=20)
+            if o:
+                outs.append(o)
+        return json.dumps({"ok": True, "out": "\n".join(outs)})
+
+    @pyqtSlot(str, result=str)
+    def hermes_portal(self, op: str) -> str:
+        if op not in ("status", "tools"):
+            return json.dumps({"ok": False, "error": "op inválida"})
+        rc, out = self._h_run(["portal", op], timeout=30)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(result=str)
+    def hermes_profile_create(self) -> str:
+        rc, out = self._h_run(["profile", "create", "themeforge", "--clone"], timeout=30)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(result=str)
+    def hermes_profile_list(self) -> str:
+        rc, out = self._h_run(["profile", "list"], timeout=20)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(result=str)
+    def hermes_bundle_create(self) -> str:
+        try:
+            from hermes_web_agents import web_agent_names
+            skills = ["themeforge-operator"] + list(web_agent_names())
+        except Exception:
+            skills = ["themeforge-operator"]
+        args = ["bundles", "create", "themeforge"]
+        for s in skills:
+            args += ["--skill", s]
+        rc, out = self._h_run(args, timeout=30)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(int, result=str)
+    def hermes_insights(self, days: int) -> str:
+        self._h_async("insights", ["insights", "--days", str(int(days or 30))], timeout=60)
+        return json.dumps({"ok": True, "running": True})
+
+    @pyqtSlot(result=str)
+    def hermes_fallback_list(self) -> str:
+        rc, out = self._h_run(["fallback", "list"], timeout=20)
+        return json.dumps({"ok": rc == 0, "out": out})
+
+    @pyqtSlot(result=str)
+    def hermes_fallback_add(self) -> str:
+        from pathlib import Path
+        exe = self._h_exe()
+        if not exe:
+            self.terminal_ready.emit(json.dumps({"kind": "hermes-fallback", "error": "Hermes no instalado"}))
+            return json.dumps({"ok": False, "error": "Hermes no instalado"})
+        return self._start_terminal(str(Path.home()), exe, ["fallback", "add"], "hermes-fallback")
 
     @pyqtSlot(str, result=str)
     def ping(self, msg: str) -> str:
