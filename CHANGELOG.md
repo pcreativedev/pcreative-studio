@@ -5,6 +5,33 @@ All notable changes to ThemeForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-05-30
+
+### Added — Panel Hermes completo en la Web UI
+
+- **El Operador (Hermes) alcanza paridad 1:1 con el panel nativo** en los tres
+  temas web (Neo-Tokyo · Matrix · Kawaii): las 12 pestañas del panel
+  `hermes_panel.py` ahora existen en la UI web, cableadas a datos/acciones
+  reales (cero mock). Además de Misión y Chat/Admin (que ya estaban): **Proveedor**
+  (login OAuth / API key / elegir modelo cerebro), **Imágenes** (Runware:
+  buscar modelos, default, test), **Agentes** (skills: listar/buscar/instalar +
+  pack curado + sembrar web), **Crear** (plantilla / redactar con IA / guardar
+  SKILL.md), **Memoria** (MEMORY.md + USER.md con contadores + notas por
+  proyecto + sesiones), **Kanban** (boards/tareas/dispatch en vivo), **Cron**
+  (jobs + pausar/reanudar/ejecutar/eliminar + programar), **Remoto** (gateway:
+  setup/estado, enviar, pairing) y **Avanzado** (seguridad/portal/perfil/bundle/
+  insights/fallback).
+- **Bridge (`web_shell.py`)**: 49 slots Hermes nuevos + señal `hermes_event`
+  para operaciones asíncronas (instalar skill, dispatch, draft IA, enviar
+  mensaje, insights, test del cerebro), wrappers finos sobre `hermes <args>`
+  reutilizando la lógica de `hermes_panel.py`. Los flujos interactivos (OAuth,
+  gateway setup, fallback add) se abren en terminal embebida.
+
+### Changed
+
+- Terminal embebida: `node-pty` → `@homebridge/node-pty-prebuilt-multiarch`
+  (binarios prebuilt, sin compilación nativa).
+
 ## [1.6.0] - 2026-05-29
 
 ### Added — Web UI (Neo-Tokyo · Matrix · Kawaii)
