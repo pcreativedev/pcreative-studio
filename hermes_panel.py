@@ -520,6 +520,19 @@ class MissionTab(QWidget):
         row_stack.addWidget(self.cb_audit)
         root.addLayout(row_stack)
 
+        # Aviso al terminar (manda resumen al canal de mensajería elegido).
+        row_notify = QHBoxLayout()
+        self.cb_notify = QCheckBox("🔔 Avisar al acabar a")
+        self.cb_notify.setToolTip("Al terminar, envía un aviso por el gateway "
+                                  "(requiere plataforma configurada en 📲 Remoto).")
+        row_notify.addWidget(self.cb_notify)
+        self.in_notify = QLineEdit("telegram")
+        self.in_notify.setPlaceholderText("destino: telegram · discord:#ops")
+        self.in_notify.setFixedWidth(180)
+        row_notify.addWidget(self.in_notify)
+        row_notify.addStretch()
+        root.addLayout(row_notify)
+
         ctl = QHBoxLayout()
         ctl.addWidget(QLabel("Variantes:"))
         self.variants = QSpinBox()
@@ -697,6 +710,24 @@ class MissionTab(QWidget):
                                  "▶ Preview, o ve a 💬 Chat para seguir.")
         except Exception:
             pass
+        # Aviso por el gateway (Telegram/WhatsApp/…) si está activado.
+        if self.cb_notify.isChecked():
+            target = self.in_notify.text().strip()
+            if target:
+                try:
+                    proj = ""
+                    if PROJECTS_DIR.is_dir():
+                        ps = [p for p in PROJECTS_DIR.iterdir() if p.is_dir()
+                              and not p.name.startswith(".")]
+                        if ps:
+                            proj = max(ps, key=lambda p: p.stat().st_mtime).name
+                    msg = (f"✅ ThemeForge: misión terminada (exit {code})."
+                           + (f" Proyecto: {proj}." if proj else ""))
+                    rc, out = run_hermes(["send", "--to", target, msg], timeout=30)
+                    self._append(f"🔔 Aviso a «{target}»: "
+                                 + ("enviado ✓" if rc == 0 else f"falló ({out[:80]})"))
+                except Exception as e:  # noqa: BLE001
+                    self._append(f"🔔 Aviso falló: {e}")
 
     def _stop(self):
         if self._proc and self._proc.state() != QProcess.ProcessState.NotRunning:
@@ -2167,7 +2198,187 @@ class ImagesTab(QWidget):
         pass
 
 
-# ───────────────────────── 🛡️ Avanzado (sandbox + portal + remoto) ──────
+# ───────────────────────── 📲 Remoto (mensajería / gateway) ─────────────
+# Plataformas soportadas + su env var de credencial (en ~/.hermes/.env).
+GATEWAY_PLATFORMS = [
+    ("telegram", "TELEGRAM_BOT_TOKEN", "BotFather → /newbot → token"),
+    ("discord", "DISCORD_TOKEN", "Discord Developer Portal → Bot token"),
+    ("slack", "SLACK_BOT_TOKEN", "Slack app → Bot User OAuth Token (xoxb-)"),
+    ("whatsapp", "WHATSAPP_*", "WhatsApp Cloud API / proveedor"),
+    ("signal", "SIGNAL_*", "signal-cli vinculado"),
+    ("matrix", "MATRIX_*", "homeserver + access token"),
+    ("email", "EMAIL_*", "IMAP/SMTP"),
+    ("sms", "SMS_*", "Twilio u otro"),
+    ("teams", "TEAMS_*", "Microsoft Graph / Azure app"),
+]
+
+
+class MessagingTab(QWidget):
+    """Control remoto vía el gateway de Hermes: configurar plataformas (Telegram,
+    WhatsApp, Discord…), arrancar/parar el servicio, enviar de prueba y pairing.
+    Permite lanzar misiones y recibir resultados desde el móvil."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._hermes = find_hermes()
+        self._proc: QProcess | None = None
+        root = QVBoxLayout(self)
+
+        title = QLabel("📲 Remoto (mensajería)")
+        f = QFont(); f.setPointSize(13); f.setBold(True); title.setFont(f)
+        root.addWidget(title)
+        sub = QLabel("Conecta Telegram/WhatsApp/Discord/Slack/… para <b>lanzar "
+                     "misiones desde el móvil</b> y recibir avisos + zips. El "
+                     "gateway corre en segundo plano y también tickea el cron.")
+        sub.setTextFormat(Qt.TextFormat.RichText); sub.setWordWrap(True)
+        sub.setStyleSheet("color:#9aa;")
+        root.addWidget(sub)
+
+        # ── Servicio gateway ──
+        gbox = QFrame(); gbox.setFrameShape(QFrame.Shape.StyledPanel)
+        gl = QVBoxLayout(gbox)
+        gl.addWidget(QLabel("<b>Servicio del gateway</b>"))
+        grow = QHBoxLayout()
+        self.btn_setup = QPushButton("⚙️ Configurar plataformas")
+        self.btn_setup.setToolTip("Abre el asistente `hermes gateway setup` en una "
+                                  "terminal (elige plataforma y pega el token).")
+        self.btn_setup.clicked.connect(self._setup)
+        grow.addWidget(self.btn_setup)
+        for label, args in (("Estado", ["gateway", "status"]),
+                            ("Instalar servicio", ["gateway", "install"]),
+                            ("▶ Arrancar", ["gateway", "start"]),
+                            ("⏹ Parar", ["gateway", "stop"])):
+            b = QPushButton(label)
+            b.clicked.connect(lambda _c=False, a=args: self._run(a))
+            grow.addWidget(b)
+        grow.addStretch()
+        gl.addLayout(grow)
+        root.addWidget(gbox)
+
+        # ── Plataformas + credenciales (env) ──
+        pbox = QFrame(); pbox.setFrameShape(QFrame.Shape.StyledPanel)
+        pl = QVBoxLayout(pbox)
+        pl.addWidget(QLabel("<b>Plataformas</b> — credencial en "
+                            "<code>~/.hermes/.env</code> (deny-by-default; añade "
+                            "tu ID a <code>&lt;PLAT&gt;_ALLOWED_USERS</code>)"))
+        prow = QHBoxLayout()
+        prow.addWidget(QLabel("Plataforma:"))
+        self.cb_plat = QComboBox()
+        for name, env, hint in GATEWAY_PLATFORMS:
+            self.cb_plat.addItem(f"{name}  ·  {env}", name)
+        self.cb_plat.currentIndexChanged.connect(self._plat_hint)
+        prow.addWidget(self.cb_plat, 1)
+        self.btn_list = QPushButton("📋 Targets configurados")
+        self.btn_list.clicked.connect(lambda: self._run(["send", "--list"]))
+        prow.addWidget(self.btn_list)
+        pl.addLayout(prow)
+        self.plat_hint = QLabel(); self.plat_hint.setStyleSheet("color:#7aa2f7;")
+        self.plat_hint.setWordWrap(True)
+        pl.addWidget(self.plat_hint)
+        root.addWidget(pbox)
+
+        # ── Enviar de prueba ──
+        sbox = QFrame(); sbox.setFrameShape(QFrame.Shape.StyledPanel)
+        sl = QVBoxLayout(sbox)
+        sl.addWidget(QLabel("<b>Enviar mensaje de prueba</b>"))
+        srow = QHBoxLayout()
+        self.in_target = QLineEdit()
+        self.in_target.setPlaceholderText("destino: telegram · discord:#ops · slack:#eng")
+        srow.addWidget(self.in_target, 1)
+        self.in_msg = QLineEdit()
+        self.in_msg.setPlaceholderText("mensaje…")
+        srow.addWidget(self.in_msg, 2)
+        self.btn_send = QPushButton("📤 Enviar")
+        self.btn_send.clicked.connect(self._send)
+        srow.addWidget(self.btn_send)
+        sl.addLayout(srow)
+        root.addWidget(sbox)
+
+        # ── Pairing ──
+        pgbox = QFrame(); pgbox.setFrameShape(QFrame.Shape.StyledPanel)
+        pgl = QVBoxLayout(pgbox)
+        pgl.addWidget(QLabel("<b>Pairing</b> — autoriza usuarios desconocidos por código"))
+        pgrow = QHBoxLayout()
+        self.btn_pair_list = QPushButton("Ver pairing")
+        self.btn_pair_list.clicked.connect(lambda: self._run(["pairing", "list"]))
+        pgrow.addWidget(self.btn_pair_list)
+        self.in_pair_plat = QLineEdit(); self.in_pair_plat.setPlaceholderText("plataforma")
+        self.in_pair_plat.setFixedWidth(110)
+        pgrow.addWidget(self.in_pair_plat)
+        self.in_pair_code = QLineEdit(); self.in_pair_code.setPlaceholderText("código")
+        self.in_pair_code.setFixedWidth(110)
+        pgrow.addWidget(self.in_pair_code)
+        self.btn_pair_ok = QPushButton("✓ Aprobar")
+        self.btn_pair_ok.clicked.connect(self._approve)
+        pgrow.addWidget(self.btn_pair_ok)
+        pgrow.addStretch()
+        pgl.addLayout(pgrow)
+        root.addWidget(pgbox)
+
+        self.log = QPlainTextEdit(); self.log.setReadOnly(True)
+        self.log.setStyleSheet("font-family:monospace; font-size:11px; "
+                               "background:#111; color:#cdd;")
+        root.addWidget(self.log, 1)
+
+        if not self._hermes:
+            root.insertWidget(1, _no_hermes_banner("ℹ️ Hermes no instalado."))
+        self._plat_hint()
+
+    def _plat_hint(self):
+        i = max(0, self.cb_plat.currentIndex())
+        name, env, hint = GATEWAY_PLATFORMS[i]
+        self.plat_hint.setText(f"ℹ️ {name}: credencial <code>{env}</code> — {hint}. "
+                               "Configúrala con «Configurar plataformas».")
+        self.plat_hint.setTextFormat(Qt.TextFormat.RichText)
+
+    def _setup(self):
+        if not self._hermes:
+            return
+        try:
+            import platform_compat as pc
+            pc.open_in_terminal(str(Path.home() / ".hermes"),
+                                command=f"{self._hermes} gateway setup", hold=True)
+            self.log.appendPlainText("→ Asistente abierto en una terminal: elige "
+                                     "plataforma y pega el token. Luego «▶ Arrancar».")
+        except Exception as e:  # noqa: BLE001
+            self.log.appendPlainText(f"✗ no se pudo abrir la terminal: {e}\n"
+                                     f"Ejecuta a mano: hermes gateway setup")
+
+    def _run(self, args: list[str]):
+        if not self._hermes:
+            return
+        self.log.appendPlainText(f"$ hermes {' '.join(args)}")
+        self._proc = _spawn_hermes(
+            self, args, lambda t: self.log.appendPlainText(t.rstrip()),
+            lambda code: self.log.appendPlainText(f"■ exit {code}"))
+
+    def _send(self):
+        if not self._hermes:
+            return
+        target = self.in_target.text().strip()
+        msg = self.in_msg.text().strip()
+        if not target or not msg:
+            self.log.appendPlainText("Pon destino y mensaje.")
+            return
+        code, out = run_hermes(["send", "--to", target, msg], timeout=30)
+        self.log.appendPlainText(f"$ hermes send --to {target} …\n{out}\n"
+                                 + ("✓ enviado" if code == 0 else f"✗ exit {code}"))
+
+    def _approve(self):
+        plat = self.in_pair_plat.text().strip()
+        code_ = self.in_pair_code.text().strip()
+        if not plat or not code_:
+            self.log.appendPlainText("Pon plataforma y código.")
+            return
+        rc, out = run_hermes(["pairing", "approve", plat, code_], timeout=20)
+        self.log.appendPlainText(f"$ hermes pairing approve {plat} {code_}\n{out}")
+        self.in_pair_code.clear()
+
+    def set_powered(self, on: bool):
+        pass
+
+
+# ───────────────────────── 🛡️ Avanzado (sandbox + portal + perfil/insights) ──
 class AdvancedTab(QWidget):
     """Seguridad/aislamiento de ejecución, portal de imágenes y control remoto
     (gateway). Envuelve `hermes config set` + `hermes portal` + `hermes gateway`."""
@@ -2224,26 +2435,47 @@ class AdvancedTab(QWidget):
         pl.addLayout(prow)
         root.addWidget(pbox)
 
-        # ── Remoto / gateway ──
-        gbox = QFrame(); gbox.setFrameShape(QFrame.Shape.StyledPanel)
-        gl = QVBoxLayout(gbox)
-        gl.addWidget(QLabel("<b>📲 Control remoto (gateway)</b>"))
-        gl.addWidget(QLabel("Lanza misiones desde Telegram/Discord/Slack y recibe el "
-                            "aviso/zip al terminar. El daemon también tickea el cron."))
-        grow = QHBoxLayout()
-        for label, args in (("Estado", ["gateway", "status"]),
-                            ("▶ Arrancar", ["gateway", "start"]),
-                            ("⏹ Parar", ["gateway", "stop"]),
-                            ("Pairing", ["pairing", "list"])):
-            b = QPushButton(label)
-            b.clicked.connect(lambda _c=False, a=args: self._run(a))
-            grow.addWidget(b)
-        grow.addStretch()
-        gl.addLayout(grow)
-        gl.addWidget(QLabel("<span style='color:#888'>Configurar plataformas: "
-                            "<code>hermes gateway setup</code> en una terminal "
-                            "(asistente interactivo) o desde ⚙️ Admin.</span>"))
-        root.addWidget(gbox)
+        # ── Perfil + bundle ThemeForge ──
+        prbox = QFrame(); prbox.setFrameShape(QFrame.Shape.StyledPanel)
+        prl = QVBoxLayout(prbox)
+        prl.addWidget(QLabel("<b>👤 Perfil + bundle ThemeForge</b>"))
+        prl.addWidget(QLabel("Perfil Hermes aislado (config/skills/memoria propias) y "
+                            "un bundle <code>/themeforge</code> que agrupa los agentes web."))
+        prow2 = QHBoxLayout()
+        self.btn_profile = QPushButton("Crear perfil 'themeforge'")
+        self.btn_profile.clicked.connect(self._create_profile)
+        prow2.addWidget(self.btn_profile)
+        self.btn_bundle = QPushButton("Crear bundle /themeforge")
+        self.btn_bundle.clicked.connect(self._create_bundle)
+        prow2.addWidget(self.btn_bundle)
+        self.btn_profiles = QPushButton("Listar perfiles")
+        self.btn_profiles.clicked.connect(lambda: self._run(["profile", "list"]))
+        prow2.addWidget(self.btn_profiles)
+        prow2.addStretch()
+        prl.addLayout(prow2)
+        root.addWidget(prbox)
+
+        # ── Insights de coste + fallback ──
+        ibox = QFrame(); ibox.setFrameShape(QFrame.Shape.StyledPanel)
+        il = QVBoxLayout(ibox)
+        il.addWidget(QLabel("<b>📈 Coste & fallback</b>"))
+        il.addWidget(QLabel("Analítica de tokens/coste por misión, y cadena de fallback "
+                            "de proveedor si el cerebro falla."))
+        irow = QHBoxLayout()
+        self.btn_insights = QPushButton("Insights (30 días)")
+        self.btn_insights.clicked.connect(lambda: self._run(["insights", "--days", "30"]))
+        irow.addWidget(self.btn_insights)
+        self.btn_fallback_list = QPushButton("Ver fallback")
+        self.btn_fallback_list.clicked.connect(lambda: self._run(["fallback", "list"]))
+        irow.addWidget(self.btn_fallback_list)
+        self.btn_fallback_add = QPushButton("➕ Añadir fallback")
+        self.btn_fallback_add.setToolTip("Abre `hermes fallback add` en una terminal "
+                                         "(elige proveedor/modelo).")
+        self.btn_fallback_add.clicked.connect(self._fallback_add)
+        irow.addWidget(self.btn_fallback_add)
+        irow.addStretch()
+        il.addLayout(irow)
+        root.addWidget(ibox)
 
         self.log = QPlainTextEdit(); self.log.setReadOnly(True)
         self.log.setStyleSheet("font-family:monospace; font-size:11px; "
@@ -2296,8 +2528,46 @@ class AdvancedTab(QWidget):
             self, args, lambda t: self.log.appendPlainText(t.rstrip()),
             lambda code: self.log.appendPlainText(f"■ exit {code}"))
 
+    def _create_profile(self):
+        if not self._hermes:
+            return
+        rc, out = run_hermes(["profile", "create", "themeforge", "--clone"], timeout=30)
+        self.log.appendPlainText(f"$ hermes profile create themeforge --clone\n{out}\n"
+                                 + ("✓ perfil creado (úsalo: hermes -p themeforge …)"
+                                    if rc == 0 else f"✗ exit {rc}"))
+
+    def _create_bundle(self):
+        if not self._hermes:
+            return
+        skills = ["themeforge-operator"]
+        try:
+            from hermes_web_agents import web_agent_names
+            skills += web_agent_names()
+        except Exception:
+            pass
+        args = ["bundles", "create", "themeforge"]
+        for s in skills:
+            args += ["--skill", s]
+        rc, out = run_hermes(args, timeout=30)
+        self.log.appendPlainText(
+            f"$ hermes bundles create themeforge --skill … ({len(skills)} skills)\n{out}\n"
+            + ("✓ bundle creado → usa /themeforge en el chat" if rc == 0 else f"✗ exit {rc}"))
+
+    def _fallback_add(self):
+        if not self._hermes:
+            return
+        try:
+            import platform_compat as pc
+            pc.open_in_terminal(str(Path.home() / ".hermes"),
+                                command=f"{self._hermes} fallback add", hold=True)
+            self.log.appendPlainText("→ `hermes fallback add` abierto en una terminal "
+                                     "(elige proveedor/modelo de respaldo).")
+        except Exception as e:  # noqa: BLE001
+            self.log.appendPlainText(f"✗ {e} — ejecuta a mano: hermes fallback add")
+
     def set_powered(self, on: bool):
-        for b in (self.btn_apply_sec, self.btn_portal, self.btn_portal_tools):
+        for b in (self.btn_apply_sec, self.btn_portal, self.btn_portal_tools,
+                  self.btn_profile, self.btn_bundle, self.btn_insights):
             b.setEnabled(bool(self._hermes) and on)
         if on:
             self.refresh()
@@ -2363,6 +2633,7 @@ class HermesPanel(QWidget):
         self.kanban = KanbanTab()
         self.cron = CronTab()
         self.images = ImagesTab()
+        self.messaging = MessagingTab()
         self.advanced = AdvancedTab()
         self.chat = HermesTerminal()
         self.admin = AdminTab()
@@ -2375,6 +2646,7 @@ class HermesPanel(QWidget):
         self.tabs.addTab(self.memory, "🧠 Memoria")
         self.tabs.addTab(self.kanban, "📊 Kanban")
         self.tabs.addTab(self.cron, "⏰ Cron")
+        self.tabs.addTab(self.messaging, "📲 Remoto")
         self.tabs.addTab(self.advanced, "🛡️ Avanzado")
         self.tabs.addTab(self.admin, "⚙️ Admin")
         self.tabs.addTab(self.chat, "💬 Chat")
@@ -2391,7 +2663,7 @@ class HermesPanel(QWidget):
         self.strip.set_powered(on)
         for t in (self.mission, self.provider, self.images, self.agents,
                   self.create, self.memory, self.kanban, self.cron,
-                  self.advanced, self.admin):
+                  self.messaging, self.advanced, self.admin):
             try:
                 t.set_powered(on)
             except Exception:
