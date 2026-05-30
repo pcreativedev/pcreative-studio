@@ -897,20 +897,37 @@ class AgentsTab(QWidget):
         title = QLabel("🤖 Agentes especializados")
         f = QFont(); f.setPointSize(13); f.setBold(True); title.setFont(f)
         bar.addWidget(title)
+        self.cb_webonly = QCheckBox("Solo web/diseño")
+        self.cb_webonly.setChecked(True)
+        self.cb_webonly.setToolTip("Muestra solo los agentes de ThemeForge "
+                                   "(web/UX-UI), no toda la librería de Hermes.")
+        self.cb_webonly.stateChanged.connect(lambda _s: self.refresh())
+        bar.addWidget(self.cb_webonly)
         bar.addStretch()
         self.search = QLineEdit()
         self.search.setPlaceholderText("Buscar en el registro (ej: react, shopify)…")
         self.search.returnPressed.connect(self._do_search)
-        self.search.setFixedWidth(240)
+        self.search.setFixedWidth(220)
         bar.addWidget(self.search)
         self.btn_search = QPushButton("🔍 Buscar")
         self.btn_search.clicked.connect(self._do_search)
         bar.addWidget(self.btn_search)
+        self.btn_seed = QPushButton("🌱 Sembrar agentes web")
+        self.btn_seed.setToolTip("(Re)instala el pack de agentes web/UX-UI de ThemeForge.")
+        self.btn_seed.clicked.connect(self._seed)
+        bar.addWidget(self.btn_seed)
         self.btn_refresh = QPushButton("↻")
         self.btn_refresh.setFixedWidth(32)
         self.btn_refresh.clicked.connect(self.refresh)
         bar.addWidget(self.btn_refresh)
         root.addLayout(bar)
+
+        # Siembra el pack de agentes web la primera vez (idempotente).
+        try:
+            from hermes_web_agents import seed_web_agents
+            seed_web_agents()
+        except Exception:
+            pass
 
         split = QSplitter(Qt.Orientation.Horizontal)
         self.list = QListWidget()
@@ -976,19 +993,37 @@ class AgentsTab(QWidget):
     def refresh(self):
         self.list.clear()
         skills = self._scan()
-        for s in skills:
+        webonly = self.cb_webonly.isChecked()
+        shown = [s for s in skills if s["tf"]] if webonly else skills
+        # ThemeForge primero (⭐), luego el resto.
+        shown = sorted(shown, key=lambda s: (not s["tf"], s["name"]))
+        for s in shown:
             label = f"{'⭐ ' if s['tf'] else ''}{s['name']}  ·  {s['category']}"
             it = QListWidgetItem(label)
             it.setData(Qt.ItemDataRole.UserRole, s)
             it.setToolTip(s["description"])
             self.list.addItem(it)
-        n = len(skills)
         tf = sum(1 for s in skills if s["tf"])
-        self.status.setText(
-            f"{n} skill(s) instalada(s) · {tf} de ThemeForge ⭐"
-            if n else "No hay skills instaladas todavía.")
-        if not self.list.currentItem() and n:
+        if webonly:
+            self.status.setText(
+                f"{len(shown)} agente(s) web/diseño de ThemeForge ⭐  "
+                f"· desmarca «Solo web/diseño» para ver las {len(skills)} skills de Hermes."
+                if shown else "No hay agentes web — pulsa 🌱 Sembrar agentes web.")
+        else:
+            self.status.setText(f"{len(skills)} skill(s) instalada(s) · {tf} de "
+                                "ThemeForge ⭐")
+        if not self.list.currentItem() and self.list.count():
             self.list.setCurrentRow(0)
+
+    def _seed(self):
+        try:
+            from hermes_web_agents import seed_web_agents
+            done = seed_web_agents(force=True)
+            self.status.setText(f"🌱 {len(done)} agente(s) web (re)instalados."
+                                if done else "Agentes web ya al día.")
+        except Exception as e:  # noqa: BLE001
+            self.status.setText(f"Error sembrando: {e}")
+        self.refresh()
 
     def _show_selected(self, cur, _prev=None):
         if not cur:
