@@ -774,6 +774,14 @@ HERMES_PROVIDERS = [
     {"key": "gemini", "auth": "api", "label": "Gemini (Google) · API key",
      "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
      "note": "Alternativa por API key (Google AI Studio)."},
+    {"key": "opencode-zen", "auth": "api", "label": "OpenCode Zen · API key",
+     "models": ["claude-sonnet-4", "gpt-5", "qwen3-coder", "kimi-k2"],
+     "note": "Gateway de modelos de OpenCode (opencode.ai/zen, OPENCODE_ZEN_API_KEY). "
+             "Endpoint propio — el base_url lo pone Hermes solo."},
+    {"key": "opencode-go", "auth": "api", "label": "OpenCode Go (plan) · API key",
+     "models": ["glm-4.6", "kimi-k2", "minimax-m2", "qwen3.7"],
+     "note": "Plan OpenCode Go (opencode.ai/zen/go, OPENCODE_GO_API_KEY): GLM/Kimi/"
+             "MiniMax/Qwen. Endpoint propio."},
 ]
 
 
