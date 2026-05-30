@@ -30,15 +30,15 @@ MODELS = {
 }
 DEFAULT_MODEL = MODELS["flux-dev"]
 
-# Arquitecturas que Runware permite filtrar (para el selector).
-ARCHITECTURES = ["flux", "sdxl", "sd1x", "sd3", "pony", "fluxkontext"]
+# Arquitecturas reales de Runware (verificadas vía modelSearch 2026-05-30).
+ARCHITECTURES = ["flux1d", "flux1s", "sdxl", "sd1x", "sd3", "pony"]
 
 # Categorías curadas por CASO DE USO para templates web: cada una define un
 # término de búsqueda + arquitectura sugerida que alimenta el selector en vivo
 # (search_models). Así el usuario elige por "para qué" y luego afina el modelo.
 CATEGORIES = [
     {"key": "photoreal", "label": "📷 Fotorrealista (hero, secciones)",
-     "search": "realistic photo", "architecture": "flux"},
+     "search": "realistic photo", "architecture": "flux1d"},
     {"key": "illustration", "label": "🎨 Ilustración / arte",
      "search": "illustration art", "architecture": "sdxl"},
     {"key": "logo", "label": "🏷️ Logo / vector / flat",
@@ -48,7 +48,7 @@ CATEGORIES = [
     {"key": "3d", "label": "🧊 3D / render",
      "search": "3d render", "architecture": "sdxl"},
     {"key": "fast", "label": "⚡ Rápido (drafts)",
-     "search": "flux schnell", "architecture": "flux"},
+     "search": "schnell", "architecture": "flux1s"},
 ]
 
 
