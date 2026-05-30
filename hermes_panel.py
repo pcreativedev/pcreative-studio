@@ -708,7 +708,9 @@ def _no_hermes_banner(text: str) -> QLabel:
 # (codex/claude-OAuth/…). OJO: Claude para Hermes va SIEMPRE por API key
 # (no usa el OAuth de Claude Code que sí usan los agentes de build).
 # auth: "api" (API key) u "oauth" (login en el navegador). `key` = provider id de
-# Hermes (verificado con `hermes auth add --help`: anthropic, openai-codex, …).
+# Hermes — VERIFICADO contra PROVIDER_REGISTRY y _OAUTH_CAPABLE_PROVIDERS del
+# Hermes instalado (2026-05-30): oauth-capables = anthropic, nous, openai-codex,
+# xai-oauth, qwen-oauth, google-gemini-cli, minimax-oauth.
 HERMES_PROVIDERS = [
     {"key": "anthropic", "auth": "api", "label": "Anthropic (Claude) · API key",
      "models": ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
@@ -716,23 +718,28 @@ HERMES_PROVIDERS = [
              "Claude Code / Pro-Max)."},
     {"key": "openai-codex", "auth": "oauth", "label": "ChatGPT / Codex (OpenAI) · login",
      "models": ["gpt-5.5", "gpt-5.1", "o4"],
-     "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key. Sí lo "
-             "permite Hermes (provider openai-codex)."},
-    {"key": "gemini-oauth", "auth": "oauth", "label": "Gemini (Google) · login",
+     "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key."},
+    {"key": "google-gemini-cli", "auth": "oauth", "label": "Gemini (Google) · login",
      "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
-     "note": "Login con tu cuenta de Google (OAuth). Sí lo permite Hermes."},
-    {"key": "copilot", "auth": "oauth", "label": "GitHub Copilot · login (gh)",
-     "models": ["gpt-5", "claude-sonnet-4"],
-     "note": "Usa tu sesión de GitHub Copilot (vía `gh auth`)."},
+     "note": "Login con tu cuenta de Google (OAuth, vía Gemini CLI)."},
+    {"key": "xai-oauth", "auth": "oauth", "label": "xAI / Grok · login",
+     "models": ["grok-4", "grok-4-fast"],
+     "note": "Login con tu cuenta de xAI (OAuth)."},
+    {"key": "qwen-oauth", "auth": "oauth", "label": "Qwen · login",
+     "models": ["qwen3-coder", "qwen3-max"],
+     "note": "Login con tu cuenta de Qwen (OAuth)."},
+    {"key": "nous", "auth": "oauth", "label": "Nous Portal · login",
+     "models": ["hermes-4-405b", "hermes-4-70b"],
+     "note": "`hermes setup --portal` o login OAuth — 300+ modelos + tool gateway."},
     {"key": "openrouter", "auth": "api", "label": "OpenRouter (200+ modelos) · API key",
      "models": ["anthropic/claude-opus-4.8", "openai/gpt-5.5",
                 "google/gemini-2.5-pro", "deepseek/deepseek-r1"],
      "note": "Un solo API key da acceso a cientos de modelos."},
-    {"key": "openai", "auth": "api", "label": "OpenAI · API key",
+    {"key": "openai-api", "auth": "api", "label": "OpenAI · API key",
      "models": ["gpt-5.5", "gpt-5.1", "o4"], "note": ""},
-    {"key": "nous", "auth": "oauth", "label": "Nous Portal · login",
-     "models": ["hermes-4-405b", "hermes-4-70b"],
-     "note": "`hermes setup --portal` o login OAuth — 300+ modelos + tool gateway."},
+    {"key": "gemini", "auth": "api", "label": "Gemini (Google) · API key",
+     "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
+     "note": "Alternativa por API key (Google AI Studio)."},
 ]
 
 
