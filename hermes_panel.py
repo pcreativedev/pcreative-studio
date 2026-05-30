@@ -707,22 +707,32 @@ def _no_hermes_banner(text: str) -> QLabel:
 # El modelo "cerebro" de Hermes se configura aparte de los agentes de build
 # (codex/claude-OAuth/…). OJO: Claude para Hermes va SIEMPRE por API key
 # (no usa el OAuth de Claude Code que sí usan los agentes de build).
+# auth: "api" (API key) u "oauth" (login en el navegador). `key` = provider id de
+# Hermes (verificado con `hermes auth add --help`: anthropic, openai-codex, …).
 HERMES_PROVIDERS = [
-    {"key": "anthropic", "label": "Anthropic (Claude) · API key",
+    {"key": "anthropic", "auth": "api", "label": "Anthropic (Claude) · API key",
      "models": ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
      "note": "Claude para Hermes requiere API key de Anthropic (no el login de "
              "Claude Code / Pro-Max)."},
-    {"key": "openrouter", "label": "OpenRouter (200+ modelos) · API key",
+    {"key": "openai-codex", "auth": "oauth", "label": "ChatGPT / Codex (OpenAI) · login",
+     "models": ["gpt-5.5", "gpt-5.1", "o4"],
+     "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key. Sí lo "
+             "permite Hermes (provider openai-codex)."},
+    {"key": "gemini-oauth", "auth": "oauth", "label": "Gemini (Google) · login",
+     "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
+     "note": "Login con tu cuenta de Google (OAuth). Sí lo permite Hermes."},
+    {"key": "copilot", "auth": "oauth", "label": "GitHub Copilot · login (gh)",
+     "models": ["gpt-5", "claude-sonnet-4"],
+     "note": "Usa tu sesión de GitHub Copilot (vía `gh auth`)."},
+    {"key": "openrouter", "auth": "api", "label": "OpenRouter (200+ modelos) · API key",
      "models": ["anthropic/claude-opus-4.8", "openai/gpt-5.5",
                 "google/gemini-2.5-pro", "deepseek/deepseek-r1"],
-     "note": "Un solo API key da acceso a cientos de modelos (sk-or-v1-…)."},
-    {"key": "openai", "label": "OpenAI · API key",
+     "note": "Un solo API key da acceso a cientos de modelos."},
+    {"key": "openai", "auth": "api", "label": "OpenAI · API key",
      "models": ["gpt-5.5", "gpt-5.1", "o4"], "note": ""},
-    {"key": "google", "label": "Google (Gemini) · API key",
-     "models": ["gemini-2.5-pro", "gemini-2.5-flash"], "note": ""},
-    {"key": "nous", "label": "Nous Portal · OAuth/API",
+    {"key": "nous", "auth": "oauth", "label": "Nous Portal · login",
      "models": ["hermes-4-405b", "hermes-4-70b"],
-     "note": "`hermes setup --portal` configura OAuth + 300+ modelos + tool gateway."},
+     "note": "`hermes setup --portal` o login OAuth — 300+ modelos + tool gateway."},
 ]
 
 
@@ -773,6 +783,11 @@ class ProviderTab(QWidget):
         root.addWidget(self.note)
 
         ctl = QHBoxLayout()
+        self.btn_login = QPushButton("🔓 Login (OAuth)")
+        self.btn_login.setToolTip("Abre el navegador para iniciar sesión "
+                                  "(Gemini/ChatGPT/Copilot/Nous).")
+        self.btn_login.clicked.connect(self._login_oauth)
+        ctl.addWidget(self.btn_login)
         self.btn_savekey = QPushButton("💾 Guardar API key")
         self.btn_savekey.clicked.connect(self._save_key)
         ctl.addWidget(self.btn_savekey)
@@ -810,6 +825,15 @@ class ProviderTab(QWidget):
         self.cb_model.clear()
         self.cb_model.addItems(sp["models"])
         self.note.setText("ℹ️ " + sp["note"] if sp.get("note") else "")
+        # Muestra login OAuth o campo de API key según el provider.
+        is_oauth = sp.get("auth") == "oauth"
+        has = bool(self._hermes) and getattr(self, "_powered_on", True)
+        self.btn_login.setVisible(is_oauth)
+        self.btn_login.setEnabled(has and is_oauth)
+        self.in_key.setVisible(not is_oauth)
+        self.btn_savekey.setVisible(not is_oauth)
+        self.in_key.setEnabled(has and not is_oauth)
+        self.btn_savekey.setEnabled(has and not is_oauth)
 
     def refresh(self):
         prov, model = _hermes_model_info()
@@ -841,6 +865,24 @@ class ProviderTab(QWidget):
         self.log.appendPlainText(f"$ hermes auth add {prov} --api-key ****\n{out}")
         self.log.appendPlainText("✓ key guardada" if code == 0 else f"✗ exit {code}")
         self.refresh()
+
+    def _login_oauth(self):
+        if not self._hermes:
+            return
+        prov = self._spec()["key"]
+        self.log.appendPlainText(
+            f"$ hermes auth add {prov} --type oauth\n"
+            "→ Se abrirá el navegador para iniciar sesión. Completa el login ahí…")
+        self.btn_login.setEnabled(False)
+
+        def done(code):
+            self.btn_login.setEnabled(True)
+            self.log.appendPlainText("✓ login OK — pulsa «✅ Usar este modelo»."
+                                     if code == 0 else f"✗ login exit {code}")
+            self.refresh()
+        self._proc = _spawn_hermes(
+            self, ["auth", "add", prov, "--type", "oauth"],
+            lambda t: self.log.appendPlainText(t.rstrip()), done)
 
     def _apply_model(self):
         if not self._hermes:
@@ -875,8 +917,10 @@ class ProviderTab(QWidget):
         _spawn_hermes(self, ["-z", "ping: responde solo 'OK'"], line, done)
 
     def set_powered(self, on: bool):
-        for b in (self.btn_savekey, self.btn_apply, self.btn_test):
+        self._powered_on = on
+        for b in (self.btn_apply, self.btn_test):
             b.setEnabled(bool(self._hermes) and on)
+        self._provider_changed()  # recalcula login/key según provider y estado
         if on:
             self.refresh()
 
