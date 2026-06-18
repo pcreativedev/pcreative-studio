@@ -87,6 +87,7 @@ Discovery / curation reference: [`punkpeye/awesome-mcp-servers`](https://github.
 extended) in `mcp_catalog.py`.
 | GitHub CLI (`gh`) | MIT | <https://github.com/cli/cli> | Repo create / push from the ProjectWindow |
 | `paru` | GPL v3 | <https://github.com/Morganamilo/paru> | AUR helper hint in docs |
+| Medusa (`create-medusa-app`) | MIT | <https://github.com/medusajs/medusa> | Scaffolds a Medusa 2 backend + Next.js storefront for the `forge-commerce` / `forge-commerce-growshop` stacks. Downloaded at scaffold time, never bundled. |
 
 ## WordPress integration packs
 
@@ -245,6 +246,9 @@ Attribution to midudev is preserved in:
 | **CPython** ≥ 3.11 | PSF | Runtime. |
 | **Qt 6** (The Qt Company) | LGPL v3 / commercial | Under the hood of PyQt6. |
 | **Node.js** ≥ 20 | MIT | Runtime for the embedded terminal server and the scaffolding commands of most stacks. |
+| **FastAPI** | MIT | Powers the remote/mobile engine in `api_gateway.py` (JSON-RPC + WebSocket API). |
+| **Uvicorn** | BSD-3-Clause | ASGI server that runs the FastAPI gateway in `api_gateway.py`. |
+| **Capacitor** (Ionic) | MIT | Native wrapper for the mobile app under `mobile/` (envelops the WebUI). <https://github.com/ionic-team/capacitor> |
 
 ## Reporting an attribution error
 

@@ -355,17 +355,26 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#193-disabling-mcp-integration">19.3 Disabling MCP integration</a></li>
 </ul>
 </li>
-<li><a href="#20-optional-licensing-system">20. Optional licensing system</a><ul>
+<li><a href="#20-themeforge-mobile-remote-engine">20. ThemeForge mobile (remote engine)</a><ul>
+<li><a href="#201-start-the-gateway">20.1 Start the gateway</a></li>
+<li><a href="#202-configure-the-access-token">20.2 Configure the access token</a></li>
+<li><a href="#203-access-from-the-pwa-capacitor-app">20.3 Access from the PWA / Capacitor app</a></li>
+<li><a href="#204-the-same-web-ui-against-the-remote-engine">20.4 The same Web UI, against the remote engine</a></li>
+<li><a href="#205-networking-private-only">20.5 Networking — private only</a></li>
+<li><a href="#206-optional-push-notifications-fcm">20.6 Optional push notifications (FCM)</a></li>
+</ul>
+</li>
+<li><a href="#21-optional-licensing-system">21. Optional licensing system</a><ul>
 <li><a href="#what-gets-dropped-per-stack-family">What gets dropped per stack family</a></li>
 <li><a href="#url-templating">URL templating</a></li>
 <li><a href="#bring-your-own-backend">Bring your own backend</a></li>
 </ul>
 </li>
-<li><a href="#21-configuration-files">21. Configuration files</a><ul>
+<li><a href="#22-configuration-files">22. Configuration files</a><ul>
 <li><a href="#context-override-pattern">Context override pattern</a></li>
 </ul>
 </li>
-<li><a href="#22-troubleshooting">22. Troubleshooting</a><ul>
+<li><a href="#23-troubleshooting">23. Troubleshooting</a><ul>
 <li><a href="#themeforge-does-not-start-importerror-on-pyqt6">ThemeForge does not start (ImportError on PyQt6)</a></li>
 <li><a href="#embedded-terminal-does-not-load">Embedded terminal does not load</a></li>
 <li><a href="#embedded-preview-shows-blank-in-wayland">Embedded preview shows blank in Wayland</a></li>
@@ -379,20 +388,20 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#reference-analysis-dialog-says-need-login-for-gemini">Reference-analysis dialog says "Need login" for Gemini</a></li>
 </ul>
 </li>
-<li><a href="#23-operator-hermes-autonomous-missions">23. Operator (Hermes) — autonomous missions</a><ul>
-<li><a href="#231-how-it-works-architecture">23.1 How it works (architecture)</a></li>
-<li><a href="#232-install-hermes">23.2 Install Hermes</a></li>
-<li><a href="#233-configure-the-brain-provider-api-key">23.3 Configure the brain (provider + API key)</a></li>
-<li><a href="#234-register-the-themeforge-mcp-server-in-hermes">23.4 Register the ThemeForge MCP server in Hermes</a></li>
-<li><a href="#235-the-operator-skill">23.5 The Operator skill</a></li>
-<li><a href="#236-using-it-three-entry-points">23.6 Using it — three entry points</a></li>
-<li><a href="#237-what-a-mission-does">23.7 What a mission does</a></li>
-<li><a href="#238-how-hermes-learns-from-a-project">23.8 How Hermes learns from a project</a></li>
-<li><a href="#239-figma-integration-related">23.9 Figma integration (related)</a></li>
-<li><a href="#2310-troubleshooting">23.10 Troubleshooting</a></li>
+<li><a href="#24-operator-hermes-autonomous-missions">24. Operator (Hermes) — autonomous missions</a><ul>
+<li><a href="#241-how-it-works-architecture">24.1 How it works (architecture)</a></li>
+<li><a href="#242-install-hermes">24.2 Install Hermes</a></li>
+<li><a href="#243-configure-the-brain-provider-api-key">24.3 Configure the brain (provider + API key)</a></li>
+<li><a href="#244-register-the-themeforge-mcp-server-in-hermes">24.4 Register the ThemeForge MCP server in Hermes</a></li>
+<li><a href="#245-the-operator-skill">24.5 The Operator skill</a></li>
+<li><a href="#246-using-it-three-entry-points">24.6 Using it — three entry points</a></li>
+<li><a href="#247-what-a-mission-does">24.7 What a mission does</a></li>
+<li><a href="#248-how-hermes-learns-from-a-project">24.8 How Hermes learns from a project</a></li>
+<li><a href="#249-figma-integration-related">24.9 Figma integration (related)</a></li>
+<li><a href="#2410-troubleshooting">24.10 Troubleshooting</a></li>
 </ul>
 </li>
-<li><a href="#24-credits-and-third-party-licenses">24. Credits and third-party licenses</a><ul>
+<li><a href="#25-credits-and-third-party-licenses">25. Credits and third-party licenses</a><ul>
 <li><a href="#direct-integrations">Direct integrations</a></li>
 <li><a href="#invoked-as-subprocess">Invoked-as-subprocess</a></li>
 <li><a href="#referenced-skill-packages-not-redistributed-invoked-by-name">Referenced skill packages (not redistributed — invoked by name)</a></li>
@@ -438,11 +447,12 @@ system, and troubleshooting.</p>
 <li><a href="#17-app-themes">App themes</a></li>
 <li><a href="#18-vibe-scaffolder">Vibe scaffolder</a></li>
 <li><a href="#19-mcp-servers">MCP servers</a></li>
-<li><a href="#20-optional-licensing-system">Optional licensing system</a></li>
-<li><a href="#21-configuration-files">Configuration files</a></li>
-<li><a href="#22-troubleshooting">Troubleshooting</a></li>
-<li><a href="#23-operator-hermes--autonomous-missions">Operator (Hermes) — autonomous missions</a></li>
-<li><a href="#24-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
+<li><a href="#20-themeforge-mobile-remote-engine">ThemeForge mobile (remote engine)</a></li>
+<li><a href="#21-optional-licensing-system">Optional licensing system</a></li>
+<li><a href="#22-configuration-files">Configuration files</a></li>
+<li><a href="#23-troubleshooting">Troubleshooting</a></li>
+<li><a href="#24-operator-hermes--autonomous-missions">Operator (Hermes) — autonomous missions</a></li>
+<li><a href="#25-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
 </ol>
 <hr />
 <h2 id="1-what-is-themeforge">1. What is ThemeForge<a class="anchor" href="#1-what-is-themeforge" title="Link to this section">#</a></h2>
@@ -809,8 +819,25 @@ stacks are supported including (non-exhaustive):</p>
 <li><code>sylius</code> — Sylius 2.x full commerce framework (MIT) on Symfony
     7.4. Doctrine ORM 3 + Twig 3 + API Platform 3, multi-channel
     native. SyliusThemeBundle for custom themes.</li>
+<li><code>forge-commerce</code> (NEW in v1.8.0) — <strong>ForgeCommerce</strong>: a fully
+    self-hosted, headless store built on <strong>Medusa 2 (MIT) + Next.js
+    storefront</strong> with <strong>multi-gateway</strong> payments and <strong>native AI</strong>
+    (semantic search / recommendations via <strong>pgvector</strong>). The scaffold
+    is <strong>non-interactive</strong> and lays down a <code>docker-compose.yml</code> that
+    brings up <strong>Postgres 16 (pgvector) + Redis</strong> automatically, runs
+    the Medusa migrations and enables the <code>vector</code> extension — so when
+    it finishes you already have <code>backend/</code> (Medusa) + the Next.js
+    storefront running locally. Requires <strong>Docker</strong> (for Postgres +
+    Redis) and Node 20+. It is the "own everything, 0 % commission"
+    alternative to Shopify, also vendible as a template.</li>
+<li><code>forge-commerce-growshop</code> (NEW in v1.8.0) — same ForgeCommerce
+    base, but the generated <code>CLAUDE.md</code> instructs the build agent to
+    produce a <strong>specialised, age-restricted catalogue</strong> end-to-end:
+    a mandatory <strong>18+ age-gate</strong>, legal disclaimers / RGPD pages, and
+    advanced category filters. A blueprint for any store that needs
+    age verification and legal notices baked in from the first commit.</li>
 </ul>
-<p>All 15 e-commerce stacks live under the single <strong>E-commerce</strong>
+<p>All 17 e-commerce stacks live under the single <strong>E-commerce</strong>
   category in the stack picker. Full walk-through with prereqs,
   scaffold steps, activation and distribution channels in
   <a href="ECOMMERCE.md"><code>docs/ECOMMERCE.md</code></a>.</p>
@@ -2130,7 +2157,113 @@ linking).</p>
 later, just delete the <code>themeforge</code> entry from
 <code>~/.claude.json</code> → <code>mcpServers</code>.</p>
 <hr />
-<h2 id="20-optional-licensing-system">20. Optional licensing system<a class="anchor" href="#20-optional-licensing-system" title="Link to this section">#</a></h2>
+<h2 id="20-themeforge-mobile-remote-engine">20. ThemeForge mobile (remote engine)<a class="anchor" href="#20-themeforge-mobile-remote-engine" title="Link to this section">#</a></h2>
+<blockquote>
+<p><strong>TL;DR.</strong> Since <strong>v1.8.0</strong> you can drive the ThemeForge engine
+<strong>from your phone</strong>. A small FastAPI gateway (<code>api_gateway.py</code>)
+exposes the engine over HTTP/WebSocket; a PWA (and an optional
+Capacitor app) talks to it. The <strong>same Web UI</strong> documented in this
+guide runs against the remote engine — nothing is re-implemented.
+⚠ <strong>Keep it on a private network / VPN. Never expose the gateway to
+the public internet.</strong></p>
+</blockquote>
+<p>The heavy lifting (scaffolding, Docker, the AI agents) stays on the
+machine where ThemeForge is installed — your desktop, laptop or a VPS.
+The phone is just a <strong>thin client</strong> of that engine.</p>
+<h3 id="201-start-the-gateway">20.1 Start the gateway<a class="anchor" href="#201-start-the-gateway" title="Link to this section">#</a></h3>
+<p>The gateway lives at the repo root (<code>api_gateway.py</code>) and is a
+standard FastAPI app served with <code>uvicorn</code>:</p>
+<pre><code class="language-bash">cd ~/Proyectos/themeforge
+uvicorn api_gateway:app --host 0.0.0.0 --port 8765
+</code></pre>
+<p>It exposes the engine over <strong>JSON-RPC (HTTP) + WebSocket</strong> for the
+streaming actions (agent output, setup logs) and an upload endpoint.</p>
+<h3 id="202-configure-the-access-token">20.2 Configure the access token<a class="anchor" href="#202-configure-the-access-token" title="Link to this section">#</a></h3>
+<p>Every request is authenticated with a <strong>bearer token</strong>. The gateway
+resolves it in this order:</p>
+<ol>
+<li>The <code>THEMEFORGE_API_TOKEN</code> environment variable, if set.</li>
+<li>Otherwise <code>~/.config/themeforge/api_token.txt</code>.</li>
+<li>If neither exists, the gateway <strong>generates a random token on first
+   start</strong>, writes it to <code>~/.config/themeforge/api_token.txt</code> and
+   prints it once to the console:</li>
+</ol>
+<p><code>[gateway] token generado → ~/.config/themeforge/api_token.txt
+   [gateway] THEMEFORGE_API_TOKEN=&lt;the-token&gt;</code></p>
+<p>Copy that token into the mobile client (it's stored locally on the
+phone). HTTP requests must send <code>Authorization: Bearer &lt;token&gt;</code>;
+requests with a missing or wrong token get <strong>401</strong>. Pick your own
+token instead of the auto-generated one by exporting
+<code>THEMEFORGE_API_TOKEN=…</code> before launching, or by editing
+<code>api_token.txt</code> (keep it private — anyone with the token can drive
+your engine).</p>
+<h3 id="203-access-from-the-pwa-capacitor-app">20.3 Access from the PWA / Capacitor app<a class="anchor" href="#203-access-from-the-pwa-capacitor-app" title="Link to this section">#</a></h3>
+<p>Two clients ship in the repo, both pointing at the same gateway:</p>
+<ul>
+<li><strong>PWA</strong> — <code>webui/mobile/</code> (installable web app: <code>index.html</code> +
+  <code>app.jsx</code> + <code>manifest.webmanifest</code> + <code>sw.js</code>). Serve it from any
+  static host on your private network (or from the gateway machine)
+  and "Add to Home Screen" on the phone. No app store, no build step.</li>
+<li><strong>Capacitor app</strong> — <code>mobile/</code> wraps that PWA into a native
+  Android/iOS shell. It adds reliable push, a splash screen and proper
+  app installation. Build it with:</li>
+</ul>
+<p><code>bash
+  cd mobile
+  npm install
+  npm run add:android      # or: npm run add:ios
+  npm run android          # opens Android Studio → Run</code></p>
+<p>Android needs <strong>Android Studio</strong>; iOS needs <strong>Xcode</strong>.</p>
+<p>The first time the client opens you give it two things: the <strong>gateway
+URL</strong> (e.g. <code>http://&lt;machine-on-your-vpn&gt;:8765</code>) and the <strong>bearer
+token</strong> from §20.2.</p>
+<h3 id="204-the-same-web-ui-against-the-remote-engine">20.4 The same Web UI, against the remote engine<a class="anchor" href="#204-the-same-web-ui-against-the-remote-engine" title="Link to this section">#</a></h3>
+<p>The phone does <strong>not</strong> run a second, cut-down UI. The mobile client
+loads the regular ThemeForge Web UI and swaps the in-process
+<code>QWebChannel</code> bridge for <strong><code>webui/remote/tfbridge-remote.js</code></strong>, which
+re-implements the exact same <code>window.tfBridge</code> API on top of the
+gateway's HTTP/WebSocket endpoints. So gallery, project creation,
+preview, cost, settings, Operator… behave identically to the desktop
+app — they just run their work on the remote engine.</p>
+<h3 id="205-networking-private-only">20.5 Networking — private only<a class="anchor" href="#205-networking-private-only" title="Link to this section">#</a></h3>
+<p>The gateway has <strong>no per-user accounts and no rate limiting beyond the
+single shared token</strong>, so treat it like an SSH key: it is meant to run
+on a <strong>private network</strong>. The recommended setup is a <strong>VPN / overlay
+network such as Tailscale</strong> (or WireGuard), where the gateway binds to
+the VPN interface and only your own devices can reach it.</p>
+<ul>
+<li>✅ <strong>Do:</strong> run the gateway behind Tailscale/WireGuard, or bound to
+  <code>localhost</code> and reached over an SSH tunnel.</li>
+<li>⛔ <strong>Don't:</strong> port-forward <code>:8765</code> to the public internet or put it
+  on a public IP without a VPN in front. Anyone who guesses or
+  captures the token would gain full control of the engine.</li>
+</ul>
+<h3 id="206-optional-push-notifications-fcm">20.6 Optional push notifications (FCM)<a class="anchor" href="#206-optional-push-notifications-fcm" title="Link to this section">#</a></h3>
+<p>Optionally, the gateway can push a <strong>"build finished"</strong> notification
+to your phone via <strong>Firebase Cloud Messaging</strong> (<code>push_service.py</code>).
+This is entirely optional — skip it and the mobile client still works,
+you just won't get push alerts.</p>
+<p>To enable it:</p>
+<ol>
+<li><strong>Server:</strong> download the <strong>service-account JSON</strong> from your own
+   Firebase project and place it at
+   <code>~/.config/themeforge/fcm-service-account.json</code> (or point
+   <code>GOOGLE_APPLICATION_CREDENTIALS</code> at it). The service-account
+   credentials are <strong>never committed to the repo</strong> — they're your
+   private Firebase keys, kept only in <code>~/.config/themeforge/</code>. Check
+   it's wired with <code>GET /push/status</code>.</li>
+<li><strong>App:</strong> on launch the Capacitor app requests notification
+   permission, obtains its device token and registers it with
+   <code>POST /push/register</code>. Device tokens are stored locally in
+   <code>~/.config/themeforge/push_tokens.json</code>.</li>
+<li><strong>Test:</strong> <code>POST /push/test</code> should deliver a push to the
+   registered device(s).</li>
+</ol>
+<p>The OAuth2 access token for FCM is signed on the fly from the
+service-account key, so no extra Firebase SDK or heavy dependency is
+required on the server.</p>
+<hr />
+<h2 id="21-optional-licensing-system">21. Optional licensing system<a class="anchor" href="#21-optional-licensing-system" title="Link to this section">#</a></h2>
 <blockquote>
 <p><strong>TL;DR — what's bundled and what isn't.</strong></p>
 <p>ThemeForge ships the <strong>client side</strong> of a license verification flow:
@@ -2229,7 +2362,7 @@ Content-Type: application/json
 work. Drop-in compatible backends: Lemon Squeezy License API, Polar,
 Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.</p>
 <hr />
-<h2 id="21-configuration-files">21. Configuration files<a class="anchor" href="#21-configuration-files" title="Link to this section">#</a></h2>
+<h2 id="22-configuration-files">22. Configuration files<a class="anchor" href="#22-configuration-files" title="Link to this section">#</a></h2>
 <p>Under <code>~/.config/themeforge/</code>:</p>
 <table>
 <thead>
@@ -2324,7 +2457,7 @@ project you build locally.</p>
 <p>The public stubs in <code>context/</code> are intentionally neutral — no product
 names, no domains, no strategies leak from the repo.</p>
 <hr />
-<h2 id="22-troubleshooting">22. Troubleshooting<a class="anchor" href="#22-troubleshooting" title="Link to this section">#</a></h2>
+<h2 id="23-troubleshooting">23. Troubleshooting<a class="anchor" href="#23-troubleshooting" title="Link to this section">#</a></h2>
 <h3 id="themeforge-does-not-start-importerror-on-pyqt6">ThemeForge does not start (ImportError on PyQt6)<a class="anchor" href="#themeforge-does-not-start-importerror-on-pyqt6" title="Link to this section">#</a></h3>
 <p>Install <code>python-pyqt6</code> and <code>python-pyqt6-webengine</code> from your distro.
 On Arch: <code>sudo pacman -S python-pyqt6 python-pyqt6-webengine</code>. On
@@ -2381,7 +2514,7 @@ default; <code>ntfs-3g</code> provides FUSE-based access.</p>
 <code>GEMINI_API_KEY</code> env var. Run <code>gemini</code> once in a terminal to complete
 OAuth, or set the key via the Settings panel.</p>
 <hr />
-<h2 id="23-operator-hermes-autonomous-missions">23. Operator (Hermes) — autonomous missions<a class="anchor" href="#23-operator-hermes-autonomous-missions" title="Link to this section">#</a></h2>
+<h2 id="24-operator-hermes-autonomous-missions">24. Operator (Hermes) — autonomous missions<a class="anchor" href="#24-operator-hermes-autonomous-missions" title="Link to this section">#</a></h2>
 <p>The <strong>Operator</strong> is an <strong>optional</strong> integration that lets
 <a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a> (Nous Research, MIT)
 act as an <strong>autonomous orchestration brain</strong> for ThemeForge: you give it a brief
@@ -2392,7 +2525,7 @@ in natural language and it plans, creates/builds, quality-checks, packages — a
 the 🚀 buttons only appear <strong>if Hermes is installed</strong>. If you never install
 Hermes, nothing changes.</p>
 </blockquote>
-<h3 id="231-how-it-works-architecture">23.1 How it works (architecture)<a class="anchor" href="#231-how-it-works-architecture" title="Link to this section">#</a></h3>
+<h3 id="241-how-it-works-architecture">24.1 How it works (architecture)<a class="anchor" href="#241-how-it-works-architecture" title="Link to this section">#</a></h3>
 <ul>
 <li><strong>Brain</strong> = Hermes. It reasons/plans using an LLM provider (see below) and calls
   tools. It runs as a local CLI (<code>hermes</code>).</li>
@@ -2406,7 +2539,7 @@ Hermes, nothing changes.</p>
                     │                                         │
                     └── QA loop (preflight) ── package (zip) ─┘
 </code></pre>
-<h3 id="232-install-hermes">23.2 Install Hermes<a class="anchor" href="#232-install-hermes" title="Link to this section">#</a></h3>
+<h3 id="242-install-hermes">24.2 Install Hermes<a class="anchor" href="#242-install-hermes" title="Link to this section">#</a></h3>
 <p>Two ways (both optional):</p>
 <ul>
 <li><strong>From ThemeForge:</strong> <em>Settings → 🔧 Setup dependencies → check
@@ -2416,7 +2549,7 @@ Hermes, nothing changes.</p>
   curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash</code>
   Installs to <code>~/.hermes/</code>, binary at <code>~/.local/bin/hermes</code>.</li>
 </ul>
-<h3 id="233-configure-the-brain-provider-api-key">23.3 Configure the brain (provider + API key)<a class="anchor" href="#233-configure-the-brain-provider-api-key" title="Link to this section">#</a></h3>
+<h3 id="243-configure-the-brain-provider-api-key">24.3 Configure the brain (provider + API key)<a class="anchor" href="#243-configure-the-brain-provider-api-key" title="Link to this section">#</a></h3>
 <p>Hermes uses an <strong>API key</strong> provider (not a subscription — see the compliance note).
 Recommended: <strong>OpenRouter</strong> (one key, 200+ models).</p>
 <pre><code class="language-bash">hermes config set OPENROUTER_API_KEY sk-or-...
@@ -2434,7 +2567,7 @@ The safe, supported path for any automation is <strong>API keys, not subscriptio
 Using your own subscription (e.g. Codex logged in with ChatGPT) is your own
 decision and risk. This is not legal advice — check your plan's current terms.</p>
 </blockquote>
-<h3 id="234-register-the-themeforge-mcp-server-in-hermes">23.4 Register the ThemeForge MCP server in Hermes<a class="anchor" href="#234-register-the-themeforge-mcp-server-in-hermes" title="Link to this section">#</a></h3>
+<h3 id="244-register-the-themeforge-mcp-server-in-hermes">24.4 Register the ThemeForge MCP server in Hermes<a class="anchor" href="#244-register-the-themeforge-mcp-server-in-hermes" title="Link to this section">#</a></h3>
 <p>Add to <code>~/.hermes/config.yaml</code> so Hermes can call ThemeForge:</p>
 <pre><code class="language-yaml">mcp_servers:
   themeforge:
@@ -2448,14 +2581,14 @@ decision and risk. This is not legal advice — check your plan's current terms.
 <pre><code class="language-bash">hermes -z &quot;Use the themeforge MCP list_stacks tool; reply with only the count.&quot;
 # → e.g. 62
 </code></pre>
-<h3 id="235-the-operator-skill">23.5 The Operator skill<a class="anchor" href="#235-the-operator-skill" title="Link to this section">#</a></h3>
+<h3 id="245-the-operator-skill">24.5 The Operator skill<a class="anchor" href="#245-the-operator-skill" title="Link to this section">#</a></h3>
 <p>The orchestration logic lives in a Hermes skill at
 <code>~/.hermes/skills/themeforge/themeforge-operator/SKILL.md</code> (it ships with the
 Operator setup). It teaches Hermes the workflow (plan → create/continue → build →
 QA loop → package), how to assign a <strong>distinct UI/UX Pro Max style+palette per
 variant</strong>, when to spawn <strong>parallel subagents</strong> (<code>delegate_task</code>), and how to
 <strong>learn</strong> (see 23.8). Load it with <code>-s themeforge-operator</code>.</p>
-<h3 id="236-using-it-three-entry-points">23.6 Using it — three entry points<a class="anchor" href="#236-using-it-three-entry-points" title="Link to this section">#</a></h3>
+<h3 id="246-using-it-three-entry-points">24.6 Using it — three entry points<a class="anchor" href="#246-using-it-three-entry-points" title="Link to this section">#</a></h3>
 <p><strong>A) Operator tab → NEW project (from scratch).</strong>
 Open the <strong>🚀 Operator</strong> tab. Write a brief, pick the number of variants and the
 build agent, and hit <strong>🚀 Lanzar misión</strong>. Hermes <strong>creates the project</strong>
@@ -2479,7 +2612,7 @@ hermes -s themeforge-operator
 # one-shot
 hermes chat -q &quot;Build ONE Envato-ready ... &quot; -s themeforge-operator
 </code></pre>
-<h3 id="237-what-a-mission-does">23.7 What a mission does<a class="anchor" href="#237-what-a-mission-does" title="Link to this section">#</a></h3>
+<h3 id="247-what-a-mission-does">24.7 What a mission does<a class="anchor" href="#247-what-a-mission-does" title="Link to this section">#</a></h3>
 <ol>
 <li><strong>Plan</strong> — choose stack (<code>suggest_stack</code>/<code>list_stacks</code>), style/palette per variant.</li>
 <li><strong>Create or continue</strong> — <code>create_project</code> (new) or work in the existing path.</li>
@@ -2491,7 +2624,7 @@ hermes chat -q &quot;Build ONE Envato-ready ... &quot; -s themeforge-operator
 <li><strong>Report</strong> — path, style, QA result, zip. Multiple variants run as parallel
    <code>delegate_task</code> subagents.</li>
 </ol>
-<h3 id="238-how-hermes-learns-from-a-project">23.8 How Hermes learns from a project<a class="anchor" href="#238-how-hermes-learns-from-a-project" title="Link to this section">#</a></h3>
+<h3 id="248-how-hermes-learns-from-a-project">24.8 How Hermes learns from a project<a class="anchor" href="#248-how-hermes-learns-from-a-project" title="Link to this section">#</a></h3>
 <ul>
 <li><strong>Per-project context (auto):</strong> Hermes auto-loads the project's <code>AGENTS.md</code> /
   <code>.hermes.md</code> / <code>CLAUDE.md</code> when working in its directory — so it inherits prior
@@ -2504,14 +2637,14 @@ hermes chat -q &quot;Build ONE Envato-ready ... &quot; -s themeforge-operator
 <li><strong>Procedural skills:</strong> after non-trivial workflows, Hermes saves reusable skills
   via <code>skill_manage</code> (e.g. “build-pricing-section-astro”).</li>
 </ul>
-<h3 id="239-figma-integration-related">23.9 Figma integration (related)<a class="anchor" href="#239-figma-integration-related" title="Link to this section">#</a></h3>
+<h3 id="249-figma-integration-related">24.9 Figma integration (related)<a class="anchor" href="#249-figma-integration-related" title="Link to this section">#</a></h3>
 <p>ThemeForge can build <strong>from a Figma design</strong>: in <em>New project → Recreate from
 reference</em> choose <strong>“Figma (URL del frame)”</strong> and paste the frame link
 (right-click in Figma → <em>Copy link to selection</em>). The build agent reads it via
 the <strong>figma-context MCP</strong> (read-only Figma→code, MIT). Set your Figma token at
 <em>Settings → 🔑 AI credentials → Figma</em> (<code>FIGMA_API_KEY</code>, a Figma personal access
 token, scope: read). See §19 (MCP servers).</p>
-<h3 id="2310-troubleshooting">23.10 Troubleshooting<a class="anchor" href="#2310-troubleshooting" title="Link to this section">#</a></h3>
+<h3 id="2410-troubleshooting">24.10 Troubleshooting<a class="anchor" href="#2410-troubleshooting" title="Link to this section">#</a></h3>
 <ul>
 <li><strong>No Operator tab / buttons:</strong> Hermes isn't installed (it's optional). Install it
   (23.2) and restart ThemeForge.</li>
@@ -2524,7 +2657,7 @@ token, scope: read). See §19 (MCP servers).</p>
   preview profile. Run the project's install (<code>npm install</code>, etc.) first.</li>
 </ul>
 <hr />
-<h2 id="24-credits-and-third-party-licenses">24. Credits and third-party licenses<a class="anchor" href="#24-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
+<h2 id="25-credits-and-third-party-licenses">25. Credits and third-party licenses<a class="anchor" href="#25-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
 <p>ThemeForge is licensed under <strong>GPL v3</strong> (forced by the PyQt6
 dependency which is GPL v3 or commercial). See <code>LICENSE</code>.</p>
 <h3 id="direct-integrations">Direct integrations<a class="anchor" href="#direct-integrations" title="Link to this section">#</a></h3>
@@ -2657,7 +2790,7 @@ the active preview between them.</p>
 <h2 id="appendix-b-reporting-issues">Appendix B — Reporting issues<a class="anchor" href="#appendix-b-reporting-issues" title="Link to this section">#</a></h2>
 <p>If you hit a bug:</p>
 <ol>
-<li>Check §17 (Troubleshooting) first.</li>
+<li>Check §23 (Troubleshooting) first.</li>
 <li>Run ThemeForge from a terminal so you can capture stack traces:
    <code>python3 ~/Proyectos/themeforge/themeforge.py</code>.</li>
 <li>Report at the repo's Issues tracker including:

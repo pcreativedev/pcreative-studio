@@ -79,8 +79,11 @@ adopt-local / existing-repo), pick an AI provider, and ThemeForge:
   Cursor, Windsurf, OpenCode can drive ThemeForge from their own
   conversation window. Plus a curated catalog of 12 community MCPs
   (Playwright, Chrome DevTools, GitHub, Figma, Postgres, Shopify
-  Dev, browsermcp…) auto-configured in each scaffolded project
-  via `.mcp.json`. See [`docs/USER_GUIDE.md` §19](docs/USER_GUIDE.md#19-mcp-servers).
+  Dev, browsermcp…) auto-configured per scaffolded project via
+  `.mcp.json` — and the suggestions are now **stack-aware**: JS UI
+  MCPs (Magic / Magic UI / shadcn, framer-motion / 21st.dev) are only
+  proposed on Node/React frontends (including monorepos), never on
+  non-JS stacks. See [`docs/USER_GUIDE.md` §19](docs/USER_GUIDE.md#19-mcp-servers).
 
 📖 **[Read the full user guide → `docs/USER_GUIDE.md`](docs/USER_GUIDE.md)**
 
@@ -219,11 +222,26 @@ python themeforge.py
   backend as the classic UI. Switch in Settings → Themes; set
   `THEMEFORGE_CLASSIC=1` for the native QWidget UI. See [Web UI](#web-ui).
 - **60+ stacks** — Next.js, Astro, Laravel, WordPress (5 builder packs
-  with MCP-adapter), **15 e-commerce stacks** (7 Shopify variants +
+  with MCP-adapter), **e-commerce stacks** (7 Shopify variants +
   Magento/Hyvä, Saleor, Vendure, BigCommerce, PrestaShop, OpenCart,
-  Sylius — see [docs/ECOMMERCE.md](docs/ECOMMERCE.md) &
+  Sylius + **ForgeCommerce** self-hosted on Medusa 2 + Next.js —
+  see [docs/ECOMMERCE.md](docs/ECOMMERCE.md) &
   [docs/SHOPIFY.md](docs/SHOPIFY.md)), Flutter, Expo, Ionic,
   Tauri, Electron, Spring Boot, Ktor, Phaser, R3F, and more.
+- **🛒 ForgeCommerce stack** — headless, self-hosted e-commerce on
+  **Medusa 2 + Next.js**: multi-gateway payments, semantic search with
+  pgvector, and a non-interactive Docker scaffold (Postgres + Redis).
+  Includes a `forge-commerce-growshop` variant for specialised catalogs
+  with age-gating / legal-notice handling. See
+  [docs/ECOMMERCE.md](docs/ECOMMERCE.md).
+- **📱 Use the engine from your phone** — `api_gateway.py` exposes the
+  ThemeForge backend over **FastAPI** (JSON-RPC + WebSocket streaming +
+  file upload, bearer-token auth via env or `~/.config/themeforge`,
+  meant to sit behind a VPN / private network). A PWA + Capacitor
+  wrapper (`webui/mobile/`, `mobile/`) installs it as an app, and
+  `webui/remote/tfbridge-remote.js` re-implements `window.tfBridge`
+  over the API so the web UI runs unchanged on mobile. Push
+  notifications via FCM (`push_service.py`).
 - **Multi-stack mono-repo detection** — automatic sub-project
   dropdown for projects like `Files/Laravel/` + `Files/Flutter/`.
 - **Conversational reference analysis** — multi-turn IA dialog with

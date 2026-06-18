@@ -1,11 +1,11 @@
 # E-commerce stacks in ThemeForge
 
-ThemeForge ships **15 e-commerce stacks** under a single "E-commerce"
+ThemeForge ships **16 e-commerce stacks** under a single "E-commerce"
 category in the stack picker. They cover the full spectrum from
 SaaS-themed (Shopify, BigCommerce) to self-hosted PHP frameworks
 (Magento, PrestaShop, OpenCart, Sylius) and headless TypeScript backends
-(Hydrogen, Saleor, Vendure, Medusa). This guide walks each non-Shopify
-platform; for Shopify see [`docs/SHOPIFY.md`](SHOPIFY.md).
+(Hydrogen, Saleor, Vendure, Medusa, ForgeCommerce). This guide walks each
+non-Shopify platform; for Shopify see [`docs/SHOPIFY.md`](SHOPIFY.md).
 
 > All third-party tooling is pulled from official sources at scaffold
 > time (Composer, npm, git). Nothing is bundled in this repository. See
@@ -24,6 +24,8 @@ platform; for Shopify see [`docs/SHOPIFY.md`](SHOPIFY.md).
 | **`prestashop-theme`** | Self-hosted PHP / Smarty | OSL 3.0 | EU SMB online stores, Spanish/French market | PrestaShop Addons (2k+), ThemeForest (900+) |
 | **`opencart-theme`** | Self-hosted PHP / Twig | GPL | Small/medium stores, English-speaking market | OpenCart Marketplace, ThemeForest (1.5k+) |
 | **`sylius`** | Self-hosted PHP / Symfony 7 | MIT | Custom enterprise PHP commerce, multi-channel | Sylius Marketplace, Packagist |
+| **`forge-commerce`** | Headless TypeScript (Medusa 2 + Next.js) | MIT | Self-hosted, 0%-commission commerce with multi-gateway + semantic search | Self-distributed |
+| **`forge-commerce-growshop`** | Headless TypeScript (Medusa 2 + Next.js) | MIT | Same as `forge-commerce` + business guide for specialised/age-gated catalogs | Self-distributed |
 
 ## 1. Magento 2 + Hyvä (`magento-hyva`)
 
@@ -423,6 +425,76 @@ distinct domain, theme, locales, currencies and tax zones.
 - **Sylius Marketplace** (`sylius.com/store`).
 - **Packagist** as a Composer package.
 
+## 9. ForgeCommerce (`forge-commerce`, `forge-commerce-growshop`)
+
+The agency's own headless e-commerce stack: a self-hosted **Medusa 2 +
+Next.js** storefront built for 0%-commission, full-control stores. Unlike
+the bare `medusa` stack (§5), ForgeCommerce ships an opinionated blueprint
+(in the project's `CLAUDE.md`) covering multi-gateway payments, semantic
+catalog search via **pgvector**, and a non-interactive Docker scaffold.
+
+**Licence:** MIT (Medusa core + Next.js storefront). Anything you build on
+top is yours under the licence of your choice.
+
+### Prereqs
+
+- Node 22+.
+- **Docker** + Docker Compose — the scaffold brings up Postgres (with the
+  `pgvector` extension) and Redis for you; you do not need a local DB.
+
+### What the scaffold does
+
+1. Runs the Medusa 2 scaffold non-interactively (backend + Next.js
+   storefront), with `.git` stripped so your repo is the source of truth.
+2. Writes a `docker-compose.yml` provisioning **Postgres (pgvector)** +
+   **Redis**, so the stack is up with one command and no manual DB setup.
+3. Wires `DATABASE_URL` / `REDIS_URL` and the storefront publishable key
+   placeholders in `.env`.
+4. Writes a `CLAUDE.md` blueprint with the security, payments and AI
+   guidance for the agent: multi-gateway checkout (incl. high-risk
+   providers), pgvector-backed semantic product search, and the
+   pcreative licensing hooks shared by the other ThemeForge stacks.
+5. Writes `README-FORGECOMMERCE.md` with the run workflow.
+
+### Run
+
+```bash
+docker compose up -d            # Postgres (pgvector) + Redis
+npm install
+npm run dev                     # Medusa backend at :9000 (admin at /app)
+cd storefront && npm install && npm run dev   # Next.js storefront at :8000
+```
+
+### Semantic search (pgvector)
+
+The Postgres container ships the `pgvector` extension enabled, so the
+storefront can embed products and run vector similarity search natively —
+no external search SaaS required. The blueprint in `CLAUDE.md` documents
+how to populate and query the embeddings.
+
+### Multi-gateway payments
+
+ForgeCommerce is designed to wire several payment providers side by side
+through Medusa's payment-module API, so a store can route different
+methods/regions to different processors. The provider keys are configured
+per environment; nothing is hard-coded in the scaffold.
+
+### The `forge-commerce-growshop` variant
+
+`forge-commerce-growshop` is the same Medusa 2 + Next.js base with an
+additional **business guide** aimed at specialised, age-gated catalogs
+(e.g. growshop products). The extra material in its `CLAUDE.md` covers
+age-verification gating and the legal notices/disclaimers a specialised
+catalog typically needs, on top of the standard ForgeCommerce blueprint.
+The technical scaffold (Docker, pgvector, multi-gateway) is identical to
+`forge-commerce`.
+
+### Distribution
+
+- Self-hosted — you own the deployment end to end (0% platform
+  commission).
+- Distributable as your own template/repo; no marketplace dependency.
+
 ## MCPs available for e-commerce stacks
 
 | MCP | Stack(s) | Transport | Auth | Tools |
@@ -433,8 +505,8 @@ distinct domain, theme, locales, currencies and tax zones.
 | `shopify-customer-account` | catalog only (not auto-wired) | HTTP | OAuth 2.0 PKCE | order tracking, returns, addresses |
 | `magento-freento-mcp` | `magento-hyva` (auto-wired in `.mcp.json`) | HTTP | OAuth Bearer | orders, quotes, credit memos, products, stock, customers, admins, system |
 
-Saleor, Vendure, Medusa, BigCommerce, PrestaShop, OpenCart and Sylius
-do not ship native MCPs at the time of writing. The agent uses the
+Saleor, Vendure, Medusa, ForgeCommerce, BigCommerce, PrestaShop, OpenCart
+and Sylius do not ship native MCPs at the time of writing. The agent uses the
 schema/docs already loaded via `autoskills` plus the project's
 `CLAUDE.md` for those stacks.
 
@@ -464,6 +536,7 @@ official sources at scaffold time. Licences enforced at install:
 - Vendure — MIT.
 - Cornerstone — MIT.
 - Medusa — MIT.
+- ForgeCommerce (Medusa 2 + Next.js) — MIT.
 - PrestaShop core — OSL 3.0.
 - OpenCart core — GPL.
 - Sylius — MIT.

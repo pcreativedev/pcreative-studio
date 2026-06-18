@@ -10,7 +10,7 @@ For pre-publication blockers (private to the maintainer), see
 
 ## Where we are right now
 
-**v1.2.3 shipped on 2026-05-26.** Releases out the door:
+**v1.8.0 shipped on 2026-06-18.** Releases out the door:
 
 - **v1.0.0** (2026-05-23) — initial public release. 60+ stacks,
   embedded preview + terminal, pre-flight, ZIP builder, demo
@@ -32,13 +32,21 @@ For pre-publication blockers (private to the maintainer), see
   cross-platform dependency-wizard hardening (Linux npm `~/.local` +
   single-terminal sudo, macOS Homebrew PATH/bootstrap, Windows winget
   `--disable-interactivity` + exit-code re-check, validated on a Win10 VM).
-- **v1.2.3** (2026-05-26, current Latest) — **🚀 Operator (Hermes,
+- **v1.2.3** (2026-05-26) — **🚀 Operator (Hermes,
   optional)**: autonomous missions (Mission Control tab) + live preview +
   interactive chat, run on new or existing/gallery projects, learns per-project.
   **Figma → build** (implement a Figma frame via figma-context MCP) + Figma token
   in credentials. Multiple project windows (open/create more while one runs).
   Windows single-UAC winget + PHP/Composer + venv path + terminal scrollbar.
   Package-manager auto-detect (pnpm/yarn/bun) with non-fatal install.
+- **v1.8.0** (2026-06-18, current Latest) — **📱 ThemeForge mobile
+  (thin client + remote engine)**: `api_gateway.py` (FastAPI JSON-RPC/WS,
+  13 sync + 6 stream tools + upload), PWA + Capacitor shell, remote bridge
+  `tfbridge-remote.js` (reimplements `window.tfBridge` over the API), FCM
+  push notifications. **ForgeCommerce stack** (Medusa 2 + Next.js,
+  self-hosted, multi-gateway, AI-native via pgvector) + growshop variant,
+  added to the e-commerce stacks. **Per-stack MCP refinement** — the
+  `.mcp.json` generator no longer recommends JS UI MCPs on non-JS stacks.
 
 Linux ships as AppImage / .deb / .rpm / AUR; macOS + Windows alpha
 builds from CI. See [Releases](../../releases) for downloads and
@@ -336,6 +344,12 @@ Anthropic / OpenAI / Google / cursor / windsurf in 2025-2026).
   with the relevant subset per stack (web → playwright + chrome
   devtools + figma + browsermcp; shopify → +shopify-dev; backend
   with DB → +postgres; etc.).
+- ✅ **Per-stack MCP refinement** (v1.8.0) — the recommendation engine
+  is now stack-language aware: JS-oriented UI MCPs (browsermcp,
+  chrome-devtools, figma, etc.) are no longer injected into non-JS
+  stacks (Laravel/PHP, Rails, Spring, Phoenix, Python backends…),
+  which keep only the MCPs that actually apply (e.g. postgres for a
+  DB stack). Cleaner `.mcp.json`, no irrelevant tooling.
 
 ### Future updates
 
@@ -398,6 +412,74 @@ PKGBUILDs for **AUR** (`themeforge` + `themeforge-git`) live in
   and snap auto-updates are contentious in the community.
 - **Windows installer.** See "Windows port" below for the bundling
   side once the codebase actually runs there.
+
+---
+
+## 📱 Mobile / remote engine
+
+Current state (post-v1.8.0, on main): thin client + remote engine
+architecture so the heavy ThemeForge engine runs on a host machine
+(or VPS) while a phone drives it over the network.
+
+**Shipped:**
+
+- ✅ **`api_gateway.py`** (v1.8.0) — FastAPI gateway exposing the
+  engine over JSON-RPC + WebSockets: 13 synchronous tools, 6
+  streaming tools, plus file upload. Lets any remote client invoke
+  the scaffolder, gallery, cost tracker, preflight, etc.
+- ✅ **PWA + Capacitor shell** (v1.8.0) — the existing WebUI runs as a
+  Progressive Web App and is wrapped with Capacitor for installable
+  iOS/Android builds.
+- ✅ **`tfbridge-remote.js`** (v1.8.0) — remote bridge that
+  reimplements `window.tfBridge` over the gateway API, so the same
+  WebUI screens work unchanged against a remote engine instead of the
+  in-process QWebChannel bridge.
+- ✅ **FCM push notifications** (v1.8.0) — Firebase Cloud Messaging
+  push so long-running jobs (scaffold finished, build done) notify the
+  phone even when the app is backgrounded.
+
+### Future updates
+
+- **Auth / pairing flow.** Secure pairing between the phone client and
+  the host engine (token + QR pairing over Tailscale / LAN), so the
+  gateway isn't open to anything that can reach the port.
+- **Offline queueing.** Queue actions on the client while the engine
+  host is unreachable and replay on reconnect.
+- **Mobile-native gallery polish.** Touch-optimised gallery and
+  project views (swipe actions, pull-to-refresh) beyond the desktop
+  WebUI reflow.
+- **Ephemeral engine container.** Spin up a throwaway containerised
+  engine on demand (per session) so the phone doesn't need a
+  permanently-on host. Tied to the cloud direction.
+
+---
+
+## 🛒 E-commerce stacks
+
+Current state (post-v1.8.0, on main): the e-commerce category groups
+all commerce platforms under one flat picker (the platform lives in
+the stack `name`, not in sub-categories). Each ships scaffold +
+platform-specific CLAUDE.md guidance and the relevant MCP subset.
+
+**Shipped:**
+
+- ✅ **ForgeCommerce stack** (v1.8.0) — first-party agency commerce
+  stack: **Medusa 2 + Next.js**, self-hosted, multi-gateway payments,
+  AI-native (pgvector). Non-interactive scaffold with a Docker compose
+  (pgvector + redis) and a security/payments/AI blueprint baked into
+  the generated CLAUDE.md. Ships a **growshop variant** preconfigured
+  for that niche.
+
+### Future updates
+
+- **More first-party niche variants** on top of ForgeCommerce
+  (restaurant, services, B2B wholesale) reusing the Medusa 2 + Next.js
+  base.
+- **Storefront theme starters** — opinionated Next.js storefront
+  templates (minimal, editorial, high-conversion) selectable at
+  scaffold time.
+- **Seed/demo dataset** generator for ForgeCommerce so a fresh
+  scaffold has browsable products out of the box.
 
 ---
 

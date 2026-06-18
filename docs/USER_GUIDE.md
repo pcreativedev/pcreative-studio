@@ -35,11 +35,12 @@ system, and troubleshooting.
 17. [App themes](#17-app-themes)
 18. [Vibe scaffolder](#18-vibe-scaffolder)
 19. [MCP servers](#19-mcp-servers)
-20. [Optional licensing system](#20-optional-licensing-system)
-21. [Configuration files](#21-configuration-files)
-22. [Troubleshooting](#22-troubleshooting)
-23. [Operator (Hermes) — autonomous missions](#23-operator-hermes--autonomous-missions)
-24. [Credits and third-party licenses](#24-credits-and-third-party-licenses)
+20. [ThemeForge mobile (remote engine)](#20-themeforge-mobile-remote-engine)
+21. [Optional licensing system](#21-optional-licensing-system)
+22. [Configuration files](#22-configuration-files)
+23. [Troubleshooting](#23-troubleshooting)
+24. [Operator (Hermes) — autonomous missions](#24-operator-hermes--autonomous-missions)
+25. [Credits and third-party licenses](#25-credits-and-third-party-licenses)
 
 ---
 
@@ -396,8 +397,25 @@ stacks are supported including (non-exhaustive):
   - `sylius` — Sylius 2.x full commerce framework (MIT) on Symfony
     7.4. Doctrine ORM 3 + Twig 3 + API Platform 3, multi-channel
     native. SyliusThemeBundle for custom themes.
+  - `forge-commerce` (NEW in v1.8.0) — **ForgeCommerce**: a fully
+    self-hosted, headless store built on **Medusa 2 (MIT) + Next.js
+    storefront** with **multi-gateway** payments and **native AI**
+    (semantic search / recommendations via **pgvector**). The scaffold
+    is **non-interactive** and lays down a `docker-compose.yml` that
+    brings up **Postgres 16 (pgvector) + Redis** automatically, runs
+    the Medusa migrations and enables the `vector` extension — so when
+    it finishes you already have `backend/` (Medusa) + the Next.js
+    storefront running locally. Requires **Docker** (for Postgres +
+    Redis) and Node 20+. It is the "own everything, 0 % commission"
+    alternative to Shopify, also vendible as a template.
+  - `forge-commerce-growshop` (NEW in v1.8.0) — same ForgeCommerce
+    base, but the generated `CLAUDE.md` instructs the build agent to
+    produce a **specialised, age-restricted catalogue** end-to-end:
+    a mandatory **18+ age-gate**, legal disclaimers / RGPD pages, and
+    advanced category filters. A blueprint for any store that needs
+    age verification and legal notices baked in from the first commit.
 
-  All 15 e-commerce stacks live under the single **E-commerce**
+  All 17 e-commerce stacks live under the single **E-commerce**
   category in the stack picker. Full walk-through with prereqs,
   scaffold steps, activation and distribution channels in
   [`docs/ECOMMERCE.md`](ECOMMERCE.md).
@@ -1520,7 +1538,136 @@ later, just delete the `themeforge` entry from
 
 ---
 
-## 20. Optional licensing system
+## 20. ThemeForge mobile (remote engine)
+
+> **TL;DR.** Since **v1.8.0** you can drive the ThemeForge engine
+> **from your phone**. A small FastAPI gateway (`api_gateway.py`)
+> exposes the engine over HTTP/WebSocket; a PWA (and an optional
+> Capacitor app) talks to it. The **same Web UI** documented in this
+> guide runs against the remote engine — nothing is re-implemented.
+> ⚠ **Keep it on a private network / VPN. Never expose the gateway to
+> the public internet.**
+
+The heavy lifting (scaffolding, Docker, the AI agents) stays on the
+machine where ThemeForge is installed — your desktop, laptop or a VPS.
+The phone is just a **thin client** of that engine.
+
+### 20.1 Start the gateway
+
+The gateway lives at the repo root (`api_gateway.py`) and is a
+standard FastAPI app served with `uvicorn`:
+
+```bash
+cd ~/Proyectos/themeforge
+uvicorn api_gateway:app --host 0.0.0.0 --port 8765
+```
+
+It exposes the engine over **JSON-RPC (HTTP) + WebSocket** for the
+streaming actions (agent output, setup logs) and an upload endpoint.
+
+### 20.2 Configure the access token
+
+Every request is authenticated with a **bearer token**. The gateway
+resolves it in this order:
+
+1. The `THEMEFORGE_API_TOKEN` environment variable, if set.
+2. Otherwise `~/.config/themeforge/api_token.txt`.
+3. If neither exists, the gateway **generates a random token on first
+   start**, writes it to `~/.config/themeforge/api_token.txt` and
+   prints it once to the console:
+
+   ```
+   [gateway] token generado → ~/.config/themeforge/api_token.txt
+   [gateway] THEMEFORGE_API_TOKEN=<the-token>
+   ```
+
+Copy that token into the mobile client (it's stored locally on the
+phone). HTTP requests must send `Authorization: Bearer <token>`;
+requests with a missing or wrong token get **401**. Pick your own
+token instead of the auto-generated one by exporting
+`THEMEFORGE_API_TOKEN=…` before launching, or by editing
+`api_token.txt` (keep it private — anyone with the token can drive
+your engine).
+
+### 20.3 Access from the PWA / Capacitor app
+
+Two clients ship in the repo, both pointing at the same gateway:
+
+- **PWA** — `webui/mobile/` (installable web app: `index.html` +
+  `app.jsx` + `manifest.webmanifest` + `sw.js`). Serve it from any
+  static host on your private network (or from the gateway machine)
+  and "Add to Home Screen" on the phone. No app store, no build step.
+- **Capacitor app** — `mobile/` wraps that PWA into a native
+  Android/iOS shell. It adds reliable push, a splash screen and proper
+  app installation. Build it with:
+
+  ```bash
+  cd mobile
+  npm install
+  npm run add:android      # or: npm run add:ios
+  npm run android          # opens Android Studio → Run
+  ```
+
+  Android needs **Android Studio**; iOS needs **Xcode**.
+
+The first time the client opens you give it two things: the **gateway
+URL** (e.g. `http://<machine-on-your-vpn>:8765`) and the **bearer
+token** from §20.2.
+
+### 20.4 The same Web UI, against the remote engine
+
+The phone does **not** run a second, cut-down UI. The mobile client
+loads the regular ThemeForge Web UI and swaps the in-process
+`QWebChannel` bridge for **`webui/remote/tfbridge-remote.js`**, which
+re-implements the exact same `window.tfBridge` API on top of the
+gateway's HTTP/WebSocket endpoints. So gallery, project creation,
+preview, cost, settings, Operator… behave identically to the desktop
+app — they just run their work on the remote engine.
+
+### 20.5 Networking — private only
+
+The gateway has **no per-user accounts and no rate limiting beyond the
+single shared token**, so treat it like an SSH key: it is meant to run
+on a **private network**. The recommended setup is a **VPN / overlay
+network such as Tailscale** (or WireGuard), where the gateway binds to
+the VPN interface and only your own devices can reach it.
+
+- ✅ **Do:** run the gateway behind Tailscale/WireGuard, or bound to
+  `localhost` and reached over an SSH tunnel.
+- ⛔ **Don't:** port-forward `:8765` to the public internet or put it
+  on a public IP without a VPN in front. Anyone who guesses or
+  captures the token would gain full control of the engine.
+
+### 20.6 Optional push notifications (FCM)
+
+Optionally, the gateway can push a **"build finished"** notification
+to your phone via **Firebase Cloud Messaging** (`push_service.py`).
+This is entirely optional — skip it and the mobile client still works,
+you just won't get push alerts.
+
+To enable it:
+
+1. **Server:** download the **service-account JSON** from your own
+   Firebase project and place it at
+   `~/.config/themeforge/fcm-service-account.json` (or point
+   `GOOGLE_APPLICATION_CREDENTIALS` at it). The service-account
+   credentials are **never committed to the repo** — they're your
+   private Firebase keys, kept only in `~/.config/themeforge/`. Check
+   it's wired with `GET /push/status`.
+2. **App:** on launch the Capacitor app requests notification
+   permission, obtains its device token and registers it with
+   `POST /push/register`. Device tokens are stored locally in
+   `~/.config/themeforge/push_tokens.json`.
+3. **Test:** `POST /push/test` should deliver a push to the
+   registered device(s).
+
+The OAuth2 access token for FCM is signed on the fly from the
+service-account key, so no extra Firebase SDK or heavy dependency is
+required on the server.
+
+---
+
+## 21. Optional licensing system
 
 > **TL;DR — what's bundled and what isn't.**
 >
@@ -1612,7 +1759,7 @@ Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.
 
 ---
 
-## 21. Configuration files
+## 22. Configuration files
 
 Under `~/.config/themeforge/`:
 
@@ -1656,7 +1803,7 @@ names, no domains, no strategies leak from the repo.
 
 ---
 
-## 22. Troubleshooting
+## 23. Troubleshooting
 
 ### ThemeForge does not start (ImportError on PyQt6)
 
@@ -1743,7 +1890,7 @@ OAuth, or set the key via the Settings panel.
 
 ---
 
-## 23. Operator (Hermes) — autonomous missions
+## 24. Operator (Hermes) — autonomous missions
 
 The **Operator** is an **optional** integration that lets
 [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research, MIT)
@@ -1755,7 +1902,7 @@ in natural language and it plans, creates/builds, quality-checks, packages — a
 > the 🚀 buttons only appear **if Hermes is installed**. If you never install
 > Hermes, nothing changes.
 
-### 23.1 How it works (architecture)
+### 24.1 How it works (architecture)
 
 - **Brain** = Hermes. It reasons/plans using an LLM provider (see below) and calls
   tools. It runs as a local CLI (`hermes`).
@@ -1771,7 +1918,7 @@ You (brief) → Hermes (plan) → MCP → ThemeForge tools → your agent CLIs (
                     └── QA loop (preflight) ── package (zip) ─┘
 ```
 
-### 23.2 Install Hermes
+### 24.2 Install Hermes
 
 Two ways (both optional):
 
@@ -1783,7 +1930,7 @@ Two ways (both optional):
   ```
   Installs to `~/.hermes/`, binary at `~/.local/bin/hermes`.
 
-### 23.3 Configure the brain (provider + API key)
+### 24.3 Configure the brain (provider + API key)
 
 Hermes uses an **API key** provider (not a subscription — see the compliance note).
 Recommended: **OpenRouter** (one key, 200+ models).
@@ -1805,7 +1952,7 @@ Direct providers also work: `anthropic` / `openai` (`ANTHROPIC_API_KEY` /
 > Using your own subscription (e.g. Codex logged in with ChatGPT) is your own
 > decision and risk. This is not legal advice — check your plan's current terms.
 
-### 23.4 Register the ThemeForge MCP server in Hermes
+### 24.4 Register the ThemeForge MCP server in Hermes
 
 Add to `~/.hermes/config.yaml` so Hermes can call ThemeForge:
 
@@ -1826,7 +1973,7 @@ hermes -z "Use the themeforge MCP list_stacks tool; reply with only the count."
 # → e.g. 62
 ```
 
-### 23.5 The Operator skill
+### 24.5 The Operator skill
 
 The orchestration logic lives in a Hermes skill at
 `~/.hermes/skills/themeforge/themeforge-operator/SKILL.md` (it ships with the
@@ -1835,7 +1982,7 @@ QA loop → package), how to assign a **distinct UI/UX Pro Max style+palette per
 variant**, when to spawn **parallel subagents** (`delegate_task`), and how to
 **learn** (see 23.8). Load it with `-s themeforge-operator`.
 
-### 23.6 Using it — three entry points
+### 24.6 Using it — three entry points
 
 **A) Operator tab → NEW project (from scratch).**
 Open the **🚀 Operator** tab. Write a brief, pick the number of variants and the
@@ -1863,7 +2010,7 @@ hermes -s themeforge-operator
 hermes chat -q "Build ONE Envato-ready ... " -s themeforge-operator
 ```
 
-### 23.7 What a mission does
+### 24.7 What a mission does
 
 1. **Plan** — choose stack (`suggest_stack`/`list_stacks`), style/palette per variant.
 2. **Create or continue** — `create_project` (new) or work in the existing path.
@@ -1875,7 +2022,7 @@ hermes chat -q "Build ONE Envato-ready ... " -s themeforge-operator
 6. **Report** — path, style, QA result, zip. Multiple variants run as parallel
    `delegate_task` subagents.
 
-### 23.8 How Hermes learns from a project
+### 24.8 How Hermes learns from a project
 
 - **Per-project context (auto):** Hermes auto-loads the project's `AGENTS.md` /
   `.hermes.md` / `CLAUDE.md` when working in its directory — so it inherits prior
@@ -1888,7 +2035,7 @@ hermes chat -q "Build ONE Envato-ready ... " -s themeforge-operator
 - **Procedural skills:** after non-trivial workflows, Hermes saves reusable skills
   via `skill_manage` (e.g. “build-pricing-section-astro”).
 
-### 23.9 Figma integration (related)
+### 24.9 Figma integration (related)
 
 ThemeForge can build **from a Figma design**: in *New project → Recreate from
 reference* choose **“Figma (URL del frame)”** and paste the frame link
@@ -1897,7 +2044,7 @@ the **figma-context MCP** (read-only Figma→code, MIT). Set your Figma token at
 *Settings → 🔑 AI credentials → Figma* (`FIGMA_API_KEY`, a Figma personal access
 token, scope: read). See §19 (MCP servers).
 
-### 23.10 Troubleshooting
+### 24.10 Troubleshooting
 
 - **No Operator tab / buttons:** Hermes isn't installed (it's optional). Install it
   (23.2) and restart ThemeForge.
@@ -1911,7 +2058,7 @@ token, scope: read). See §19 (MCP servers).
 
 ---
 
-## 24. Credits and third-party licenses
+## 25. Credits and third-party licenses
 
 ThemeForge is licensed under **GPL v3** (forced by the PyQt6
 dependency which is GPL v3 or commercial). See `LICENSE`.
@@ -1999,7 +2146,7 @@ the active preview between them.
 
 If you hit a bug:
 
-1. Check §17 (Troubleshooting) first.
+1. Check §23 (Troubleshooting) first.
 2. Run ThemeForge from a terminal so you can capture stack traces:
    `python3 ~/Proyectos/themeforge/themeforge.py`.
 3. Report at the repo's Issues tracker including:
