@@ -171,6 +171,84 @@ CATALOG: list[MCPEntry] = [
         requires_auth=True,
     ),
 
+    # ── UI components (21st.dev) ────────────────────────────────────
+    MCPEntry(
+        key="magic",
+        name="Magic (21st.dev) — UI components",
+        license="MIT",
+        repo="https://github.com/21st-dev/magic-mcp",
+        description=(
+            "21st.dev Magic: el agente escribe componentes de UI "
+            "profesionales (hero, pricing, bento, testimonios, navbars…) "
+            "del registro 21st.dev con `/ui`. Tailwind + shadcn. Hace que "
+            "las webs queden visualmente top."
+        ),
+        relevance=["web-frontend", "design"],
+        install={
+            "command": "npx",
+            # --prefer-offline: usa la caché de npm y NO consulta el registro en
+            # cada arranque. Sin esto, con wifi flojo `@latest` hace un check de
+            # red que supera el timeout de arranque del MCP → "servidor caído".
+            "args": ["-y", "--prefer-offline", "@21st-dev/magic@latest"],
+            "env": {"API_KEY": "${TWENTYFIRST_API_KEY}"},
+        },
+        env_hint=(
+            "Requiere TWENTYFIRST_API_KEY (gratis en 21st.dev → Settings → "
+            "API). Guárdala en ThemeForge (Credenciales) o como env var. Con "
+            "ella, en el proyecto el agente usa `/ui <descripción>` para "
+            "generar componentes profesionales del registro 21st.dev."
+        ),
+        requires_auth=True,
+    ),
+    MCPEntry(
+        key="magicui",
+        name="Magic UI — componentes animados",
+        license="MIT",
+        repo="https://github.com/magicuidesign/magicui",
+        description=(
+            "Magic UI: componentes ANIMADOS listos (blur-fade, marquee, grids/"
+            "bento, shimmer, animated beam, particles…) en Tailwind + Motion. El "
+            "agente los genera con pocos errores. SIN API key."
+        ),
+        relevance=["web-frontend", "design"],
+        install={"command": "npx",
+                 "args": ["-y", "--prefer-offline", "@magicuidesign/mcp@latest"]},
+    ),
+    MCPEntry(
+        key="shadcn",
+        name="shadcn/ui — registro de componentes",
+        license="MIT",
+        repo="https://ui.shadcn.com/docs/mcp",
+        description=(
+            "shadcn/ui: el agente busca, ve e instala componentes del registro "
+            "shadcn (y registros de terceros) por lenguaje natural. SIN API key "
+            "para el registro público."
+        ),
+        relevance=["web-frontend", "design"],
+        install={"command": "npx", "args": ["shadcn@latest", "mcp"]},
+    ),
+    MCPEntry(
+        key="higgsfield",
+        name="Higgsfield — imágenes/vídeo IA (DE PAGO)",
+        license="Proprietary (SaaS)",
+        repo="https://higgsfield.ai/mcp",
+        description=(
+            "Higgsfield: genera IMÁGENES (hasta 4K) y VÍDEOS cinematográficos con "
+            "30+ modelos (Soul, Flux, Seedream, Kling, Veo…). Útil para heros/"
+            "galerías ORIGINALES. ⚠️ DE PAGO por créditos + requiere cuenta."
+        ),
+        # Tag propio (ningún stack lo usa) → NO se auto-cablea: el user lo activa
+        # a mano cuando quiera generar imágenes/vídeo (porque consume créditos).
+        relevance=["media-gen"],
+        install={"type": "http", "url": "https://mcp.higgsfield.ai/mcp"},
+        env_hint=(
+            "NO necesita API key, pero SÍ una cuenta Higgsfield (login OAuth la "
+            "primera vez al conectar) y es DE PAGO: cada generación consume "
+            "créditos de tu plan. Por eso no se cablea solo — actívalo a mano."
+        ),
+        requires_auth=True,
+    ),
+
     # ── E-commerce ──────────────────────────────────────────────────
     MCPEntry(
         key="shopify-dev",
@@ -374,7 +452,21 @@ def recommend_for_stack(stack_key: str, stack_meta: dict | None = None) -> list[
     if "game" in category or "videojuego" in category:
         tags.add("web-frontend")  # most game stacks are web-based
 
-    return [e for e in CATALOG if any(t in tags for t in e.relevance)]
+    result = [e for e in CATALOG if any(t in tags for t in e.relevance)]
+
+    # Los MCPs de componentes son React + Tailwind + shadcn: NO aplican a stacks
+    # PHP/Smarty/Ruby/Python-server (PrestaShop, Magento, WordPress, Sylius,
+    # Django…). Se filtran salvo que el stack sea claramente un frontend JS/React.
+    lang = (stack_meta or {}).get("language", "").lower()
+    is_js_react = any(k in lang for k in ("react", "next", "typescript", "javascript", "remix"))
+    non_js = any(k in lang for k in (
+        "php", "smarty", "ruby", "java", "kotlin", "go", "golang", "rust",
+        "elixir", "phoenix", "swift", "dart", "flutter", "c#", ".net", "blazor", "python"))
+    if non_js and not is_js_react:
+        _REACT_UI_MCPS = {"magic", "magicui", "shadcn"}
+        result = [e for e in result if e.key not in _REACT_UI_MCPS]
+
+    return result
 
 
 def list_all() -> list[MCPEntry]:

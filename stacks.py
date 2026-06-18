@@ -1857,6 +1857,140 @@ STACKS = {
         "ux_pack": "saleor-nextjs",
         "notes": "Storefront oficial Saleor (Next.js 15 + App Router + GraphQL Codegen + Tailwind). Multi-channel multi-region enterprise. Backend Saleor (Python/Django) self-host gratis o Saleor Cloud (paid). Licencia BSD-3. Para catálogos B2B+B2C complejos con multi-currency real.",
     },
+    "restaurant-saas": {
+        "name": "Restaurant SaaS (Next.js + Supabase + Stripe · carta QR + pedidos + pago + admin)",
+        "category": "E-commerce",
+        "language": "TypeScript + Next.js + Supabase + Stripe",
+        "scaffold": [
+            "echo '→ Restaurant SaaS — Next.js 15 + Supabase + Stripe…'",
+            'npx --yes create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --no-turbopack --use-npm',
+            "echo '→ Dependencias (Supabase + Stripe + QR)…'",
+            "npm install @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js qrcode 2>&1 | tail -3",
+            "npm install -D @types/qrcode 2>&1 | tail -2",
+            "echo '→ Copiando boilerplate (esquema BD, carta QR, pedidos, pago, panel admin)…'",
+            "cp -a __TFDIR__/templates/restaurant-saas/. . 2>/dev/null || echo '(plantilla no encontrada — el agente la generará desde el brief)'",
+            "cp .env.example .env.local 2>/dev/null || true",
+        ],
+        "min_version": "Next.js 15 / Supabase / Stripe / Node 20+",
+        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "ux_pack": "restaurant-saas",
+        "notes": (
+            "Mini-SaaS para restaurantes/bares. Boilerplate INCLUIDO (no lo rehagas, "
+            "rellénalo con el brief): Next.js 15 App Router + TS + Tailwind. "
+            "Supabase Postgres con esquema `supabase/schema.sql` (tablas: restaurants, "
+            "categories, menu_items, dining_tables [QR], orders, order_items) + RLS. "
+            "Carta digital pública por QR en `/m/[table]` (cliente escanea → ve carta → "
+            "añade al carrito → paga). Pago con Stripe (`/api/checkout` + webhook "
+            "`/api/stripe/webhook` que marca el pedido pagado). Panel admin en `/admin` "
+            "(login Supabase Auth, pedidos en tiempo real vía Realtime, CRUD de carta, "
+            "generación de QR por mesa). El brief del negocio está en `src/data/brief.json` "
+            "(datos + carta real). Tu trabajo: cargar esa carta en la BD (seed), aplicar el "
+            "branding/colores/fotos del negocio y dejar el diseño x100 respecto a su web actual. "
+            "Variables en `.env.example` (Supabase URL/keys + Stripe keys)."
+        ),
+    },
+    "booking-saas": {
+        "name": "Booking SaaS (Next.js + Supabase + Stripe · reservas online + agenda + recordatorios)",
+        "category": "E-commerce",
+        "language": "TypeScript + Next.js + Supabase + Stripe",
+        "scaffold": [
+            "echo '→ Booking SaaS — Next.js 15 + Supabase + Stripe…'",
+            'npx --yes create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --no-turbopack --use-npm',
+            "echo '→ Dependencias (Supabase + Stripe + fechas)…'",
+            "npm install @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js date-fns 2>&1 | tail -3",
+            "echo '→ Copiando boilerplate (esquema BD anti-doble-reserva, agenda, reserva pública, depósito, panel admin)…'",
+            "cp -a __TFDIR__/templates/booking-saas/. . 2>/dev/null || echo '(plantilla no encontrada — el agente la generará desde el brief)'",
+            "cp .env.example .env.local 2>/dev/null || true",
+        ],
+        "min_version": "Next.js 15 / Supabase / Stripe / Node 20+",
+        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "ux_pack": "booking-saas",
+        "notes": (
+            "Mini-SaaS de RESERVAS para servicios con cita (peluquerías, estética, "
+            "fisio, clínicas, talleres…). Boilerplate INCLUIDO (no lo rehagas, "
+            "rellénalo con el brief): Next.js 15 App Router + TS + Tailwind. "
+            "Supabase Postgres con esquema `supabase/schema.sql` (tablas: business, "
+            "staff, services [con duración y precio], appointments, customers) + RLS "
+            "(lectura pública de servicios/horarios, escritura solo admin). "
+            "CLAVE ANTI-DOBLE-RESERVA a nivel BD: extensión `btree_gist` + constraint "
+            "EXCLUDE USING GIST (staff_id WITH =, tstzrange(starts_at, ends_at, '[)') "
+            "WITH &&) WHERE (status <> 'cancelled') — dos clientes NUNCA pillan el mismo "
+            "hueco. Reserva pública en `/reservar`: el cliente elige servicio → ve slots "
+            "libres (calculados por duración + horario, refresco realtime de Supabase) → "
+            "confirma. Depósito opcional con Stripe (`/api/checkout` + webhook "
+            "`/api/stripe/webhook` idempotente con tabla processed_webhooks). Panel admin "
+            "en `/admin` (login Supabase Auth, agenda del día en tiempo real, CRUD de "
+            "servicios y horarios, gestión de citas). Webhook: raw body con req.text() → "
+            "stripe.webhooks.constructEvent → idempotencia en la MISMA transacción → 200 "
+            "rápido. El brief está en `src/data/brief.json` (datos + servicios reales en "
+            "menu.sections[].items[] con precio y duración). Variables en `.env.example`."
+        ),
+    },
+    "shop-lite": {
+        "name": "Shop Lite (Next.js + Supabase + Stripe · catálogo + carrito + pago/WhatsApp)",
+        "category": "E-commerce",
+        "language": "TypeScript + Next.js + Supabase + Stripe",
+        "scaffold": [
+            "echo '→ Shop Lite — Next.js 15 + Supabase + Stripe…'",
+            'npx --yes create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --no-turbopack --use-npm',
+            "echo '→ Dependencias (Supabase + Stripe)…'",
+            "npm install @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js 2>&1 | tail -3",
+            "echo '→ Copiando boilerplate (esquema BD, catálogo, carrito, checkout Stripe/WhatsApp, panel admin)…'",
+            "cp -a __TFDIR__/templates/shop-lite/. . 2>/dev/null || echo '(plantilla no encontrada — el agente la generará desde el brief)'",
+            "cp .env.example .env.local 2>/dev/null || true",
+        ],
+        "min_version": "Next.js 15 / Supabase / Stripe / Node 20+",
+        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "ux_pack": "shop-lite",
+        "notes": (
+            "Mini-tienda para comercios de retail (boutiques, floristerías, ferreterías, "
+            "ópticas…) que aún no venden online. Boilerplate INCLUIDO (no lo rehagas, "
+            "rellénalo con el brief): Next.js 15 App Router + TS + Tailwind. Supabase "
+            "Postgres con esquema `supabase/schema.sql` (tablas: shop, categories, "
+            "products [precio, stock, imagen], orders, order_items) + RLS (catálogo de "
+            "lectura pública, escritura solo admin con is_admin((select auth.uid())), "
+            "auth envuelto en select y columnas indexadas). Catálogo público en `/` y "
+            "`/producto/[slug]`, carrito en cliente (localStorage). DOS modos de checkout "
+            "(el comercio elige por env): (1) Stripe (`/api/checkout` + webhook idempotente "
+            "`/api/stripe/webhook` con tabla processed_webhooks, eventos "
+            "checkout.session.completed + payment_intent.succeeded) o (2) pedido por "
+            "WhatsApp (link wa.me con el carrito pre-rellenado, sin pasarela — baja la "
+            "fricción al comercio que empieza). Panel admin en `/admin` (login Supabase "
+            "Auth, CRUD de productos/categorías, pedidos en tiempo real). El brief está en "
+            "`src/data/brief.json` (datos + productos reales en menu.sections[].items[] "
+            "con precio e imagen). Variables en `.env.example` (Supabase + Stripe + "
+            "NEXT_PUBLIC_CHECKOUT_MODE=stripe|whatsapp + NEXT_PUBLIC_WHATSAPP)."
+        ),
+    },
+    "pro-landing": {
+        "name": "Pro Landing (Next.js + Tailwind · landing premium + captación de leads)",
+        "category": "Sitios y Landing",
+        "language": "TypeScript + Next.js + Tailwind",
+        "scaffold": [
+            "echo '→ Pro Landing — Next.js 15 + Tailwind…'",
+            'npx --yes create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --no-turbopack --use-npm',
+            "echo '→ Copiando boilerplate (landing premium + formulario de captación anti-spam)…'",
+            "cp -a __TFDIR__/templates/pro-landing/. . 2>/dev/null || echo '(plantilla no encontrada — el agente la generará desde el brief)'",
+            "cp .env.example .env.local 2>/dev/null || true",
+        ],
+        "min_version": "Next.js 15 / Node 20+",
+        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "ux_pack": "pro-landing",
+        "notes": (
+            "Landing premium de CAPTACIÓN para servicios profesionales y negocios locales "
+            "(abogados, inmobiliarias, gimnasios, gestorías, reformas…) y como fallback "
+            "genérico. Boilerplate INCLUIDO (no lo rehagas, rellénalo con el brief): "
+            "Next.js 15 App Router + TS + Tailwind, SIN backend pesado (no Supabase). "
+            "Secciones: hero con propuesta de valor, servicios (de menu.sections[].items[]), "
+            "prueba social (reseñas/rating de Google del brief), FAQ, CTA y un FORMULARIO "
+            "DE CONTACTO/LEAD con anti-spam por capas: honeypot (campo oculto que los bots "
+            "rellenan), rate-limit básico por IP en memoria y validación de email; el lead "
+            "se envía por email vía un Server Action a `/api/lead` (configurable: log, "
+            "Resend o webhook). Pensada para SEO local (metadata, JSON-LD LocalBusiness, "
+            "Open Graph). El brief está en `src/data/brief.json` (datos + servicios reales). "
+            "Variables en `.env.example` (LEAD_EMAIL / RESEND_API_KEY opcionales)."
+        ),
+    },
     "vendure": {
         "name": "Vendure (MIT, NestJS + GraphQL)",
         "category": "E-commerce",
@@ -1983,12 +2117,13 @@ STACKS = {
         "notes": "BigCommerce theme stack — Cornerstone (theme oficial MIT) + Stencil CLI. Handlebars + SCSS Citadel (Foundation 5.5). 2º theme store después de Shopify por volumen. Ticket más alto: themes $150-300. Para Theme Store oficial: NO puede ser derivado de Cornerstone (mismo gating que Dawn en Shopify Theme Store).",
     },
     "prestashop-theme": {
-        "name": "PrestaShop 9 child theme (OSL 3.0)",
+        "name": "PrestaShop 9 — tienda completa (Docker) + child theme",
         "category": "E-commerce",
         "language": "PHP + Smarty",
         "scaffold": [
-            "echo '→ PrestaShop child theme scaffold (parent: classic)…'",
-            "[ -d themes/classic ] || echo '⚠️  themes/classic no existe. Instala PrestaShop 9.x ANTES de continuar.'",
+            "echo '→ Provisionando PrestaShop 9 con Docker (MariaDB + PrestaShop, locale ES)…'",
+            "TF_PORT=$(python3 -c \"import json,os;d=json.load(open(os.path.expanduser('~/.config/themeforge/ports.json')));print((d.get('__SLUG__') or {}).get('port') or 8080)\" 2>/dev/null || echo 8080)",
+            "echo \"→ Puerto asignado: $TF_PORT\"",
             "mkdir -p themes/__SLUG__/config themes/__SLUG__/assets/css themes/__SLUG__/assets/js themes/__SLUG__/assets/img themes/__SLUG__/templates themes/__SLUG__/modules themes/__SLUG__/_dev",
             'cat > themes/__SLUG__/config/theme.yml <<\'THEMEFORGE_EOF\'\n'
             'name: __SLUG__\n'
@@ -2025,17 +2160,77 @@ STACKS = {
             '    sitemap:      layout-left-column\n'
             'THEMEFORGE_EOF',
             "touch themes/__SLUG__/preview.png",
+            'cat > docker-compose.yml <<THEMEFORGE_EOF\n'
+            'services:\n'
+            '  db:\n'
+            '    image: mariadb:11\n'
+            '    environment:\n'
+            '      MARIADB_ROOT_PASSWORD: prestashop\n'
+            '      MARIADB_DATABASE: prestashop\n'
+            '    volumes:\n'
+            '      - ps-db:/var/lib/mysql\n'
+            '    restart: unless-stopped\n'
+            '  prestashop:\n'
+            '    image: prestashop/prestashop:9\n'
+            '    depends_on:\n'
+            '      - db\n'
+            '    ports:\n'
+            '      - "${TF_PORT}:80"\n'
+            '    environment:\n'
+            '      DB_SERVER: db\n'
+            '      DB_NAME: prestashop\n'
+            '      DB_USER: root\n'
+            '      DB_PASSWD: prestashop\n'
+            '      PS_INSTALL_AUTO: 1\n'
+            '      PS_ERASE_DB: 1\n'
+            '      PS_DEV_MODE: 1\n'
+            '      PS_DOMAIN: localhost:${TF_PORT}\n'
+            '      PS_FOLDER_ADMIN: admin-dev\n'
+            '      PS_LANGUAGE: es\n'
+            '      PS_COUNTRY: es\n'
+            '      ADMIN_MAIL: admin@__SLUG__.local\n'
+            '      ADMIN_PASSWD: prestashop123\n'
+            '    volumes:\n'
+            '      - ps-app:/var/www/html\n'
+            '      - ./themes/__SLUG__:/var/www/html/themes/__SLUG__\n'
+            '    restart: unless-stopped\n'
+            'volumes:\n'
+            '  ps-db:\n'
+            '  ps-app:\n'
+            'THEMEFORGE_EOF',
+            "echo '→ Levantando PrestaShop (docker compose up -d — la 1ª vez descarga ~1 GB)…'",
+            'if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then '
+            'docker compose up -d || echo "  ⚠️ docker compose up falló (revisa puertos/imágenes)"; '
+            'echo "  ⏳ Esperando a que PrestaShop TERMINE de instalarse antes de seguir (hasta ~5 min la 1ª vez)…"; '
+            'for i in $(seq 1 100); do '
+            'if curl -fs -o /dev/null "http://localhost:$TF_PORT/"; then echo "  ✅ PrestaShop LISTO y respondiendo en http://localhost:$TF_PORT/"; break; fi; '
+            'if [ $((i % 10)) -eq 0 ]; then echo "  …sigue instalando ($((i * 3))s transcurridos)"; fi; '
+            'sleep 3; '
+            'done; '
+            'elif command -v docker >/dev/null 2>&1; then echo "  ⚠️ El daemon de Docker NO responde (parado, sin permisos, o kernel actualizado sin reiniciar). Arranca docker (sudo systemctl start docker; o reinicia si actualizaste el kernel) y luego: docker compose up -d"; '
+            'else echo "  ⚠️ Docker no está instalado. Instálalo y luego: docker compose up -d"; fi',
+            'echo ""',
+            'echo "✅ Tienda PrestaShop provisionada — el setup continúa (autoskills, etc.)."',
+            'echo "   🛒 Tienda: http://localhost:$TF_PORT/"',
+            'echo "   🔑 Admin:  http://localhost:$TF_PORT/admin-dev/   (admin@__SLUG__.local / prestashop123)"',
+            'echo "   📋 Logs:   docker compose logs -f prestashop"',
+            'echo "   🤖 Gestión IA (opcional): instala el módulo PrestaShop MCP en el back-office (Módulos) → expone un MCP remoto HTTP+OAuth para el agente. Guía: docs.mcp.prestashop.com"',
             'cat > themes/__SLUG__/README-PRESTASHOP.md <<\'THEMEFORGE_EOF\'\n'
             '# __PROJECT__ — PrestaShop child theme\n'
             '\n'
             'Stack: **PrestaShop 9.x** + child theme heredando del **classic**.\n'
             'Licencia **OSL 3.0** (misma que PrestaShop core).\n'
             '\n'
-            '## Prerequisites\n'
+            '## Tienda ya provisionada (Docker)\n'
             '\n'
-            '1. PrestaShop 9.x instalado (`composer create-project prestashop/prestashop`).\n'
-            '2. PHP 8.1+, MySQL 8 / MariaDB 10.5+.\n'
-            '3. El theme `classic` debe existir en `themes/classic/`.\n'
+            'ThemeForge ha levantado PrestaShop 9 + MariaDB con `docker-compose.yml`:\n'
+            '\n'
+            '- 🛒 Tienda:  `http://localhost:<puerto>/`\n'
+            '- 🔑 Admin:   `http://localhost:<puerto>/admin-dev/`  (admin@__SLUG__.local / prestashop123)\n'
+            '- Parar / arrancar:  `docker compose stop` · `docker compose up -d`\n'
+            '- Logs:  `docker compose logs -f prestashop`\n'
+            '- Consola PS:  `docker compose exec prestashop php bin/console …`\n'
+            '- El child theme `themes/__SLUG__/` está montado como volumen: lo editas en local y se ve en la tienda.\n'
             '\n'
             '## Estructura generada\n'
             '\n'
@@ -2052,7 +2247,7 @@ STACKS = {
             '## Activación\n'
             '\n'
             '```bash\n'
-            'php bin/console prestashop:themes:enable __SLUG__\n'
+            'docker compose exec prestashop php bin/console prestashop:themes:enable __SLUG__\n'
             '# o desde Back Office: Design > Theme & Logo > Use this theme\n'
             '```\n'
             '\n'
@@ -2071,9 +2266,9 @@ STACKS = {
             'THEMEFORGE_EOF',
         ],
         "min_version": "PrestaShop 9.0+ / PHP 8.1+ / Smarty 4",
-        "skills": [],
+        "skills": ["anthropics/skills/frontend-design"],
         "ux_pack": "prestashop-theme",
-        "notes": "PrestaShop 9 child theme heredando del theme `classic`. Estructura mínima: config/theme.yml + preview.png. Smarty templates overrides + asset pipeline opcional. Licencia OSL 3.0. Marketplaces: PrestaShop Addons (2k+ templates) + ThemeForest (900+). Stack scaffoldea SOLO el child theme — PrestaShop ya debe estar instalado.",
+        "notes": "Tienda PrestaShop 9 COMPLETA provisionada con Docker (docker-compose.yml: MariaDB + prestashop/prestashop:9, auto-install, locale ES, admin en /admin-dev/, admin@<slug>.local / prestashop123). El child theme `themes/<slug>/` (hereda de `classic`) va montado como volumen para editar en local. NO requiere PrestaShop preinstalado — el scaffold lo levanta. Para pagos (transferencia/contrarreembolso/Bizum) usa los módulos nativos de PrestaShop; para tarjeta de growshop NO uses Stripe (alto riesgo). Smarty para overrides de plantillas. Licencia OSL 3.0. 🤖 GESTIÓN POR IA — MCP oficial de PrestaShop (docs.mcp.prestashop.com): NO es un `npx`, es un MÓDULO que se instala en el back-office (Módulos → instalar 'PrestaShop MCP'; deps PrestaShop Account + EventBus + MCP Tools, vía MBO). Una vez instalado y con la cuenta PrestaShop conectada, da una URL de MCP REMOTO (transport Streamable HTTP + OAuth, scopes mcp.discover/mcp.read/mcp.write/email) que permite crear/editar productos, categorías, pedidos y configuración por API. Para usarlo: el usuario instala el módulo, copia la URL del MCP desde la config del módulo y la añade al cliente IA como servidor MCP remoto (type http). MIENTRAS NO esté disponible, gestiona la tienda con la consola: `docker compose exec prestashop php bin/console …` (p.ej. listar comandos, crear admin, limpiar caché) y/o el back-office.",
     },
     "opencart-theme": {
         "name": "OpenCart 4 theme extension (GPL)",
@@ -2289,7 +2484,7 @@ STACKS = {
         "category": "Web · Static",
         "language": "HTML / JS",
         "scaffold": [
-            "npm create vite@latest . -- --template vanilla-ts",
+            "npm create vite@latest . -- --template vanilla-ts </dev/null",
             "npm install",
             "npm install -D tailwindcss@latest @tailwindcss/vite",
         ],
@@ -2302,7 +2497,7 @@ STACKS = {
         "category": "Web · Static",
         "language": "HTML / JS",
         "scaffold": [
-            "npm create vite@latest . -- --template vanilla",
+            "npm create vite@latest . -- --template vanilla </dev/null",
             "npm install",
             "npm install bootstrap@5 @popperjs/core sass",
         ],
@@ -2315,7 +2510,7 @@ STACKS = {
         "category": "Web · Frontend",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template react-ts",
+            "npm create vite@latest . -- --template react-ts </dev/null",
             "npm install",
             "npm install -D tailwindcss@latest @tailwindcss/vite",
         ],
@@ -2328,7 +2523,7 @@ STACKS = {
         "category": "Web · Frontend",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template vue-ts",
+            "npm create vite@latest . -- --template vue-ts </dev/null",
             "npm install",
             "npm install -D tailwindcss@latest @tailwindcss/vite",
         ],
@@ -2717,6 +2912,163 @@ STACKS = {
         "skills": [],
         "notes": "Medusa 2 (admin + backend) + Next.js storefront en el mismo proyecto. Alternativa OSS a Shopify. Vendible como template.",
     },
+    "forge-commerce": {
+        "name": "ForgeCommerce — Medusa 2 + Next.js (headless, multi-pasarela, IA, self-hosted)",
+        "category": "E-commerce",
+        "language": "TypeScript + Medusa + Next.js",
+        "scaffold": [
+            "echo '→ ForgeCommerce: Medusa 2 + Next.js + Postgres(pgvector) + Redis (self-hosted)…'",
+            "echo '→ create-medusa-app (backend + storefront Next.js — descarga grande, varios min)…'",
+            'npx --yes create-medusa-app@latest backend --db-url "postgres://medusa:medusa@localhost:5433/medusa" --with-nextjs-starter --no-migrations --no-browser --use-npm </dev/null || echo "  ⚠️ create-medusa-app falló (necesita Node 20+ y red)"',
+            "echo '→ docker-compose: Postgres(pgvector) + Redis…'",
+            'cat > docker-compose.yml <<THEMEFORGE_EOF\n'
+            'services:\n'
+            '  db:\n'
+            '    image: pgvector/pgvector:pg16\n'
+            '    environment:\n'
+            '      POSTGRES_USER: medusa\n'
+            '      POSTGRES_PASSWORD: medusa\n'
+            '      POSTGRES_DB: medusa\n'
+            '    ports:\n'
+            '      - "5433:5432"\n'
+            '    volumes:\n'
+            '      - fc-db:/var/lib/postgresql/data\n'
+            '    restart: unless-stopped\n'
+            '  redis:\n'
+            '    image: redis:7-alpine\n'
+            '    ports:\n'
+            '      - "6380:6379"\n'
+            '    restart: unless-stopped\n'
+            'volumes:\n'
+            '  fc-db:\n'
+            'THEMEFORGE_EOF',
+            'if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then '
+            'docker compose up -d || echo "  ⚠️ docker compose up falló"; '
+            'echo "  ⏳ Esperando a Postgres…"; '
+            'for i in $(seq 1 40); do if docker compose exec -T db pg_isready -U medusa >/dev/null 2>&1; then echo "  ✅ Postgres listo"; break; fi; sleep 2; done; '
+            'docker compose exec -T db psql -U medusa -d medusa -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 && echo "  ✅ pgvector habilitado (búsqueda semántica IA)"; '
+            'if [ -d backend ]; then echo "  → migraciones + admin…"; (cd backend && (npx medusa db:migrate || true) && (npx medusa user -e admin@forge.local -p forgecommerce123 || true)); fi; '
+            'else echo "  ⚠️ Docker no disponible: arranca db/redis con docker compose up -d y luego (cd backend && npx medusa db:migrate && npx medusa user -e admin@forge.local -p forgecommerce123)"; fi',
+            'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'.\')" 2>/dev/null && echo "  ✅ MCPs cableados en .mcp.json (magic, magicui, shadcn, fetch, playwright)" || echo "  ⚠️ no se pudo cablear .mcp.json"',
+            'echo ""',
+            'echo "✅ ForgeCommerce base lista (falta que el agente añada seguridad + multi-pasarela + IA según CLAUDE.md)."',
+            'echo "   🧩 Backend Medusa:  cd backend && npm run dev  → admin http://localhost:9000/app  (admin@forge.local / forgecommerce123)"',
+            'echo "   🛍  Storefront:      cd backend-storefront && npm run dev  → http://localhost:8000"',
+            'echo "   🗄  Postgres+pgvector :5433 · Redis :6380 (Docker)"',
+        ],
+        "min_version": "Medusa 2 / Node 20+ / Next.js 15 / Postgres 16 (pgvector) / Redis 7",
+        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "ux_pack": "forge-commerce",
+        "notes": (
+            "🏗️ ForgeCommerce = e-commerce PROPIO super-avanzado y super-seguro, productizado para la agencia: "
+            "el CLIENTE LO POSEE, 0% comisión, self-hosted, headless (sirve web Y app móvil), con LIBERTAD TOTAL de "
+            "pasarela (incluida alto riesgo cannabis/CBD que Stripe/Shopify rechazan) e IA nativa. Base: Medusa 2 "
+            "(Node/TS, MIT) en `backend/` + storefront Next.js en `backend-storefront/`, Postgres(pgvector)+Redis por Docker.\n\n"
+            "## 🔒 SEGURIDAD — OBLIGATORIO (es 'super seguro' o no es)\n"
+            "- **PCI = SAQ-A:** la captura de tarjeta SIEMPRE en página alojada del proveedor por REDIRECT (no iframe, no server-to-server). NUNCA toques ni almacenes datos de tarjeta. El redirect además esquiva bugs del ciclo de pago server-to-server de Medusa.\n"
+            "- **OWASP API #1 = BOLA:** autoriza POR OBJETO en cada endpoint (carrito/pedido/cliente) — comprueba propiedad, no basta con estar logueado.\n"
+            "- **Recalcula SIEMPRE los totales en el servidor** (jamás confíes en precios/cantidades del cliente).\n"
+            "- **Verifica la firma de TODOS los webhooks** de pasarela antes de marcar un pedido pagado.\n"
+            "- Cabeceras **CSP + HSTS**, rate-limiting, secretos solo en `.env` (NUNCA al repo), validación de input (Zod), 2FA admin + RBAC, RGPD (consentimiento + derecho al olvido), audit log.\n\n"
+            "## 💳 MULTI-PASARELA — cada método un payment provider de Medusa\n"
+            "Implementa cada pasarela como un módulo que EXTIENDE `AbstractPaymentProvider` (`@medusajs/framework/utils`), registrado en `medusa-config.ts` bajo el módulo `@medusajs/payment`; cada método su propio provider id (initiatePayment/authorizePayment/capturePayment/refundPayment + identifier). Patrón probado (plugin Mollie de la comunidad).\n"
+            "- **Tarjeta (REDIRECT alojado):** MONEI (acepta CBD/alto riesgo en ES; agrega tarjeta + Bizum + SEPA; condicional THC<0,2%, UE) y/o GreenexPay (cannabis/growshops/seedbanks; capa sobre Redsys/Stripe/Monei).\n"
+            "- **Cripto:** BTCPay Server self-hosted (Greenfield REST API, no-custodial).\n"
+            "- **Transferencia y Contrarreembolso:** providers 'offline' (autoriza en checkout, captura/liquida en entrega) + Bizum.\n"
+            "- ⚠️ Para catálogos de ALTO RIESGO (growshop/CBD): NUNCA Stripe/Shopify Payments/Adyen (rechazan). MONEI/GreenexPay/cripto/transferencia/COD. Valida con alta real + transacción de prueba antes de lanzar (las páginas de MONEI/GreenexPay son marketing).\n\n"
+            "## 🤖 IA NATIVA (el diferencial)\n"
+            "- **Búsqueda semántica/vectorial + recomendaciones** con `pgvector` en el MISMO Postgres (texto→embedding→similitud coseno). Reusa backups/seguridad del Postgres. (pgvector escala bien ~1-10M vectores.)\n"
+            "- **Generación de descripciones** de producto (LLM) e **imágenes** de producto (Runware, ya integrado en ThemeForge).\n"
+            "- Opcional: asistente de compra / soporte con RAG agéntico.\n\n"
+            "## 🌍 COMERCIO\n"
+            "Multi-idioma + multi-moneda + IVA vía Regions de Medusa; promociones/cupones, inventario, envíos por zonas, carrito abandonado, reseñas. Admin de Medusa (+ widgets custom). API headless para web + la app móvil de ThemeForge.\n\n"
+            "## 📦 LICENCIAS\n"
+            "Integra el sistema de licencias pcreative (el cliente lo posee pero el producto va protegido/licenciado) siguiendo el patrón anti-nulled de la agencia (JWT RS256 + verify offline).\n\n"
+            "Estructura: `backend/` (Medusa) + `backend-storefront/` (Next.js) + `docker-compose.yml`. Admin: admin@forge.local / forgecommerce123. Lo que el scaffold deja listo: Medusa+Next.js+Postgres(pgvector)+Redis corriendo y migrado. Tu trabajo: TODO lo de arriba (seguridad, multi-pasarela, IA, licencias).\n\n"
+            "## 🎨 UI / DISEÑO (monorepo)\n"
+            "El storefront `backend-storefront/` es Next.js/React: aplica AHÍ todo lo de UI. Los MCP de diseño **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados en `.mcp.json` — úsalos para los componentes del storefront. **framer-motion** para las animaciones: instálalo en el storefront (`cd backend-storefront && npm install framer-motion`) — ThemeForge no lo auto-instala porque está en subcarpeta. El admin de Medusa (`backend/`) NO lleva framer-motion (es su propio panel)."
+        ),
+    },
+    "forge-commerce-growshop": {
+        "name": "ForgeCommerce Growshop — tienda cannabis (Medusa 2 + Next.js · alto riesgo · age-gate)",
+        "category": "E-commerce",
+        "language": "TypeScript + Medusa + Next.js",
+        "scaffold": [
+            "echo '→ ForgeCommerce Growshop: Medusa 2 + Next.js + Postgres(pgvector) + Redis…'",
+            "echo '→ create-medusa-app (backend + storefront Next.js — descarga grande, varios min)…'",
+            'npx --yes create-medusa-app@latest backend --db-url "postgres://medusa:medusa@localhost:5433/medusa" --with-nextjs-starter --no-migrations --no-browser --use-npm </dev/null || echo "  ⚠️ create-medusa-app falló (necesita Node 20+ y red)"',
+            "echo '→ docker-compose: Postgres(pgvector) + Redis…'",
+            'cat > docker-compose.yml <<THEMEFORGE_EOF\n'
+            'services:\n'
+            '  db:\n'
+            '    image: pgvector/pgvector:pg16\n'
+            '    environment:\n'
+            '      POSTGRES_USER: medusa\n'
+            '      POSTGRES_PASSWORD: medusa\n'
+            '      POSTGRES_DB: medusa\n'
+            '    ports:\n'
+            '      - "5433:5432"\n'
+            '    volumes:\n'
+            '      - fc-db:/var/lib/postgresql/data\n'
+            '    restart: unless-stopped\n'
+            '  redis:\n'
+            '    image: redis:7-alpine\n'
+            '    ports:\n'
+            '      - "6380:6379"\n'
+            '    restart: unless-stopped\n'
+            'volumes:\n'
+            '  fc-db:\n'
+            'THEMEFORGE_EOF',
+            'if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then '
+            'docker compose up -d || echo "  ⚠️ docker compose up falló"; '
+            'echo "  ⏳ Esperando a Postgres…"; '
+            'for i in $(seq 1 40); do if docker compose exec -T db pg_isready -U medusa >/dev/null 2>&1; then echo "  ✅ Postgres listo"; break; fi; sleep 2; done; '
+            'docker compose exec -T db psql -U medusa -d medusa -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 && echo "  ✅ pgvector habilitado (búsqueda semántica IA)"; '
+            'if [ -d backend ]; then echo "  → migraciones + admin…"; (cd backend && (npx medusa db:migrate || true) && (npx medusa user -e admin@forge.local -p forgecommerce123 || true)); fi; '
+            'else echo "  ⚠️ Docker no disponible: arranca db/redis con docker compose up -d y luego (cd backend && npx medusa db:migrate && npx medusa user -e admin@forge.local -p forgecommerce123)"; fi',
+            'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'.\')" 2>/dev/null && echo "  ✅ MCPs cableados en .mcp.json (magic, magicui, shadcn, fetch, playwright)" || echo "  ⚠️ no se pudo cablear .mcp.json"',
+            'echo ""',
+            'echo "✅ Base ForgeCommerce lista — el agente construye el GROWSHOP completo según CLAUDE.md."',
+            'echo "   🧩 Backend Medusa:  cd backend && npm run dev  → admin http://localhost:9000/app  (admin@forge.local / forgecommerce123)"',
+            'echo "   🛍  Storefront:      cd backend-storefront && npm run dev  → http://localhost:8000"',
+            'echo "   🗄  Postgres+pgvector :5433 · Redis :6380 (Docker)"',
+        ],
+        "min_version": "Medusa 2 / Node 20+ / Next.js 15 / Postgres 16 (pgvector) / Redis 7",
+        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "ux_pack": "forge-commerce",
+        "notes": (
+            "🌱 GROWSHOP COMPLETO sobre ForgeCommerce (Medusa 2 + Next.js, self-hosted, el cliente lo posee, 0% comisión). "
+            "Construye la tienda ENTERA de una sentada, multipágina, con datos demo realistas, sin pedir confirmación. "
+            "Base en `backend/` (Medusa) + `backend-storefront/` (Next.js).\n\n"
+            "## 🛒 EL NEGOCIO (growshop en España — cultivo de cannabis)\n"
+            "Vende a cultivadores (novatos y expertos) y adultos. **Categorías** (deja estructura + atributos lista; productos reales se cargan luego): "
+            "(1) Cultivo — iluminación LED/HPS, armarios/tents, ventilación/extracción, control de clima, sustratos/macetas, riego; "
+            "(2) Fertilizantes y aditivos; (3) **Semillas de cannabis** (artículo de COLECCIÓN / preservación genética); "
+            "(4) **CBD y derivados** (flores, aceites, cosmética); (5) Vaporizadores, grinders, papeles y parafernalia; (6) Accesorios y control de plagas.\n\n"
+            "## 🎨 TONO Y ESTÉTICA\n"
+            "Profesional, moderno y de CONFIANZA: verde natural + oscuro elegante, NADA de estética 'stoner' cutre. Mobile-first, carga rápida, fotos grandes, transmite seriedad + envío DISCRETO + atención experta.\n\n"
+            "## 📄 PÁGINAS\n"
+            "Home (hero + categorías destacadas + novedades + más vendidos + sello envío discreto + reseñas), catálogo por categoría con FILTROS avanzados "
+            "(semillas: banco/marca, indica/sativa/híbrida, feminizada/autofloreciente, %THC, %CBD, tiempo de floración, interior/exterior, dificultad; cultivo: marca, potencia, tamaño), "
+            "ficha de producto (galería, genética/efectos/sabor/dificultad o specs técnicas, stock, relacionados, reseñas), carrito, checkout, cuenta cliente (pedidos/direcciones/wishlist), "
+            "Blog/Guías de cultivo (SEO long-tail), Sobre nosotros, Contacto, FAQ, páginas legales.\n\n"
+            "## ⚖️ CUMPLIMIENTO LEGAL (OBLIGATORIO)\n"
+            "- **Age-gate 18+** al entrar (modal que bloquea hasta confirmar mayoría de edad, recordado por sesión).\n"
+            "- **Disclaimers:** las SEMILLAS se venden como objeto coleccionable / preservación genética, NO para germinar/cultivar. El CBD es <0,2% THC.\n"
+            "- Avisos legales, privacidad/RGPD (consentimiento + derecho al olvido), cookies, términos, política de envíos/devoluciones, y casilla 'soy mayor de edad y acepto los términos' en el checkout.\n\n"
+            "## 💳 PAGOS — NO Stripe/Shopify (rechazan cannabis/CBD)\n"
+            "Por defecto: **Transferencia bancaria + Contrarreembolso (recargo configurable + pedido mínimo) + Bizum**. Deja PREPARADOS pero desactivados (hasta alta del cliente) los providers de tarjeta de alto riesgo **MONEI / GreenexPay** (flujo REDIRECT alojado) y cripto **BTCPay**. Cada método = payment provider de Medusa (extiende `AbstractPaymentProvider`, registrado en medusa-config.ts). Muestra los métodos disponibles claros en el checkout.\n\n"
+            "## 🤖 IA NATIVA\n"
+            "**Búsqueda semántica con pgvector** que entienda lenguaje natural ('variedad fácil de cultivar en interior, efecto relajante, floración corta') → texto→embedding→similitud; recomendaciones; asistente/guía de cultivo básico (RAG). Descripciones por LLM e imágenes de producto con Runware.\n\n"
+            "## 🔒 SEGURIDAD — OBLIGATORIO\n"
+            "PCI **SAQ-A vía REDIRECT** (nunca toques datos de tarjeta; además esquiva bugs server-to-server de Medusa) · OWASP API #1 **BOLA** (autorización por objeto en carrito/pedido/cliente) · **recalcula totales en servidor** · **verifica firma de todos los webhooks** · CSP/HSTS · secretos solo en .env · rate-limiting · RBAC/2FA admin · RGPD · audit log.\n\n"
+            "## 🌍 COMERCIO + LICENCIAS\n"
+            "Multi-idioma (ES base) + multi-moneda + IVA vía Regions de Medusa; promos/cupones, inventario, envíos por zonas (transportistas con contrarreembolso), wishlist, newsletter, puntos/fidelización opcional. Admin de Medusa para que el cliente gestione productos/stock/pedidos. Integra el sistema de licencias pcreative (JWT RS256 + verify offline).\n\n"
+            "El scaffold deja Medusa+Next.js+Postgres(pgvector)+Redis corriendo. Tu trabajo: construir TODO el growshop de arriba. Cuando el usuario te dé el NOMBRE del growshop, personaliza marca/eslogan/ciudad; mientras, usa un placeholder coherente.\n\n"
+            "## 🎨 UI / DISEÑO (monorepo)\n"
+            "Todo el diseño va en el storefront `backend-storefront/` (Next.js/React). Los MCP de diseño **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados — úsalos para los componentes. **framer-motion** para animaciones: instálalo en el storefront (`cd backend-storefront && npm install framer-motion`); ThemeForge no lo auto-instala por estar en subcarpeta. Estética growshop: verde natural + oscuro elegante, mobile-first, micro-interacciones suaves (respeta `prefers-reduced-motion`)."
+        ),
+    },
 
     # ════════════════════════════════════════════════════════════════
     #  COMPONENT LIBRARIES
@@ -2726,7 +3078,7 @@ STACKS = {
         "category": "Component Lib",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template react-ts",
+            "npm create vite@latest . -- --template react-ts </dev/null",
             "npm install",
             "npx --yes storybook@latest init --yes --type react --skip-install --no-package-manager-arg",
             "npm install",
@@ -2982,7 +3334,7 @@ STACKS = {
         "category": "Web · Frontend",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template react-ts",
+            "npm create vite@latest . -- --template react-ts </dev/null",
             "npm install",
             "npm install @mantine/core @mantine/hooks @tabler/icons-react",
             "npm install -D postcss postcss-preset-mantine postcss-simple-vars",
@@ -2996,7 +3348,7 @@ STACKS = {
         "category": "Web · Frontend",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template vue-ts",
+            "npm create vite@latest . -- --template vue-ts </dev/null",
             "npm install",
             "npm install -D naive-ui vfonts @vicons/ionicons5",
         ],
@@ -3027,7 +3379,7 @@ STACKS = {
         "category": "Game · Web 2D",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template vanilla-ts",
+            "npm create vite@latest . -- --template vanilla-ts </dev/null",
             "npm install",
             "npm install pixi.js@latest",
             "npm install -D @pixi/devtools",
@@ -3045,7 +3397,7 @@ STACKS = {
         "category": "Game · Web 3D",
         "language": "TypeScript",
         "scaffold": [
-            "npm create vite@latest . -- --template react-ts",
+            "npm create vite@latest . -- --template react-ts </dev/null",
             "npm install",
             "npm install three @react-three/fiber @react-three/drei",
             "npm install -D @types/three",
