@@ -1,6 +1,6 @@
-# Shopify integration in ThemeForge
+# Shopify integration in Pcreative Studio
 
-ThemeForge ships **three Shopify stacks** that scaffold complete, opinionated
+Pcreative Studio ships **three Shopify stacks** that scaffold complete, opinionated
 projects with the official Shopify tooling, three official MCPs preconfigured,
 and a thick `CLAUDE.md` context block so the AI agent works at a professional
 level out of the gate.
@@ -44,7 +44,7 @@ fast path. The `CLAUDE.md` context warns the agent about this explicitly.
 
 ### `shopify-liquid`
 
-ThemeForge runs this pipeline:
+Pcreative Studio runs this pipeline:
 
 1. `npx --yes @shopify/cli@latest theme init . --clone-url https://github.com/Shopify/dawn`
 2. Writes **`package.json`** with `prettier` + `@shopify/prettier-plugin-liquid`
@@ -195,8 +195,8 @@ in `themeforge.py`):
 ## 5. Workflow (Liquid)
 
 ```bash
-# 1) Create the project from ThemeForge (pick "Shopify Liquid")
-#    → ThemeForge clones Dawn, writes extras and CLAUDE.md.
+# 1) Create the project from Pcreative Studio (pick "Shopify Liquid")
+#    → Pcreative Studio clones Dawn, writes extras and CLAUDE.md.
 
 # 2) Install dev dependencies (prettier + Liquid plugin)
 npm install

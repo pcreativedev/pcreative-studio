@@ -358,7 +358,7 @@ def call_openrouter(req: AnalysisRequest, api_key: str, timeout: int = 240) -> s
         "Content-Type": "application/json",
         # OpenRouter recomienda estos headers para aparecer en su leaderboard.
         "HTTP-Referer": "https://github.com/pcreativedev/themeforge",
-        "X-Title": "ThemeForge - Market Analyzer",
+        "X-Title": "Pcreative Studio - Market Analyzer",
     }
     request = urllib.request.Request(OPENROUTER_URL, data=data, headers=headers, method="POST")
     try:

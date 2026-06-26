@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ThemeForge // Neo-Tokyo</title>
+  <title>Pcreative Studio // Neo-Tokyo</title>
   <link rel="stylesheet" href="styles/neo-tokyo.css" />
   <template id="__bundler_thumbnail">
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -15,7 +15,7 @@
 <body>
   <div id="root"></div>
 
-  <!-- ThemeForge native bridge (QWebChannel ↔ Python). Vendored qwebchannel.js
+  <!-- Pcreative Studio native bridge (QWebChannel ↔ Python). Vendored qwebchannel.js
        so it works over the local http origin. window.tfBridge resolves to the
        Python object once connected; window.tfBridgeReady is a Promise. -->
   <script src="qwebchannel.js"></script>
@@ -47,7 +47,7 @@
         }
         new QWebChannel(qt.webChannelTransport, (channel) => {
           window.tfBridge = channel.objects.bridge;
-          console.log('[tfBridge] conectado al backend de ThemeForge');
+          console.log('[tfBridge] conectado al backend de Pcreative Studio');
           resolve(window.tfBridge);
         });
       }

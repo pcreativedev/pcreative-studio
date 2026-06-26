@@ -1,6 +1,6 @@
 # __PROJECT__ — License system
 
-ThemeForge has scaffolded a 6-layer anti-nulled licensing system into
+Pcreative Studio has scaffolded a 6-layer anti-nulled licensing system into
 this Shopify Liquid theme. It validates the merchant's purchase code
 against your backend, verifies the returned JWT offline (RS256), gates
 premium sections, and stamps unlicensed installs with a visible
@@ -98,6 +98,6 @@ Replace these placeholders in `assets/pcreative-license.js`:
 - `__LICENSE_PUBKEY__` — PEM-encoded RS256 public key.
 - `__LICENSE_ISSUER__` — your issuer domain.
 
-For local dev with ThemeForge, these come from
+For local dev with Pcreative Studio, these come from
 `~/.config/themeforge/licensing.json` automatically. For the public
 release, the user replaces them with their own backend.

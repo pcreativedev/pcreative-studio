@@ -1,6 +1,6 @@
 """
 web_enhancements.py — Mejoras visuales "pro" para las webs que genera/abre
-ThemeForge:
+Pcreative Studio:
 
   1) **framer-motion** (a.k.a. `motion`) — librería de animación para React/Next.
      Se instala en el setup de cada proyecto frontend y se le dan instrucciones
@@ -22,7 +22,7 @@ GUIDE_FILE = "UI-MOTION.md"
 
 # Guía que se escribe en el proyecto y se referencia desde CLAUDE.md/contexto.
 # Son INSTRUCCIONES PARA EL AGENTE (Claude) sobre cómo dejar la web "pro".
-MOTION_UI_GUIDE = """# UI PRO + ANIMACIONES — LECTURA OBLIGATORIA (ThemeForge)
+MOTION_UI_GUIDE = """# UI PRO + ANIMACIONES — LECTURA OBLIGATORIA (Pcreative Studio)
 
 > 🎯 **MANDATO**: esta web debe quedar a nivel de **estudio de diseño**:
 > profesional, moderna, animada y pulida — NO una plantilla básica. Tienes dos
@@ -309,7 +309,7 @@ STACK_FILE = "STACK-PREMIUM.md"
 
 # Guía del STACK FUNCIONAL por capacidad (datos, mapas, editores, forms, iconos).
 # Complementa UI-MOTION.md (componentes + animación + 3D). Para webs estudio premium 2026.
-STACK_GUIDE = """# STACK PREMIUM 2026 — librerías por capacidad (ThemeForge)
+STACK_GUIDE = """# STACK PREMIUM 2026 — librerías por capacidad (Pcreative Studio)
 
 > Complementa **UI-MOTION.md** (componentes + animación + 3D). Aquí el stack FUNCIONAL: datos,
 > tablas, mapas, editores, formularios, iconos. Objetivo: webs hyper-avanzadas nivel **ESTUDIO

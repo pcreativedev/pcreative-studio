@@ -1,5 +1,5 @@
 /* ============================================================================
- * ThemeForge Móvil — cliente fino (PWA) sobre el API Gateway.
+ * Pcreative Studio Móvil — cliente fino (PWA) sobre el API Gateway.
  * Usa window.tfBridge (reimplementado por tfbridge-remote.js). Mobile-first.
  * Módulo base: Crear (creación de proyectos vía gateway). Pantallas opcionales
  * se auto-registran en window.TF_PRIVATE_SCREENS si su fichero está presente.
@@ -41,7 +41,7 @@ function ConfigScreen({ onSaved }) {
   };
   return (
     <div style={{ padding: 22, paddingTop: 'max(22px, env(safe-area-inset-top))' }}>
-      <h1 style={{ fontSize: 24, margin: '8px 0 4px' }}>ThemeForge <span style={{ color: 'var(--accent)' }}>Móvil</span></h1>
+      <h1 style={{ fontSize: 24, margin: '8px 0 4px' }}>Pcreative Studio <span style={{ color: 'var(--accent)' }}>Móvil</span></h1>
       <p style={{ color: 'var(--dim)', fontSize: 14, lineHeight: 1.5 }}>
         Conecta con tu motor (VPS o portátil). Mete la URL del gateway y el token.
         Recomendado: dentro de tu red <b>Tailscale</b>, p.ej. <span className="mono" style={{ color: 'var(--accent2)' }}>http://100.x.x.x:8765</span>
@@ -49,7 +49,7 @@ function ConfigScreen({ onSaved }) {
       <div style={{ ...card, marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <label style={{ color: 'var(--dim)', fontSize: 13 }}>URL del gateway
           <input value={base} onChange={e => setBase(e.target.value)} placeholder="http://100.x.x.x:8765" style={{ ...fld, marginTop: 6 }} inputMode="url" autoCapitalize="off" autoCorrect="off" /></label>
-        <label style={{ color: 'var(--dim)', fontSize: 13 }}>Token (THEMEFORGE_API_TOKEN)
+        <label style={{ color: 'var(--dim)', fontSize: 13 }}>Token (PCREATIVE STUDIO_API_TOKEN)
           <input value={token} onChange={e => setToken(e.target.value)} placeholder="token…" type="password" style={{ ...fld, marginTop: 6 }} autoCapitalize="off" autoCorrect="off" /></label>
         <button style={btn} onClick={save} disabled={!base.trim()}>Conectar</button>
       </div>
@@ -168,7 +168,7 @@ function App() {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: 'max(14px,env(safe-area-inset-top)) 16px 10px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontWeight: 800, fontSize: 18 }}>ThemeForge</span>
+        <span style={{ fontWeight: 800, fontSize: 18 }}>Pcreative Studio</span>
         <span style={{ color: 'var(--accent)', fontSize: 12 }}>● {(cfg().base || '').replace(/^https?:\/\//, '')}</span>
         <div style={{ flex: 1 }} />
         <button style={{ ...ghost, padding: '6px 10px', fontSize: 12 }} onClick={() => { localStorage.removeItem('tf_remote'); location.reload(); }}>⚙</button>

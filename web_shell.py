@@ -2,7 +2,7 @@
 
 This is the "Forma 1" proof-of-concept: the EXACT design (the React/HTML
 prototype Claude Design produced) rendered pixel-for-pixel inside the app
-via QWebEngineView (same Chromium engine), wired to the real ThemeForge
+via QWebEngineView (same Chromium engine), wired to the real Pcreative Studio
 Python backend through a QWebChannel bridge.
 
 What it proves:
@@ -10,7 +10,7 @@ What it proves:
     origin so its `type="text/babel" src=` files load correctly).
   - A native bridge object (`window.tfBridge`) exposes real Python methods
     to the page. The POC wires ONE real action: `list_stacks()` returns the
-    actual ThemeForge STACKS, and the page shows a confirmation banner.
+    actual Pcreative Studio STACKS, and the page shows a confirmation banner.
 
 Run standalone:
 
@@ -574,10 +574,10 @@ def _private_bootstrap() -> dict:
 _SETUP_SCRIPTS = {}
 
 
-class ThemeForgeBridge(QObject):
+class PcreativeStudioBridge(QObject):
     """Objeto puente expuesto a la página como `window.tfBridge`. Cada
     @pyqtSlot es invocable desde JavaScript. Aquí va la lógica REAL de
-    ThemeForge. Las señales se reciben en JS con `bridge.<signal>.connect(cb)`."""
+    Pcreative Studio. Las señales se reciben en JS con `bridge.<signal>.connect(cb)`."""
 
     # Progreso de un build/scaffold en curso (texto de log).
     progress = pyqtSignal(str)
@@ -733,7 +733,7 @@ class ThemeForgeBridge(QObject):
                 skills = (" Este proyecto tiene **skills instaladas** (autoskills / "
                           "UI-UX Pro) en `.claude/skills/`: lístalas, léelas y ÚSALAS.")
             prompt = (
-                f"Acabas de abrir el proyecto «{proj.name}» desde ThemeForge. "
+                f"Acabas de abrir el proyecto «{proj.name}» desde Pcreative Studio. "
                 f"Lee COMPLETAMENTE {ctx} y todo lo que haya en context/ para entender "
                 f"el estado actual (qué es, stack, qué se ha hecho ya).{skills}\n\n"
                 f"Antes de tocar NADA del código:\n"
@@ -836,7 +836,7 @@ class ThemeForgeBridge(QObject):
                 marker.unlink()
         except Exception:
             pass
-        wrapper = (f"clear; echo '─── ThemeForge: ejecutando setup ───'; "
+        wrapper = (f"clear; echo '─── Pcreative Studio: ejecutando setup ───'; "
                    f"bash {shlex.quote(script)}; "
                    f"echo ''; echo '─── setup terminado. Shell lista. ───'; "
                    f"touch {shlex.quote(str(marker))} 2>/dev/null; exec bash -i")
@@ -1391,7 +1391,7 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, result=str)
     def suggest_stack(self, description: str) -> str:
-        """Pre-fill Vibe real (motor de sugerencia de ThemeForge) — ASÍNCRONO en
+        """Pre-fill Vibe real (motor de sugerencia de Pcreative Studio) — ASÍNCRONO en
         un hilo para no congelar la UI; emite `suggest_result` con el resultado."""
         import threading
 
@@ -1407,7 +1407,7 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(result=str)
     def list_stacks(self) -> str:
-        """Acción real: devuelve los stacks de verdad de ThemeForge."""
+        """Acción real: devuelve los stacks de verdad de Pcreative Studio."""
         return json.dumps(_stacks_data())
 
     @pyqtSlot(result=str)
@@ -1507,7 +1507,7 @@ class ThemeForgeBridge(QObject):
     @pyqtSlot(str, result=str)
     def switch_to_classic(self, theme: str) -> str:
         """Cambia al SISTEMA DE TEMAS NORMAL (UI nativa QWidgets): persiste el
-        tema + ui_mode=classic y REINICIA ThemeForge para cargar la UI clásica
+        tema + ui_mode=classic y REINICIA Pcreative Studio para cargar la UI clásica
         (los temas nativos no aplican sobre la UI web)."""
         try:
             import themes
@@ -1716,10 +1716,10 @@ class ThemeForgeBridge(QObject):
         proj = Path(path)
         if not (proj / ".git").is_dir():
             # init + commit inicial
-            cmd = ('git init && git add -A && git commit -m "ThemeForge: initial" '
+            cmd = ('git init && git add -A && git commit -m "Pcreative Studio: initial" '
                    '|| true')
         else:
-            cmd = ('git add -A && git commit -m "ThemeForge update" || true; '
+            cmd = ('git add -A && git commit -m "Pcreative Studio update" || true; '
                    'git push 2>&1 || echo "[push] configura el remote primero]"')
         proc = QProcess(self)
         proc.setWorkingDirectory(str(proj))
@@ -1744,7 +1744,7 @@ class ThemeForgeBridge(QObject):
         name = proj.name
         cmd = (
             'git rev-parse --git-dir >/dev/null 2>&1 || git init; '
-            'git add -A && git commit -m "ThemeForge: publish" || true; '
+            'git add -A && git commit -m "Pcreative Studio: publish" || true; '
             'if git remote get-url origin >/dev/null 2>&1; then '
             '  git push -u origin HEAD 2>&1; '
             f'else gh repo create "{name}" --private --source=. --remote=origin --push 2>&1; fi'
@@ -2040,7 +2040,7 @@ class ThemeForgeBridge(QObject):
             from PyQt6.QtWidgets import QDialog, QVBoxLayout
             from credentials_panel import CredentialsWidget
             dlg = QDialog()
-            dlg.setWindowTitle("ThemeForge — Credenciales IA")
+            dlg.setWindowTitle("Pcreative Studio — Credenciales IA")
             dlg.resize(560, 480)
             lay = QVBoxLayout(dlg)
             lay.addWidget(CredentialsWidget(dlg))
@@ -2117,7 +2117,7 @@ class ThemeForgeBridge(QObject):
 
     @pyqtSlot(str, result=str)
     def open_shortcut(self, kind: str) -> str:
-        """Atajos: abrir carpeta de ThemeForge / context/ / editar stacks.py."""
+        """Atajos: abrir carpeta de Pcreative Studio / context/ / editar stacks.py."""
         try:
             from pathlib import Path
             import subprocess
@@ -2431,7 +2431,7 @@ class ThemeForgeBridge(QObject):
     def hermes_skill_draft_ai(self, name: str, stacks: str, desc: str) -> str:
         if not (name or "").strip() or not (desc or "").strip():
             return json.dumps({"ok": False, "error": "nombre y especialidad requeridos"})
-        prompt = ("Write a Hermes SKILL.md for a ThemeForge specialized agent. Output ONLY "
+        prompt = ("Write a Hermes SKILL.md for a Pcreative Studio specialized agent. Output ONLY "
                   "the file content (YAML frontmatter + markdown body, in Spanish). "
                   f"name: {name}. base stacks: {stacks}. specialty: {desc}.")
         self._h_async("draft_skill", ["-z", prompt], timeout=120)
@@ -2734,7 +2734,7 @@ class ThemeForgeBridge(QObject):
         return json.dumps({"pong": msg})
 
 
-def _make_bridge() -> ThemeForgeBridge:
+def _make_bridge() -> PcreativeStudioBridge:
     """Devuelve el puente con los slots opcionales (Leads/Generador/Scraper) si
     el plugin privado está presente; si no, el puente base. Los @pyqtSlot de la
     subclase QObject los expone QWebChannel igual que los del base."""
@@ -2742,7 +2742,7 @@ def _make_bridge() -> ThemeForgeBridge:
         from web_shell_private import PrivateBridge
         return PrivateBridge()
     except Exception:
-        return ThemeForgeBridge()
+        return PcreativeStudioBridge()
 
 
 class WebShell(QWidget):
@@ -2791,7 +2791,7 @@ class WebShell(QWidget):
             from PyQt6.QtCore import QUrl
             win = QWidget()
             from pathlib import Path as _P
-            win.setWindowTitle(f"ThemeForge — {_P(path).name}")
+            win.setWindowTitle(f"Pcreative Studio — {_P(path).name}")
             win.resize(1280, 860)
             lay = QVBoxLayout(win)
             lay.setContentsMargins(0, 0, 0, 0)
@@ -2884,7 +2884,7 @@ def main():
     app = QApplication(sys.argv)
     w = WebShell()
     w.resize(1280, 820)
-    w.setWindowTitle("ThemeForge // Neo-Tokyo (WebEngine POC)")
+    w.setWindowTitle("Pcreative Studio // Neo-Tokyo (WebEngine POC)")
     w.show()
     sys.exit(app.exec())
 

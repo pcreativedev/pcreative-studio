@@ -1,6 +1,6 @@
 # Investigación de mercado (template)
 
-Plantilla pública. Stub neutro que ThemeForge incluye por defecto en el
+Plantilla pública. Stub neutro que Pcreative Studio incluye por defecto en el
 contexto del proyecto.
 
 Si quieres que el agente IA del proyecto tenga acceso a TU
@@ -8,7 +8,7 @@ investigación de mercado real, crea tu versión privada en:
 
     ~/.config/themeforge/context-private/MARKET-RESEARCH.md
 
-ThemeForge la priorizará sobre este stub. La privada nunca entra al
+Pcreative Studio la priorizará sobre este stub. La privada nunca entra al
 repo público (está bloqueada por `.gitignore`).
 
 ## Estructura sugerida para tu versión privada

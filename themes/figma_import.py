@@ -1,4 +1,4 @@
-"""Figma → ThemeForge token importer.
+"""Figma → Pcreative Studio token importer.
 
 Two import paths:
 
@@ -32,7 +32,7 @@ Mapping strategy:
   1. Flatten DTCG to a list of (path, type, value, modes) tuples.
   2. For each token, score against semantic patterns
      (accent/bg/fg/success/...). Best match wins.
-  3. If multiple Figma tokens compete for the same ThemeForge slot,
+  3. If multiple Figma tokens compete for the same Pcreative Studio slot,
      prefer the one with higher score; surface ties to the user
      via the import dialog for manual disambiguation.
   4. Optional AI fallback: when score < threshold, ask the active
@@ -320,7 +320,7 @@ def figma_variables_to_dtcg(figma_response: dict) -> dict:
 
 
 # ─────────────────── Semantic mapping ────────────────────────────────
-# Pattern → target ThemeForge token, with score weight.
+# Pattern → target Pcreative Studio token, with score weight.
 #
 # The scorer normalises Figma paths to lowercase + underscores
 # ("color.brand.primary" → "color_brand_primary"), then matches against
@@ -371,7 +371,7 @@ def _normalize(path: str) -> str:
 
 @dataclass
 class MappingProposal:
-    """One suggested mapping from a Figma token to a ThemeForge slot,
+    """One suggested mapping from a Figma token to a Pcreative Studio slot,
     with a confidence score. The UI surfaces these for the user to
     accept / override / reject."""
     figma_path: str
@@ -382,7 +382,7 @@ class MappingProposal:
 
 
 def propose_mappings(tokens: list[FigmaToken]) -> list[MappingProposal]:
-    """Score each Figma token against ThemeForge slots and return the
+    """Score each Figma token against Pcreative Studio slots and return the
     best candidate per slot. Ties are broken by score; ties at equal
     score are flagged for user disambiguation in the UI."""
     proposals: list[MappingProposal] = []
@@ -483,7 +483,7 @@ def themepack_to_dtcg(pack: ThemePack) -> dict:
         cursor[parts[-1]] = {"$type": "dimension", "$value": f"{val}px"}
 
     return {
-        "$description": f"ThemeForge export of '{pack.name}'",
+        "$description": f"Pcreative Studio export of '{pack.name}'",
         "color": color_node,
         "shape": shape_node,
     }

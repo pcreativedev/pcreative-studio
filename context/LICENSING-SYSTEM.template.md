@@ -2,7 +2,7 @@
 
 Plantilla pública. Stub neutro.
 
-ThemeForge soporta opcionalmente integrar cada theme generado con un
+Pcreative Studio soporta opcionalmente integrar cada theme generado con un
 sistema de licencias del autor (verificación remota de purchase code,
 setup wizard, panel admin). El módulo
 `licensing_scaffold.py`* implementa este patrón para el sistema del
@@ -20,7 +20,7 @@ panel admin), crea tu versión privada en:
 
     ~/.config/themeforge/context-private/LICENSING-SYSTEM.md
 
-ThemeForge la priorizará. Tu versión privada va a quedar fuera del repo
+Pcreative Studio la priorizará. Tu versión privada va a quedar fuera del repo
 público (`.gitignore`).
 
 *nota: el módulo se llama `licensing_scaffold.py` y los templates

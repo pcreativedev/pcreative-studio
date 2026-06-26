@@ -1,6 +1,6 @@
 """Cross-platform compatibility helpers.
 
-ThemeForge was developed on Linux and has Linux-specific assumptions
+Pcreative Studio was developed on Linux and has Linux-specific assumptions
 (bash, xdg-open, konsole, dolphin, ~/.config/, …) baked into many
 places. This module centralises those concerns so the rest of the
 codebase can call platform-agnostic helpers.
@@ -185,7 +185,7 @@ def app_config_dir(app_name: str = "themeforge") -> Path:
     - macOS: `~/Library/Application Support/<app>`.
     - Windows: `%APPDATA%/<app>` (Roaming).
 
-    Note: until a full migration sweep, most of ThemeForge still
+    Note: until a full migration sweep, most of Pcreative Studio still
     writes to `~/.config/themeforge/` directly. This helper exists
     for new code to do the right thing.
     """

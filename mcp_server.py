@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""ThemeForge MCP server (stdio transport).
+"""Pcreative Studio MCP server (stdio transport).
 
-Exposes ThemeForge's core actions as Model Context Protocol tools so
+Exposes Pcreative Studio's core actions as Model Context Protocol tools so
 AI clients (Claude Code, Cursor, Windsurf, OpenCode, etc.) can invoke
 them directly from their own conversation — no need to open the
-ThemeForge GUI.
+Pcreative Studio GUI.
 
 Phase 1 tools (read-mostly + safe writes):
 
@@ -42,7 +42,7 @@ import json
 import sys
 from pathlib import Path
 
-# Make ThemeForge's modules importable when this script is launched from
+# Make Pcreative Studio's modules importable when this script is launched from
 # a foreign cwd (e.g. Claude Code's project dir).
 _THIS_DIR = Path(__file__).resolve().parent
 if str(_THIS_DIR) not in sys.path:
@@ -53,7 +53,7 @@ from mcp.server.fastmcp import FastMCP  # noqa: E402
 mcp = FastMCP(
     "themeforge",
     instructions=(
-        "ThemeForge is a desktop GUI for scaffolding marketplace-ready "
+        "Pcreative Studio is a desktop GUI for scaffolding marketplace-ready "
         "template projects (ThemeForest / CodeCanyon / Gumroad / "
         "Creative Market) driven by AI agents. These tools expose its "
         "core actions: list available stacks/themes/providers, suggest "
@@ -68,7 +68,7 @@ mcp = FastMCP(
 # ─────────────────── Read tools ─────────────────────────────────────
 @mcp.tool()
 def list_stacks() -> list[dict]:
-    """List every project stack ThemeForge can scaffold.
+    """List every project stack Pcreative Studio can scaffold.
 
     Returns a list of dicts with: key, name, category, language,
     min_version. The `key` is what `scaffold_project()` accepts.
@@ -91,7 +91,7 @@ def list_stacks() -> list[dict]:
 
 @mcp.tool()
 def list_themes() -> list[dict]:
-    """List app themes that ThemeForge can apply to its own UI.
+    """List app themes that Pcreative Studio can apply to its own UI.
 
     Themes are JSON token files. Builtin themes ship with the install;
     user themes live in `~/.config/themeforge/themes/`. Both are
@@ -113,7 +113,7 @@ def list_themes() -> list[dict]:
 
 @mcp.tool()
 def list_recent_projects(limit: int = 10, include_archived: bool = False) -> list[dict]:
-    """List projects scaffolded with ThemeForge, sorted by last-modified.
+    """List projects scaffolded with Pcreative Studio, sorted by last-modified.
 
     Reads `~/.config/themeforge/projects-meta.json`. Returns at most
     `limit` entries. Set `include_archived=true` to include items moved
@@ -141,7 +141,7 @@ def list_recent_projects(limit: int = 10, include_archived: bool = False) -> lis
 
 @mcp.tool()
 def list_supported_providers() -> list[dict]:
-    """Inventory of the 7 AI providers ThemeForge supports.
+    """Inventory of the 7 AI providers Pcreative Studio supports.
 
     Returns auth status per provider so the agent knows which are
     actually usable. Status values:
@@ -177,7 +177,7 @@ def estimate_cost(
 ) -> dict:
     """Estimate the USD cost of an AI call.
 
-    Uses ThemeForge's `cost_tracker.PRICING` table. If the model isn't
+    Uses Pcreative Studio's `cost_tracker.PRICING` table. If the model isn't
     in the table, returns a conservative default (Opus rates) and
     `pricing_known: false`. Use exact model IDs like
     `claude-opus-4-7`, `gpt-5-codex`, `gemini-2.5-flash`.
@@ -273,7 +273,7 @@ def suggest_stack(description: str, provider_for_inference: str = "claude") -> d
 
 @mcp.tool()
 def run_preflight(project_path: str) -> dict:
-    """Run ThemeForge's pre-flight checker on a project directory.
+    """Run Pcreative Studio's pre-flight checker on a project directory.
 
     Returns each check with: id, title, level (pass/warn/fail/info),
     message, hint. The agent can use this to fix issues before the
@@ -358,7 +358,7 @@ def create_project(
     run_setup: bool = True,
     timeout: int = 420,
 ) -> dict:
-    """Create a new ThemeForge project and prepare it for an AI agent build.
+    """Create a new Pcreative Studio project and prepare it for an AI agent build.
 
     Creates `~/Proyectos/themes/<slug>/`, writes the AI context file
     (marketplace / Envato requirements), and — when run_setup=True — runs the
@@ -373,7 +373,7 @@ def create_project(
       niche: optional niche/industry injected into the AI context.
       provider: agent the build will target; maps the autoskills/uipro flags.
         One of list_supported_providers() keys; default "codex".
-      run_autoskills / run_uipro: keep True to inherit ThemeForge's quality layer.
+      run_autoskills / run_uipro: keep True to inherit Pcreative Studio's quality layer.
       run_setup: run scaffold+autoskills+uipro now (True) or just dir+context (False).
       timeout: seconds for the setup step (scaffold/npm can be slow).
 
@@ -510,7 +510,7 @@ def screenshot_project(
     timeout: int = 90,
 ) -> dict:
     """Capture a PNG screenshot of the project's running web preview, for
-    VISUAL QA. Starts the dev server (via ThemeForge's preview detection),
+    VISUAL QA. Starts the dev server (via Pcreative Studio's preview detection),
     waits for it, screenshots with headless Chromium, then stops the server.
 
     Returns {ok, image_path, url}. Pass image_path to your `vision_analyze`

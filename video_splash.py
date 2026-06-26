@@ -1,4 +1,4 @@
-"""video_splash.py — Splash de bienvenida en video al arrancar ThemeForge.
+"""video_splash.py — Splash de bienvenida en video al arrancar Pcreative Studio.
 
 Reproduce un MP4 en una ventana frameless centrada, con audio. El usuario
 puede saltarlo en cualquier momento con un clic o cualquier tecla. Cuando

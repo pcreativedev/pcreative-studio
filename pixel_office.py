@@ -5,10 +5,10 @@ agentes IA. Por defecto apunta al fork `pcreativedev/pixel-office-openclaw`
 sesiones OpenClaw como Claude Code (`~/.claude/projects/*/`) y muestra
 avatares en una oficina virtual + dashboard web en localhost:3002.
 
-ThemeForge lo gestiona así:
+Pcreative Studio lo gestiona así:
   · Auto-detect: busca instalación local en rutas conocidas.
   · Auto-install: si no está, clona+npm install con consentimiento.
-  · Auto-launch: arranca `node server.js` en background con ThemeForge.
+  · Auto-launch: arranca `node server.js` en background con Pcreative Studio.
   · Tab embebida: cada ProjectWindow tiene un tab "🎮 Office" con
     WebEngineView a http://localhost:3002.
 

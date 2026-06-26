@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ThemeForge will be documented in this file.
+All notable changes to Pcreative Studio will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -20,14 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.8.0] - 2026-06-18
 
-### Added — ThemeForge móvil (cliente fino + motor remoto)
+### Added — Pcreative Studio móvil (cliente fino + motor remoto)
 
-- **El motor de ThemeForge se puede usar desde el móvil.** Nuevo `api_gateway.py`
+- **El motor de Pcreative Studio se puede usar desde el móvil.** Nuevo `api_gateway.py`
   (FastAPI) que expone el puente nativo como API remota (JSON-RPC + WebSocket para
   streaming + subida de ficheros), con autenticación por *bearer token* (variable
   de entorno o fichero en `~/.config/themeforge`). Pensado para vivir detrás de una
   VPN/red privada, no expuesto crudo a internet.
-- **PWA + envoltorio Capacitor** (`webui/mobile/`, `mobile/`): instala ThemeForge
+- **PWA + envoltorio Capacitor** (`webui/mobile/`, `mobile/`): instala Pcreative Studio
   como app en el teléfono. `webui/remote/tfbridge-remote.js` reimplementa
   `window.tfBridge` sobre la API, así la misma Web UI funciona contra un motor
   remoto sin cambios.
@@ -95,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Web UI (Neo-Tokyo · Matrix · Kawaii)
 
-- **ThemeForge ahora tiene una UI web** renderizada en `QWebEngineView` + puente `QWebChannel` (`window.tfBridge`): los prototipos React/HTML son la interfaz principal. Por defecto arranca en modo web; `THEMEFORGE_CLASSIC=1` (o Ajustes → Temas → un tema clásico) vuelve a la UI nativa de QWidgets. Implementación en `web_shell.py` (+40 slots de puente) y `webui/`.
+- **Pcreative Studio ahora tiene una UI web** renderizada en `QWebEngineView` + puente `QWebChannel` (`window.tfBridge`): los prototipos React/HTML son la interfaz principal. Por defecto arranca en modo web; `PCREATIVE STUDIO_CLASSIC=1` (o Ajustes → Temas → un tema clásico) vuelve a la UI nativa de QWidgets. Implementación en `web_shell.py` (+40 slots de puente) y `webui/`.
 - **3 temas web completos**, cada uno con su propio splash de arranque: **Neo-Tokyo** (cyberpunk cian/magenta, por defecto), **Matrix** (terminal verde fósforo) y **Kawaii** (pastel). Se cambian en Ajustes → Temas. Los temas **web** recolorean la UI en vivo (CSS vars); los **clásicos** reinician la app para cargar la UI nativa.
 - **Temas web enchufables**: suelta un JSON en `webui/themes/<slug>.json` y aparece como tema nuevo (recolor en vivo). Importador `tools/import_web_theme.py` convierte un tema de Claude Design (CSS) → pack JSON.
 - **Todas las pantallas con datos/acciones REALES** (cero mock), a paridad con la app nativa, en los 3 temas:
@@ -110,7 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Operator / Hermes** — power on/off + status strip (versión · MCP · modelo) + misión con fases (Plan→Crear→Build→QA→Empaquetar)/variantes/agente/log en vivo + Chat + Admin (dashboard web embebido) + pestañas Agentes/Crear/Memoria/Kanban/Cron.
   - **Command Palette** (⌘/Ctrl+K).
 - **Preview robusto** (compartido por la UI web y la nativa): sondeo del puerto del dev server (sin delays fijos → adiós `ERR_CONNECTION_REFUSED`), seguimiento de la URL real del stdout (si el framework coge otro puerto), detección de sub-proyectos en mono-repos. El **setup** se ejecuta con TTY real (los scaffolders interactivos como `create-next-app` ya funcionan).
-- **Capas Neo-Tokyo nativas** (para `THEMEFORGE_CLASSIC=1`): tema built-in Neo-Tokyo, splash de secuencia de arranque, atmósfera (grid + glows) y la pestaña **Operator → Hermes** con su shell de 8 sub-pestañas.
+- **Capas Neo-Tokyo nativas** (para `PCREATIVE STUDIO_CLASSIC=1`): tema built-in Neo-Tokyo, splash de secuencia de arranque, atmósfera (grid + glows) y la pestaña **Operator → Hermes** con su shell de 8 sub-pestañas.
 
 ### Added — E-commerce expansion
 
@@ -197,7 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.3] - 2026-05-28
 
 ### Added
-- **WordPress auto-login on `localhost`** (ThemeForge mu-plugin) + real **Start/Stop** buttons for the Docker WordPress preview (start/stop containers without losing data).
+- **WordPress auto-login on `localhost`** (Pcreative Studio mu-plugin) + real **Start/Stop** buttons for the Docker WordPress preview (start/stop containers without losing data).
 
 ## [1.3.2] - 2026-05-28
 
@@ -212,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-05-27
 
 ### Added
-- **Self-provisioned WordPress dev environment in Docker** — ThemeForge brings up WordPress + MariaDB, installs WP (admin/admin) and mounts the project under `wp-content/{themes,plugins}/<slug>` before setup. The preview points straight at the live container (`no_server` profile); a `./wp` helper runs wp-cli inside the container. `wp-env` was dropped in favour of this.
+- **Self-provisioned WordPress dev environment in Docker** — Pcreative Studio brings up WordPress + MariaDB, installs WP (admin/admin) and mounts the project under `wp-content/{themes,plugins}/<slug>` before setup. The preview points straight at the live container (`no_server` profile); a `./wp` helper runs wp-cli inside the container. `wp-env` was dropped in favour of this.
 - **WordPress MCP** (official Automattic bridge) auto-wired in `.mcp.json` for native control of the WP core from the agent.
 - **Licensing client v2** (anti-nulled): RS256-signed JWT, offline verification with the embedded public key, gated auto-updater, and a `demo-installer`. Replaces the v1 client.
 - **§B Envato checklist per product format** in the generated `CLAUDE.md` (Site Template vs Script/App vs WordPress vs Mobile), so the agent applies the right marketplace rules.
@@ -247,7 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the Gallery and in each ProjectWindow run it on *existing* projects; Hermes
   learns per-project (`.hermes.md`). Installable from the dependency wizard.
   **Fully optional** — the tab/buttons only appear if Hermes is installed;
-  ThemeForge works exactly as before without it. See User Guide §23.
+  Pcreative Studio works exactly as before without it. See User Guide §23.
 - **Build from a Figma design.** *New project → Recreate from reference →
   Figma (URL)* lets the AI agent implement your Figma frame faithfully via the
   `figma-context` MCP. Set your token at *Settings → 🔑 AI credentials → Figma*
@@ -259,7 +259,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Vibe no longer restyles the app.** The proposed `theme_hint` is now only a
   suggestion for the generated project (it is already part of the dev prompt); it
-  no longer applies/persists itself onto ThemeForge's own UI, which could leave
+  no longer applies/persists itself onto Pcreative Studio's own UI, which could leave
   the IDE stuck on a light theme. The Settings theme picker is unchanged.
 - **Monorepo preview picks the customer-facing sub-app.** When opening a
   monorepo, the default active sub-app is now scored to favour the public site
@@ -290,7 +290,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **First-run onboarding wizard.** A 5-step wizard (welcome → dependencies
-  → AI credentials → defaults → finish) runs the first time ThemeForge
+  → AI credentials → defaults → finish) runs the first time Pcreative Studio
   starts, so new users land in a configured app. Re-openable from
   *Settings → 🧙 Setup wizard*.
 - **AI credentials manager.** A panel (in onboarding and *Settings → 🔑 AI
@@ -321,10 +321,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **🪟 Windows support (alpha).** ThemeForge now runs on Windows 10/11
+- **🪟 Windows support (alpha).** Pcreative Studio now runs on Windows 10/11
   with a real installer:
 
-  - **Inno Setup installer** (`ThemeForge-Setup-X.Y.Z.exe`) built on
+  - **Inno Setup installer** (`Pcreative Studio-Setup-X.Y.Z.exe`) built on
     `windows-latest` via GitHub Actions. Installs to `Program Files`
     (per-machine, UAC) like any normal app, with an entry in *Add/remove
     programs*, Start Menu + optional desktop shortcuts, App Paths registry
@@ -351,7 +351,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the palette, copy tone, themed stock images and demo data for the sector.
 
 - **🔧 Dependency setup wizard.** Detects and installs the external tools
-  ThemeForge needs (Node, git, GitHub CLI, the AI CLIs, netlify, plus
+  Pcreative Studio needs (Node, git, GitHub CLI, the AI CLIs, netlify, plus
   per-stack runtimes: Python, Java, Rust, Go, Bun, Deno, Ruby, Hugo, PHP)
   via winget / brew / paru — or direct official installers when no package
   manager is present. Opens automatically on first run if Node/git are
@@ -380,7 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   capabilities for the Model Context Protocol ecosystem (2026's
   fastest-growing standard for AI tool exposure):
 
-  1. **`mcp_server.py`** — ThemeForge's own stdio MCP server. Exposes
+  1. **`mcp_server.py`** — Pcreative Studio's own stdio MCP server. Exposes
      8 tools (`list_stacks`, `list_themes`, `list_recent_projects`,
      `list_supported_providers`, `estimate_cost`, `suggest_stack`,
      `run_preflight`, `build_zip`) to any MCP client (Claude Code,
@@ -392,10 +392,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
      servers organized by stack relevance (universal / web-frontend /
      wordpress / shopify / database / design). When the
      **📡 Pre-configurar MCP servers** toggle in Setup sub-tab is on
-     (default), ThemeForge writes a `.mcp.json` in every scaffolded
+     (default), Pcreative Studio writes a `.mcp.json` in every scaffolded
      project pointing at the right MCPs. The user's AI client reads
      it on startup and downloads each MCP via `npx` / `uvx` / `docker`
-     on first invocation — ThemeForge never bundles their source,
+     on first invocation — Pcreative Studio never bundles their source,
      just generates the config.
 
   Catalog (license-verified at curation time):
@@ -406,7 +406,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Shopify:** Shopify/dev-mcp (official).
     - **Backend with DB:** postgres (MIT, crystaldba).
 
-  All licenses fully compatible with ThemeForge's GPL v3 — they're
+  All licenses fully compatible with Pcreative Studio's GPL v3 — they're
   subprocess invocations, not embedded code. Discovery reference:
   [punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers).
 
@@ -483,9 +483,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     path). Auto-detected mappings appear in an editable table where
     every row has a checkbox to accept/skip, a confidence score
     (green ≥ 95 / yellow ≥ 85 / red < 85), a dropdown to re-target
-    the ThemeForge slot, and editable raw value.
+    the Pcreative Studio slot, and editable raw value.
   - **Semantic mapping engine** with 26 color patterns + 5 shape
-    patterns that score Figma token paths against ThemeForge slots
+    patterns that score Figma token paths against Pcreative Studio slots
     (`color.brand.primary` → `accent`, `color.bg.elevated` →
     `bg_elevated`, `radius.full` → `radius_pill`, etc.). Higher
     score = more specific match wins per slot.
@@ -555,10 +555,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   defaults (flat/underline/outlined/comfortable) for backwards
   compatibility — no visual regression.
 - **🎨 App theme system (Sprint 1).** New `themes/` module with
-  JSON-token-driven theming for the ThemeForge UI itself. Ships with
+  JSON-token-driven theming for the Pcreative Studio UI itself. Ships with
   5 builtin themes:
-  - **ThemeForge Dark** (default) — blue accent, VSCode-inspired.
-  - **ThemeForge Light** — paper-white with blue accent.
+  - **Pcreative Studio Dark** (default) — blue accent, VSCode-inspired.
+  - **Pcreative Studio Light** — paper-white with blue accent.
   - **Dracula** — purple + green pastel.
   - **Nord** — cool polar blues.
   - **Tokyo Night** — deep blues with neon accents.
@@ -581,7 +581,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   OpenCode) that normalise their structured-output events into one
   canonical event shape consumed by the analysis dialog. As a result,
   the **TTFT + tokens + cost meter** (previously Claude-only) now
-  works identically on the 7 ThemeForge providers. Cost is computed
+  works identically on the 7 Pcreative Studio providers. Cost is computed
   locally via `cost_tracker.cost_for` when the agent doesn't report
   it (currently only Claude reports `total_cost_usd` natively).
 - **Structured output flags wired in `oneshot_argv`.** Each CLI is
@@ -596,12 +596,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   v0.3.6+ supports `gemini` / `opencode` / `cursor` / `windsurf` /
   `copilot` agents. Updated `ai_providers.py` to set
   `autoskills_flag` for `gemini`, `opencode` and `openrouter` (was
-  previously `None`). All 7 ThemeForge providers now get the full
+  previously `None`). All 7 Pcreative Studio providers now get the full
   autoskills + uipro skill stack on scaffold.
 - **🎨 UI UX Pro Max integration.** New *"uipro UI/UX Pro Max"*
   checkbox in the project form (auto-checked for any stack with a
   visual UI surface; OFF only for `Backend · API` stacks). When on,
-  ThemeForge runs `npx --yes uipro-cli init --ai <agent>` after
+  Pcreative Studio runs `npx --yes uipro-cli init --ai <agent>` after
   autoskills, dropping the design-intelligence skill from
   [`nextlevelbuilder/ui-ux-pro-max-skill`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
   (MIT) into the project — 161 reasoning rules, 67 UI styles, 161
@@ -690,12 +690,12 @@ Initial public release.
   GitHub-hosted `macos-latest` runner — no Apple Developer ID
   required for distribution as alpha (Gatekeeper warning expected
   on first launch). Local build script: `scripts/build-macos.sh`.
-- **🎨 App icon + desktop launcher.** ThemeForge ships an app icon in
+- **🎨 App icon + desktop launcher.** Pcreative Studio ships an app icon in
   `assets/themeforge.png` (anvil + hammer + code/screens — branded for
   the project) plus pre-rendered sizes (16/32/48/64/128/256). The icon
   is loaded at startup and propagates to titlebar / taskbar / alt-tab
   / dock. A `scripts/install-desktop-entry.sh` script installs a
-  user-local `.desktop` entry so ThemeForge shows up in the DE app
+  user-local `.desktop` entry so Pcreative Studio shows up in the DE app
   menu (run with `--uninstall` to remove).
 - **🤝 Multi-agent compare.** New main-window tab that runs the same
   prompt across multiple AI CLIs (Claude Code, Codex, Gemini, OpenCode)
@@ -706,7 +706,7 @@ Initial public release.
   copies the output to clipboard. Useful for: choosing the best agent
   for a task, debugging which model has the right take on a problem,
   or generating multiple competing solutions for a manual merge.
-- Initial public release of ThemeForge.
+- Initial public release of Pcreative Studio.
 - GUI builder (PyQt6) for scaffolding template projects across 60+
   stacks (Next.js, Astro, Laravel, WordPress, Shopify, Flutter, Tauri,
   Spring, Ktor, Phaser, R3F, …).

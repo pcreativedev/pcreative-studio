@@ -12,8 +12,8 @@
 #   bash scripts/build-macos.sh
 #
 # Output:
-#   dist/ThemeForge.app
-#   dist/ThemeForge-macOS.zip
+#   dist/Pcreative Studio.app
+#   dist/Pcreative Studio-macOS.zip
 
 set -euo pipefail
 
@@ -49,7 +49,7 @@ echo "▶ building .app with PyInstaller…"
 rm -rf build dist
 pyinstaller --noconfirm --clean \
     --windowed \
-    --name ThemeForge \
+    --name Pcreative Studio \
     --icon assets/themeforge.icns \
     --osx-bundle-identifier dev.pcreative.themeforge \
     --add-data "assets:assets" \
@@ -58,12 +58,12 @@ pyinstaller --noconfirm --clean \
     themeforge.py
 
 echo "▶ zipping for distribution…"
-( cd dist && zip -r --symlinks ThemeForge-macOS.zip ThemeForge.app )
+( cd dist && zip -r --symlinks Pcreative Studio-macOS.zip Pcreative Studio.app )
 
 echo
 echo "✓ done."
-echo "  → dist/ThemeForge.app"
-echo "  → dist/ThemeForge-macOS.zip"
+echo "  → dist/Pcreative Studio.app"
+echo "  → dist/Pcreative Studio-macOS.zip"
 echo
 echo "Smoke test:"
-echo "  open dist/ThemeForge.app"
+echo "  open dist/Pcreative Studio.app"

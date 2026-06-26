@@ -3,7 +3,7 @@
 The user describes what they want to build in plain Spanish/English
 (e.g. "landing premium para clínica dental en Madrid, paleta cálida").
 A small structured-output prompt asks the active AI provider to
-return a JSON object that maps onto the ThemeForge project form:
+return a JSON object that maps onto the Pcreative Studio project form:
 
   {
     "stack_key": "astro-tailwind",

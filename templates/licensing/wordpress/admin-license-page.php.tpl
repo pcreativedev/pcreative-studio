@@ -7,14 +7,14 @@
  *   require_once __DIR__ . '/inc/class-license.php';
  *   require_once __DIR__ . '/inc/admin-license-page.php';
  *   add_action('admin_menu', function () {
- *       $license = new \ThemeForge\Licensing\License('__SLUG__');
+ *       $license = new \Pcreative Studio\Licensing\License('__SLUG__');
  *       licensing_register_admin_page($license, '__PROJECT__');
  *   });
  */
 
 defined('ABSPATH') || exit;
 
-function licensing_register_admin_page(\ThemeForge\Licensing\License $license, string $product_name): void
+function licensing_register_admin_page(\Pcreative Studio\Licensing\License $license, string $product_name): void
 {
     add_menu_page(
         $product_name . ' License',
@@ -29,7 +29,7 @@ function licensing_register_admin_page(\ThemeForge\Licensing\License $license, s
     );
 }
 
-function licensing_render_admin_page(\ThemeForge\Licensing\License $license, string $product_name): void
+function licensing_render_admin_page(\Pcreative Studio\Licensing\License $license, string $product_name): void
 {
     if (!current_user_can('manage_options')) {
         wp_die('Forbidden');

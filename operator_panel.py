@@ -1,4 +1,4 @@
-"""operator_panel.py — Mission Control for the ThemeForge Operator (Hermes).
+"""operator_panel.py — Mission Control for the Pcreative Studio Operator (Hermes).
 
 A GUI tab to launch autonomous template-building missions: type a brief, hit
 Launch, and Hermes (the `themeforge-operator` skill + the `themeforge` MCP
@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (
 
 OPERATOR_SKILL = "themeforge-operator"
 PROJECTS_DIR = Path.home() / "Proyectos" / "themes"
-TERMINAL_DIR = Path(os.environ.get("THEMEFORGE_TERMINAL_DIR")
+TERMINAL_DIR = Path(os.environ.get("PCREATIVE STUDIO_TERMINAL_DIR")
                     or (Path(__file__).resolve().parent / "terminal"))
 
 
@@ -281,7 +281,7 @@ class HermesTerminal(QWidget):
 
 
 class OperatorPanel(QWidget):
-    """Mission Control: launch Hermes-orchestrated ThemeForge missions."""
+    """Mission Control: launch Hermes-orchestrated Pcreative Studio missions."""
 
     SKILL = "themeforge-operator"
 
@@ -315,7 +315,7 @@ class OperatorPanel(QWidget):
         sub = QLabel(
             "<b>Modo opcional.</b> Describe una misión y Hermes la construye "
             "sola: plan → crear → build → QA → empaquetar. Cada variante recibe "
-            "un estilo UI/UX Pro Max distinto. ThemeForge funciona perfectamente "
+            "un estilo UI/UX Pro Max distinto. Pcreative Studio funciona perfectamente "
             "sin esto — el Operator es un extra para automatización autónoma."
         )
         sub.setTextFormat(Qt.TextFormat.RichText)
@@ -325,11 +325,11 @@ class OperatorPanel(QWidget):
         if not self._hermes:
             info = QLabel(
                 "ℹ️ <b>Operator no activado</b> (opcional). Para habilitarlo, "
-                "instala Hermes Agent y registra el MCP de ThemeForge:<br>"
+                "instala Hermes Agent y registra el MCP de Pcreative Studio:<br>"
                 "<code>curl -fsSL https://raw.githubusercontent.com/NousResearch/"
                 "hermes-agent/main/scripts/install.sh | bash</code><br>"
                 "Luego configura una API key (p.ej. OpenRouter) y registra el "
-                "servidor MCP. Mientras tanto, el resto de ThemeForge funciona igual."
+                "servidor MCP. Mientras tanto, el resto de Pcreative Studio funciona igual."
             )
             info.setTextFormat(Qt.TextFormat.RichText)
             info.setStyleSheet("color:#7aa2f7; background:#1a1a22; padding:8px; border-radius:6px;")
@@ -395,7 +395,7 @@ class OperatorPanel(QWidget):
         n = self.variants.value()
         prov = self.provider.currentText()
         return (
-            f"Run a ThemeForge Operator mission. Build agent (provider): {prov}. "
+            f"Run a Pcreative Studio Operator mission. Build agent (provider): {prov}. "
             f"Number of variants: {n}. Mission brief: {brief}\n\n"
             "Use the themeforge MCP tools and follow the themeforge-operator skill: "
             "plan with a DISTINCT UI/UX Pro Max style+palette per variant, then for "
@@ -548,7 +548,7 @@ class OperatorMissionDialog(QDialog):
     def _brief(self) -> str:
         task = self.task.toPlainText().strip()
         return (
-            f"Work on the EXISTING ThemeForge project '{self._name}' "
+            f"Work on the EXISTING Pcreative Studio project '{self._name}' "
             f"(path: {self._path}). Build agent (provider): "
             f"{self.provider.currentText()}. Task: {task}\n\n"
             "Use the themeforge MCP. Locate it with list_recent_projects, work IN "

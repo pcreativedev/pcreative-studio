@@ -1,6 +1,6 @@
 # NOTICE — third-party software
 
-ThemeForge ships under **GPL v3** (see `LICENSE`). It depends on,
+Pcreative Studio ships under **GPL v3** (see `LICENSE`). It depends on,
 embeds, or invokes the following third-party components. This NOTICE
 file aggregates their licenses and attribution requirements for the
 convenience of distributors and users.
@@ -24,13 +24,13 @@ The MIT license is included in each package's `LICENSE` file under
 
 ### Pixel Office visualizer
 
-ThemeForge auto-installs (with user consent) a Node application that
+Pcreative Studio auto-installs (with user consent) a Node application that
 shows AI agent sessions as pixel-art avatars on a virtual office. The
 visualizer is fetched from:
 
 - **Upstream**: <https://github.com/neomatrix25/pixel-office-openclaw>
   — by **neomatrix25**, MIT.
-- **Fork used by ThemeForge**:
+- **Fork used by Pcreative Studio**:
   <https://github.com/pcreativedev/pixel-office-openclaw> — same code +
   two commits adding a Claude Code session reader and same-origin
   auto-connect. Also MIT.
@@ -42,7 +42,7 @@ machine.
 
 ## Invoked as external subprocesses (NOT bundled)
 
-ThemeForge does not bundle these tools; it only spawns them as child
+Pcreative Studio does not bundle these tools; it only spawns them as child
 processes when the user selects the corresponding provider. The user
 is expected to install them through their distro's package manager or
 each project's official channel.
@@ -55,13 +55,13 @@ each project's official channel.
 | OpenCode CLI | MIT | <https://github.com/sst/opencode> | AI agent (`opencode`, npm pkg `opencode-ai`) |
 | UI UX Pro Max | MIT | <https://github.com/nextlevelbuilder/ui-ux-pro-max-skill> | Optional design skill (`uipro-cli init --ai <agent>`) for 161 reasoning rules + 67 UI styles + 161 paletas. Invoked when the "uipro" checkbox is enabled in the project form. |
 | **Lucide icons** | ISC | <https://github.com/lucide-icons/lucide> | 38 SVG icons bundled in `assets/icons/lucide/` and used for the main-window tabs and Settings widgets. SVGs use `currentColor` so they re-tint to the active theme's accent. ISC is functionally equivalent to MIT — full attribution preserved in the SVG files. |
-| W3C DTCG spec | (community) | <https://www.designtokens.org/tr/drafts/format/> | Theme JSON format reference for the Figma import path. ThemeForge parses tokens following the DTCG v2025.10 spec (`$type` + `$value` with `$`-prefixed metadata). |
-| Tokens Studio for Figma | (referenced, not bundled) | <https://docs.tokens.studio/> | Recommended Figma plugin for exporting design tokens as DTCG JSON to feed ThemeForge's Figma import dialog. Not redistributed. |
-| **MCP SDK** (`python-mcp`) | MIT | <https://github.com/modelcontextprotocol/python-sdk> | Anthropic's official MCP Python SDK. Used by `mcp_server.py` to expose ThemeForge actions (list_stacks / estimate_cost / run_preflight / build_zip / suggest_stack / …) as tools callable from any MCP client. |
+| W3C DTCG spec | (community) | <https://www.designtokens.org/tr/drafts/format/> | Theme JSON format reference for the Figma import path. Pcreative Studio parses tokens following the DTCG v2025.10 spec (`$type` + `$value` with `$`-prefixed metadata). |
+| Tokens Studio for Figma | (referenced, not bundled) | <https://docs.tokens.studio/> | Recommended Figma plugin for exporting design tokens as DTCG JSON to feed Pcreative Studio's Figma import dialog. Not redistributed. |
+| **MCP SDK** (`python-mcp`) | MIT | <https://github.com/modelcontextprotocol/python-sdk> | Anthropic's official MCP Python SDK. Used by `mcp_server.py` to expose Pcreative Studio actions (list_stacks / estimate_cost / run_preflight / build_zip / suggest_stack / …) as tools callable from any MCP client. |
 
 ## MCP catalog (referenced, not bundled)
 
-ThemeForge can pre-configure a curated set of community MCP servers
+Pcreative Studio can pre-configure a curated set of community MCP servers
 per scaffolded project (writes `.mcp.json` in the project root). The
 upstream code is **never** bundled — your AI client (Claude Code,
 Cursor, Windsurf, OpenCode) downloads each MCP on demand via `npx`,
@@ -93,7 +93,7 @@ extended) in `mcp_catalog.py`.
 
 When the user picks one of the WordPress stacks (`wordpress-block`,
 `wordpress-bricks`, `wordpress-elementor`, `wordpress-divi`,
-`wordpress-breakdance`), ThemeForge provisions a development WordPress +
+`wordpress-breakdance`), Pcreative Studio provisions a development WordPress +
 MariaDB environment in Docker and **auto-installs** the free plugins/themes
 listed below. None of this code is bundled in this repository — the
 WordPress container fetches each item from its **official source** via
@@ -102,7 +102,7 @@ WordPress container fetches each item from its **official source** via
 ### Auto-installed (FREE, public sources)
 
 All items are GPL (or AGPL for Novamira) and freely downloadable.
-ThemeForge calls `wp-cli` exactly the same way a user would by clicking
+Pcreative Studio calls `wp-cli` exactly the same way a user would by clicking
 *Plugins → Add new* in `wp-admin`.
 
 | Item | Source | License | Used by stack(s) |
@@ -121,16 +121,16 @@ ThemeForge calls `wp-cli` exactly the same way a user would by clicking
 | Novamira (free) | <https://github.com/use-novamira/novamira> (official releases) | **AGPL v3** | all WP stacks |
 | WordPress MCP plugin (Automattic) | <https://github.com/Automattic/wordpress-mcp> | GPL v2+ | all WP stacks |
 
-For Novamira, ThemeForge resolves the latest release asset URL via the
+For Novamira, Pcreative Studio resolves the latest release asset URL via the
 GitHub public API and passes it to `wp-cli plugin install`. We do not
 modify Novamira or run it as a service on our infrastructure, so AGPL
-network-use obligations do not attach to ThemeForge.
+network-use obligations do not attach to Pcreative Studio.
 
 ### Premium — referenced by name only, NEVER bundled
 
 The following premium products are referenced in scaffold notes,
 README templates, and the (gitignored) `~/.config/themeforge/wp_packs.json`
-schema. **ThemeForge never bundles, distributes, or links to copies of
+schema. **Pcreative Studio never bundles, distributes, or links to copies of
 these products.** Users who want to auto-install one of them must
 declare a path or URL to a copy they have legitimately licensed:
 
@@ -150,7 +150,7 @@ declare a path or URL to a copy they have legitimately licensed:
 | Kadence Blocks Pro | StellarWP | `wordpress-block` (plugin placeholder) |
 
 Users are responsible for ensuring they hold a valid license for any
-product they declare in `wp_packs.json`. ThemeForge does not verify
+product they declare in `wp_packs.json`. Pcreative Studio does not verify
 licenses and does not assume liability for unauthorized use of premium
 plugins.
 
@@ -160,7 +160,7 @@ the legal basis on which third-party names are used.
 ## Shopify integration
 
 When the user picks one of the Shopify stacks (`shopify-liquid`,
-`shopify-hydrogen`), ThemeForge bootstraps the project by invoking
+`shopify-hydrogen`), Pcreative Studio bootstraps the project by invoking
 official Shopify CLI/scaffolds that **download from Shopify's official
 sources at scaffold time**. None of the following is bundled in this
 repository.
@@ -192,15 +192,15 @@ which performs a `git clone` of the official Dawn repository into the
 new project directory. Dawn is licensed MIT by Shopify and is explicitly
 designed as a starting point for new themes. The cloned project
 retains Dawn's `LICENSE.md` and copyright headers, as MIT requires. AI
-agents using ThemeForge are instructed (via the CLAUDE.md) to
+agents using Pcreative Studio are instructed (via the CLAUDE.md) to
 **personalise and extend** Dawn — not to repackage it as-is.
 
 ## Referenced by name (NOT redistributed)
 
 When the `autoskills` checkbox is enabled and the AI provider supports
-it (Claude or Codex), ThemeForge invokes `npx --yes autoskills -a
+it (Claude or Codex), Pcreative Studio invokes `npx --yes autoskills -a
 <provider>`, which in turn fetches the following skill packages by
-name. ThemeForge does NOT bundle, redistribute, or modify these
+name. Pcreative Studio does NOT bundle, redistribute, or modify these
 packages.
 
 | Skill package | Owner |
@@ -216,15 +216,15 @@ repository for terms.
 ## ⚠️ autoskills (midudev) — CC BY-NC 4.0
 
 [`autoskills`](https://github.com/midudev/autoskills) by **midudev** is
-the tool ThemeForge invokes (via `npx`) to install the skill packages
+the tool Pcreative Studio invokes (via `npx`) to install the skill packages
 listed above. It is licensed under **Creative Commons
 Attribution-NonCommercial 4.0** (CC BY-NC 4.0).
 
 Implications:
 
-- ✅ Distributing ThemeForge for free under GPL v3 with autoskills as
+- ✅ Distributing Pcreative Studio for free under GPL v3 with autoskills as
   an optional dependency is consistent with the autoskills license.
-- ⚠️ Selling ThemeForge or shipping it as part of a commercial product
+- ⚠️ Selling Pcreative Studio or shipping it as part of a commercial product
   with the autoskills checkbox enabled by default is a grey area
   under CC BY-NC 4.0. Maintainers of downstream commercial builds
   should either:
@@ -242,7 +242,7 @@ Attribution to midudev is preserved in:
 
 | Component | License | Why it matters |
 |---|---|---|
-| **PyQt6** (Riverbank) | GPL v3 or commercial | Forces ThemeForge as a whole to be distributed under GPL v3 (the LICENSE in this repo). |
+| **PyQt6** (Riverbank) | GPL v3 or commercial | Forces Pcreative Studio as a whole to be distributed under GPL v3 (the LICENSE in this repo). |
 | **CPython** ≥ 3.11 | PSF | Runtime. |
 | **Qt 6** (The Qt Company) | LGPL v3 / commercial | Under the hood of PyQt6. |
 | **Node.js** ≥ 20 | MIT | Runtime for the embedded terminal server and the scaffolding commands of most stacks. |

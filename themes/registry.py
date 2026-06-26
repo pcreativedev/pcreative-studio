@@ -3,7 +3,7 @@
 Themes are JSON files. Two search paths:
 
   1. `themes/presets/*.json` in the repo (builtin themes shipped
-     with ThemeForge).
+     with Pcreative Studio).
   2. `~/.config/themeforge/themes/*.json` (user-installed / custom
      themes — take precedence on name collision).
 
@@ -91,7 +91,7 @@ def load_theme(name: str) -> ThemePack:
     if default_path.is_file():
         return ThemePack.from_dict(json.loads(default_path.read_text(encoding="utf-8")))
     # Last resort: in-memory default (just instantiate ThemePack)
-    return ThemePack(name="ThemeForge Dark")
+    return ThemePack(name="Pcreative Studio Dark")
 
 
 def current_theme_name() -> str:

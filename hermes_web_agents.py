@@ -2,7 +2,7 @@
 
 La pestaña 🤖 Agentes lista las skills de `~/.hermes/skills/`, pero Hermes trae su
 propia librería genérica (apple, gaming, devops…) que NO tiene que ver con diseño
-web. Este módulo siembra un conjunto curado de agentes especializados de ThemeForge
+web. Este módulo siembra un conjunto curado de agentes especializados de Pcreative Studio
 (formato agentskills.io) bajo `~/.hermes/skills/themeforge/<name>/SKILL.md`, todos
 enfocados a construir webs/plantillas premium. Cada uno se apoya en el
 `themeforge-operator` para el pipeline (create/build/QA/auditoría/zip) y aporta su
@@ -174,8 +174,8 @@ metadata:
 # {title}
 
 ## When to use
-{desc} Use this agent (alone or combined) when a ThemeForge mission needs this
-specialty. It runs **inside the ThemeForge pipeline** — defer to the
+{desc} Use this agent (alone or combined) when a Pcreative Studio mission needs this
+specialty. It runs **inside the Pcreative Studio pipeline** — defer to the
 `themeforge-operator` skill for create_project → build → QA → security audit →
 package, and contribute your expertise to the build prompts and reviews.
 

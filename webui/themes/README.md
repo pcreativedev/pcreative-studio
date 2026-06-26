@@ -1,7 +1,7 @@
 # Web theme packs (plug-and-play)
 
 Drop a `*.json` file in this folder and it becomes a selectable **web theme**
-in ThemeForge → Settings → Temas (recolors the Neo-Tokyo web UI live, no code,
+in Pcreative Studio → Settings → Temas (recolors the Neo-Tokyo web UI live, no code,
 no restart). This is the easy path for a new Claude Design visual direction:
 extract its colors/fonts into one JSON here and it just works.
 
@@ -45,7 +45,7 @@ extract its colors/fonts into one JSON here and it just works.
 1. Open the prototype's `styles/*.css` and copy the `:root` color/font values.
 2. Map them to the `vars` above (most map 1:1 to the Neo-Tokyo var names).
 3. Save as `webui/themes/<slug>.json`.
-4. Launch ThemeForge → Settings → Temas → your theme appears. Click → applied.
+4. Launch Pcreative Studio → Settings → Temas → your theme appears. Click → applied.
 
 That's it — no editing React, no bridge wiring, no restart.
 

@@ -1,5 +1,5 @@
 """
-api_gateway.py — Fase 0 de "ThemeForge móvil": expone el motor como API remota.
+api_gateway.py — Fase 0 de "Pcreative Studio móvil": expone el motor como API remota.
 
 Reconvierte el puente nativo (window.tfBridge / QWebChannel) en una API:
   - HTTP JSON-RPC (POST /rpc)     → métodos síncronos (listar, CRUD, stats…)
@@ -10,7 +10,7 @@ Reconvierte el puente nativo (window.tfBridge / QWebChannel) en una API:
 El motor headless es la única fuente de verdad; escritorio y móvil hablan esta
 API. Los métodos opcionales se cargan por plugins (ver `_load_plugins`).
 
-Auth: bearer token (env THEMEFORGE_API_TOKEN, o ~/.config/themeforge/api_token.txt).
+Auth: bearer token (env PCREATIVE STUDIO_API_TOKEN, o ~/.config/themeforge/api_token.txt).
 Pensado para vivir DETRÁS de Tailscale/WireGuard (no exponer crudo a internet).
 
 Arrancar:  uvicorn api_gateway:app --host 0.0.0.0 --port 8765
@@ -34,7 +34,7 @@ try:
 except Exception:
     _CFG = Path.home() / ".config" / "themeforge"
 
-app = FastAPI(title="ThemeForge Gateway", version="0.1")
+app = FastAPI(title="Pcreative Studio Gateway", version="0.1")
 
 # CORS abierto (la API está protegida por token + Tailscale, no por origen).
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
@@ -47,7 +47,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False,
 # ---------------------------------------------------------------------------
 def _token() -> str:
     import os
-    t = os.environ.get("THEMEFORGE_API_TOKEN")
+    t = os.environ.get("PCREATIVE STUDIO_API_TOKEN")
     if t:
         return t.strip()
     p = _CFG / "api_token.txt"
@@ -60,7 +60,7 @@ def _token() -> str:
         pc.secure_file_chmod(p)
     except Exception:
         pass
-    print(f"[gateway] token generado → {p}\n[gateway] THEMEFORGE_API_TOKEN={t}")
+    print(f"[gateway] token generado → {p}\n[gateway] PCREATIVE STUDIO_API_TOKEN={t}")
     return t
 
 
@@ -255,7 +255,7 @@ def _stream_create_build(p, emit):
     try:
         import push_service
         if push_service.configured():
-            push_service.send("ThemeForge", f"Build terminado: {name} ✅", {"slug": slug})
+            push_service.send("Pcreative Studio", f"Build terminado: {name} ✅", {"slug": slug})
     except Exception:
         pass
     return {"ok": True, "slug": slug, "path": str(project_dir), "built": True, "agent_exit": rc2}
@@ -332,7 +332,7 @@ async def push_status(_=Depends(require_http)):
 @app.post("/push/test")
 async def push_test(_=Depends(require_http)):
     import push_service
-    return await asyncio.to_thread(push_service.send, "ThemeForge",
+    return await asyncio.to_thread(push_service.send, "Pcreative Studio",
                                    "Push de prueba ✅", {"kind": "test"})
 
 

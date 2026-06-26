@@ -1,4 +1,4 @@
-# Roadmap — ThemeForge
+# Roadmap — Pcreative Studio
 
 Future improvements organised by feature area. Items here are not
 scheduled — they represent known gaps and ideas to revisit.
@@ -39,7 +39,7 @@ For pre-publication blockers (private to the maintainer), see
   in credentials. Multiple project windows (open/create more while one runs).
   Windows single-UAC winget + PHP/Composer + venv path + terminal scrollbar.
   Package-manager auto-detect (pnpm/yarn/bun) with non-fatal install.
-- **v1.8.0** (2026-06-18, current Latest) — **📱 ThemeForge mobile
+- **v1.8.0** (2026-06-18, current Latest) — **📱 Pcreative Studio mobile
   (thin client + remote engine)**: `api_gateway.py` (FastAPI JSON-RPC/WS,
   13 sync + 6 stream tools + upload), PWA + Capacitor shell, remote bridge
   `tfbridge-remote.js` (reimplements `window.tfBridge` over the API), FCM
@@ -264,7 +264,7 @@ per agent. See §13 of USER_GUIDE.
 ## 🎨 App themes
 
 Current state (post-v1.1.0, on main): 5 sprints shipped — full theme
-system for ThemeForge's own UI (separate from uipro/autoskills which
+system for Pcreative Studio's own UI (separate from uipro/autoskills which
 theme the projects it generates). See `themes/` module and §17 of
 USER_GUIDE.
 
@@ -291,7 +291,7 @@ USER_GUIDE.
   `figma_import_dialog.py`). Two paths: paste/load DTCG JSON from
   Tokens Studio (free Figma) or call REST API `/variables/local`
   (Enterprise). 26 color + 5 shape regex patterns score Figma
-  tokens against ThemeForge slots; user can re-target or skip rows.
+  tokens against Pcreative Studio slots; user can re-target or skip rows.
   Reverse export `themepack_to_dtcg()` for round-trips back to
   designers.
 
@@ -332,7 +332,7 @@ Anthropic / OpenAI / Google / cursor / windsurf in 2025-2026).
 
 **Shipped:**
 
-- ✅ **`mcp_server.py`** — ThemeForge's own stdio MCP server.
+- ✅ **`mcp_server.py`** — Pcreative Studio's own stdio MCP server.
   Exposes 8 tools to any MCP client:
   `list_stacks`, `list_themes`, `list_recent_projects`,
   `list_supported_providers`, `estimate_cost`, `suggest_stack`,
@@ -340,7 +340,7 @@ Anthropic / OpenAI / Google / cursor / windsurf in 2025-2026).
   Python SDK (FastMCP). Runs as a subprocess — no VPS, no network.
 - ✅ **`mcp_catalog.py`** — curated registry of 12 community MCPs
   (license-verified at curation time: 11 MIT/Apache-2.0 + 1
-  ThemeForge). Auto-generates `.mcp.json` in scaffolded projects
+  Pcreative Studio). Auto-generates `.mcp.json` in scaffolded projects
   with the relevant subset per stack (web → playwright + chrome
   devtools + figma + browsermcp; shopify → +shopify-dev; backend
   with DB → +postgres; etc.).
@@ -355,7 +355,7 @@ Anthropic / OpenAI / Google / cursor / windsurf in 2025-2026).
 
 - **Tool: `scaffold_project`** — let MCP clients invoke the full
   scaffolder via a tool call (Claude says "create a Next.js
-  landing for X" and ThemeForge runs the scaffold + uipro +
+  landing for X" and Pcreative Studio runs the scaffold + uipro +
   autoskills in the background, no GUI click). High value, needs
   careful UX around async progress reporting.
 - **Tool: `deploy_demo`** — same as above for the 🚀 Demo deploy
@@ -418,7 +418,7 @@ PKGBUILDs for **AUR** (`themeforge` + `themeforge-git`) live in
 ## 📱 Mobile / remote engine
 
 Current state (post-v1.8.0, on main): thin client + remote engine
-architecture so the heavy ThemeForge engine runs on a host machine
+architecture so the heavy Pcreative Studio engine runs on a host machine
 (or VPS) while a phone drives it over the network.
 
 **Shipped:**
@@ -528,7 +528,7 @@ Current state (v1.0):
 What's left to graduate from alpha to beta:
 
 - **Real-machine smoke test.** Mac user (anyone) downloads
-  `ThemeForge-macOS.zip`, drags to `/Applications`, confirms the
+  `Pcreative Studio-macOS.zip`, drags to `/Applications`, confirms the
   .app launches and the main tabs render. Report issues. This is
   the single biggest unknown.
 - **Migrate paths to `~/Library/Application Support/themeforge/`.**
@@ -550,7 +550,7 @@ What's left to graduate from alpha to beta:
 What's left to graduate from alpha to beta:
 
 - **Real-machine smoke test.** Windows 10/11 user downloads
-  `ThemeForge-Setup-X.Y.Z.exe` from a release, runs the installer
+  `Pcreative Studio-Setup-X.Y.Z.exe` from a release, runs the installer
   (no-admin per-user install), confirms the .exe launches and the
   main tabs render. Report issues. Biggest unknown — like macOS.
 - **SmartScreen "unknown publisher" warning** on first run. User
@@ -563,7 +563,7 @@ What's left to graduate from alpha to beta:
     instantly.
   - Defer until install volume warrants.
 - **winget submission.** PR to `microsoft/winget-pkgs` so users
-  can `winget install pcreativedev.ThemeForge`. Stable channel.
+  can `winget install pcreativedev.Pcreative Studio`. Stable channel.
 - **`--onefile` mode evaluation.** Current build uses `--onedir`
   to reduce antivirus false positives. Re-evaluate once code-signed.
 - **Embedded node-pty smoke test.** ConPTY backend (Windows 10

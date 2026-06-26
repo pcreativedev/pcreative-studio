@@ -293,13 +293,13 @@ def render() -> None:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ThemeForge — User Guide</title>
+<title>Pcreative Studio — User Guide</title>
 <style>{CSS}</style>
 </head>
 <body>
 <div class="layout">
   <aside class="toc">
-    <h2 class="brand">ThemeForge</h2>
+    <h2 class="brand">Pcreative Studio</h2>
     <p class="brand-sub">User guide</p>
     {toc_html}
   </aside>

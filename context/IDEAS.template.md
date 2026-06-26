@@ -7,7 +7,7 @@ proyectos que generes, crea tu versión privada en:
 
     ~/.config/themeforge/context-private/IDEAS.md
 
-ThemeForge la usará en vez de este stub.
+Pcreative Studio la usará en vez de este stub.
 
 ## Estructura sugerida para tu versión privada
 

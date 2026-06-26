@@ -55,19 +55,19 @@ STACKS = {
         "language": "PHP",
         "scaffold": [
             # ── 1. style.css del theme ───────────────────────────────
-            'cat > style.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > style.css <<\'PCREATIVE STUDIO_EOF\'\n'
             '/*\n'
             'Theme Name: __PROJECT__\n'
-            'Description: Block theme generado por ThemeForge.\n'
+            'Description: Block theme generado por Pcreative Studio.\n'
             'Version: 0.1.0\n'
             'Text Domain: __SLUG__\n'
             'License: GPLv2 or later\n'
             'Requires at least: 6.7\n'
             'Requires PHP: 8.0\n'
             '*/\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 2. theme.json mínimo válido ──────────────────────────
-            'cat > theme.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > theme.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "$schema": "https://schemas.wp.org/trunk/theme.json",\n'
             '  "version": 3,\n'
@@ -78,22 +78,22 @@ STACKS = {
             '  },\n'
             '  "styles": {}\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 3. estructura de carpetas ────────────────────────────
             "mkdir -p templates parts patterns assets",
             # ── 4. template index mínimo ─────────────────────────────
-            'cat > templates/index.html <<\'THEMEFORGE_EOF\'\n'
+            'cat > templates/index.html <<\'PCREATIVE STUDIO_EOF\'\n'
             '<!-- wp:template-part {"slug":"header","tagName":"header"} /-->\n'
             '<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->\n'
             '<main class="wp-block-group"><!-- wp:post-content /--></main>\n'
             '<!-- /wp:group -->\n'
             '<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0",
         "skills": ["wordpress/skills/block-theme-development"],
         "ux_pack": "fse",
-        "notes": "Block theme moderno (theme.json v3 + FSE). Pack UX «FSE Pro»: ThemeForge auto-instala GenerateBlocks, Spectra, ACF, Pods y Royal MCP (todos gratis). Premium opcionales (GenerateBlocks Pro, ACF Pro, Motion.page) si los declaras en ~/.config/themeforge/wp_packs.json (gitignored). El agente opera WP con wp-cli vía ./wp.",
+        "notes": "Block theme moderno (theme.json v3 + FSE). Pack UX «FSE Pro»: Pcreative Studio auto-instala GenerateBlocks, Spectra, ACF, Pods y Royal MCP (todos gratis). Premium opcionales (GenerateBlocks Pro, ACF Pro, Motion.page) si los declaras en ~/.config/themeforge/wp_packs.json (gitignored). El agente opera WP con wp-cli vía ./wp.",
     },
     "wordpress-bricks": {
         "name": "WordPress (Bricks Child Theme)",
@@ -101,20 +101,20 @@ STACKS = {
         "language": "PHP",
         "scaffold": [
             # ── 1. style.css del child theme (declara Template: bricks) ──
-            'cat > style.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > style.css <<\'PCREATIVE STUDIO_EOF\'\n'
             '/*\n'
             'Theme Name: __PROJECT__ (Bricks child)\n'
             'Template: bricks\n'
-            'Description: Child theme de Bricks Builder generado por ThemeForge.\n'
+            'Description: Child theme de Bricks Builder generado por Pcreative Studio.\n'
             'Version: 0.1.0\n'
             'Text Domain: __SLUG__\n'
             'License: GPLv2 or later\n'
             'Requires at least: 6.7\n'
             'Requires PHP: 8.0\n'
             '*/\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 2. functions.php (enqueue del child + hook bootstrap) ─
-            'cat > functions.php <<\'THEMEFORGE_EOF\'\n'
+            'cat > functions.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             "if (!defined('ABSPATH')) { exit; }\n"
             '\n'
@@ -124,13 +124,13 @@ STACKS = {
             "});\n"
             '\n'
             "// Hooks del child theme: añadir aquí filtros/acciones específicos del proyecto.\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 3. estructura de carpetas ────────────────────────────
             "mkdir -p assets/css assets/js assets/images "
             "bricks-templates/{header,footer,single,archive,page,patterns} "
             "includes",
             # ── 4. README con el flujo Bricks ─────────────────────────
-            'cat > README.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Child theme de Bricks\n'
             '\n'
             'Stack: **Bricks Builder + Bricksforge + JetEngine + Motion.page** + Royal MCP.\n'
@@ -152,31 +152,31 @@ STACKS = {
             'deliverable son los **JSON exportados** + el child theme con tu CSS/PHP.\n'
             'El comprador instala Bricks, importa los JSON, activa el child y queda\n'
             'idéntico a la demo.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Bricks Builder (licencia aparte)",
         "skills": ["wordpress/skills/block-theme-development"],
         "ux_pack": "bricks",
-        "notes": "Child theme de Bricks Builder. Pack UX «Bricks»: ThemeForge auto-instala los gratis (GreenShift, ACF, Pods, Royal MCP). Premium (Bricks parent theme, Bricksforge, JetEngine, Novamira Pro, Motion.page) requieren licencia y se autoinstalan si los declaras en ~/.config/themeforge/wp_packs.json (gitignored, NUNCA al repo). Sin la licencia de Bricks, sube bricks.zip a mano y activa el child theme luego.",
+        "notes": "Child theme de Bricks Builder. Pack UX «Bricks»: Pcreative Studio auto-instala los gratis (GreenShift, ACF, Pods, Royal MCP). Premium (Bricks parent theme, Bricksforge, JetEngine, Novamira Pro, Motion.page) requieren licencia y se autoinstalan si los declaras en ~/.config/themeforge/wp_packs.json (gitignored, NUNCA al repo). Sin la licencia de Bricks, sube bricks.zip a mano y activa el child theme luego.",
     },
     "wordpress-elementor": {
         "name": "WordPress (Elementor Child Theme)",
         "category": "CMS · WordPress",
         "language": "PHP",
         "scaffold": [
-            'cat > style.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > style.css <<\'PCREATIVE STUDIO_EOF\'\n'
             '/*\n'
             'Theme Name: __PROJECT__ (Elementor child)\n'
             'Template: hello-elementor\n'
-            'Description: Child theme de Hello Elementor + Elementor (Pro opcional), generado por ThemeForge.\n'
+            'Description: Child theme de Hello Elementor + Elementor (Pro opcional), generado por Pcreative Studio.\n'
             'Version: 0.1.0\n'
             'Text Domain: __SLUG__\n'
             'License: GPLv2 or later\n'
             'Requires at least: 6.7\n'
             'Requires PHP: 8.0\n'
             '*/\n'
-            'THEMEFORGE_EOF',
-            'cat > functions.php <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > functions.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             "if (!defined('ABSPATH')) { exit; }\n"
             '\n'
@@ -184,26 +184,26 @@ STACKS = {
             "    wp_enqueue_style('__SLUG___parent', get_template_directory_uri() . '/style.css');\n"
             "    wp_enqueue_style('__SLUG___child', get_stylesheet_uri(), ['__SLUG___parent'], '0.1.0');\n"
             "}, 20);\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             "mkdir -p assets/css assets/js assets/images "
             "elementor-templates/header elementor-templates/footer "
             "elementor-templates/single elementor-templates/archive "
             "elementor-templates/page elementor-templates/popups "
             "elementor-templates/kits includes",
-            'cat > README.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Child theme de Elementor (Hello Elementor parent)\n'
             '\n'
             'Stack: Elementor + Hello Elementor (free) o Elementor Pro (paid).\n'
             'Plugins típicos: ACF, Pods, Essential Addons, JetEngine (paid), Royal MCP, Novamira Pro (paid).\n'
             '\n'
             '## Flujo\n'
-            '1. ThemeForge instala Hello Elementor + Elementor free + Essential Addons Lite + ACF + Pods + Royal MCP.\n'
+            '1. Pcreative Studio instala Hello Elementor + Elementor free + Essential Addons Lite + ACF + Pods + Royal MCP.\n'
             '   Elementor Pro y JetEngine via `wp_packs.json` si los tienes.\n'
             '2. Diseña con Elementor en /wp-admin/ (autologueado).\n'
             '3. Templates (header/footer/single/archive/page/popup) + Kits (paletas, tipografía global) se exportan\n'
             '   vía Elementor → Templates → Export y se commitean en `elementor-templates/`.\n'
             '4. CSS/JS/hooks del child van en `assets/` + `functions.php`.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Elementor",
         "skills": ["wordpress/skills/block-theme-development"],
@@ -215,19 +215,19 @@ STACKS = {
         "category": "CMS · WordPress",
         "language": "PHP",
         "scaffold": [
-            'cat > style.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > style.css <<\'PCREATIVE STUDIO_EOF\'\n'
             '/*\n'
             'Theme Name: __PROJECT__ (Divi child)\n'
             'Template: Divi\n'
-            'Description: Child theme de Divi (Elegant Themes) generado por ThemeForge.\n'
+            'Description: Child theme de Divi (Elegant Themes) generado por Pcreative Studio.\n'
             'Version: 0.1.0\n'
             'Text Domain: __SLUG__\n'
             'License: GPLv2 or later\n'
             'Requires at least: 6.7\n'
             'Requires PHP: 8.0\n'
             '*/\n'
-            'THEMEFORGE_EOF',
-            'cat > functions.php <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > functions.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             "if (!defined('ABSPATH')) { exit; }\n"
             '\n'
@@ -235,12 +235,12 @@ STACKS = {
             "    wp_enqueue_style('__SLUG___parent', get_template_directory_uri() . '/style.css');\n"
             "    wp_enqueue_style('__SLUG___child', get_stylesheet_uri(), ['__SLUG___parent'], '0.1.0');\n"
             "}, 20);\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             "mkdir -p assets/css assets/js assets/images "
             "divi-layouts/header divi-layouts/footer divi-layouts/single "
             "divi-layouts/archive divi-layouts/page divi-layouts/modules "
             "includes",
-            'cat > README.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Child theme de Divi\n'
             '\n'
             'Stack: Divi 5 (Elegant Themes, paid). Plugins típicos: ACF, Pods, Royal MCP, Novamira Pro (paid).\n'
@@ -249,7 +249,7 @@ STACKS = {
             '1. Declara el ZIP de Divi en wp_packs.json > divi > theme para auto-instalación.\n'
             '2. Diseña con Divi Builder. Exporta layouts vía Divi → Library → Export a JSON.\n'
             '3. Commitea los JSON en `divi-layouts/`.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Divi (licencia aparte)",
         "skills": ["wordpress/skills/block-theme-development"],
@@ -261,7 +261,7 @@ STACKS = {
         "category": "CMS · WordPress",
         "language": "PHP",
         "scaffold": [
-            'cat > style.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > style.css <<\'PCREATIVE STUDIO_EOF\'\n'
             '/*\n'
             'Theme Name: __PROJECT__ (Breakdance child)\n'
             'Template: kadence\n'
@@ -272,8 +272,8 @@ STACKS = {
             'Requires at least: 6.7\n'
             'Requires PHP: 8.0\n'
             '*/\n'
-            'THEMEFORGE_EOF',
-            'cat > functions.php <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > functions.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             "if (!defined('ABSPATH')) { exit; }\n"
             '\n'
@@ -281,24 +281,24 @@ STACKS = {
             "    wp_enqueue_style('__SLUG___parent', get_template_directory_uri() . '/style.css');\n"
             "    wp_enqueue_style('__SLUG___child', get_stylesheet_uri(), ['__SLUG___parent'], '0.1.0');\n"
             "}, 20);\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             "mkdir -p assets/css assets/js assets/images "
             "breakdance-templates/global breakdance-templates/headers "
             "breakdance-templates/footers breakdance-templates/popups "
             "breakdance-templates/singles breakdance-templates/archives "
             "includes",
-            'cat > README.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Breakdance template (child de Kadence)\n'
             '\n'
             'Stack: Breakdance (plugin, free + Pro opcional) sobre Kadence como theme base.\n'
             'Breakdance reemplaza el render del front; el theme base solo sirve para wp-admin y fallback.\n'
             '\n'
             '## Flujo\n'
-            '1. ThemeForge instala Kadence + Breakdance free + ACF + Pods + Royal MCP.\n'
+            '1. Pcreative Studio instala Kadence + Breakdance free + ACF + Pods + Royal MCP.\n'
             '2. Breakdance Pro y plugins paid (en wp_packs.json > breakdance > plugins).\n'
             '3. Diseña con Breakdance. Exporta global settings / headers / footers / popups\n'
             '   vía Breakdance → Templates → Export y commitea en `breakdance-templates/`.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Breakdance",
         "skills": ["wordpress/skills/block-theme-development"],
@@ -314,13 +314,13 @@ STACKS = {
             "mkdir -p src/{Admin,Frontend,Core,Database} assets/{js,css,images} "
             "templates languages tests/{Unit,Integration,E2E} build",
             # ── 2. archivo principal del plugin con header WP ────────
-            'cat > __SLUG__.php <<\'THEMEFORGE_EOF\'\n'
+            'cat > __SLUG__.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             '/**\n'
             ' * Plugin Name: __PROJECT__\n'
-            ' * Description: Plugin generado por ThemeForge.\n'
+            ' * Description: Plugin generado por Pcreative Studio.\n'
             ' * Version: 0.1.0\n'
-            ' * Author: ThemeForge\n'
+            ' * Author: Pcreative Studio\n'
             ' * Text Domain: __SLUG__\n'
             ' * Requires at least: 6.7\n'
             ' * Requires PHP: 8.2\n'
@@ -342,9 +342,9 @@ STACKS = {
             "add_action('plugins_loaded', function () {\n"
             "    // TODO: cargar el bootstrap real desde src/Core/Plugin.php\n"
             "});\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 3. composer.json con PSR-4 autoload ──────────────────
-            'cat > composer.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > composer.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "themeforge/__SLUG__",\n'
             '  "description": "__PROJECT__ — WordPress plugin",\n'
@@ -368,9 +368,9 @@ STACKS = {
             '  },\n'
             '  "config": { "allow-plugins": { "pestphp/pest-plugin": true } }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 4. package.json con Vite + Vue para admin UI ─────────
-            'cat > package.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > package.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "__SLUG__",\n'
             '  "version": "0.1.0",\n'
@@ -391,9 +391,9 @@ STACKS = {
             '    "@playwright/test": "^1.50"\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 5. vite.config.js (build a /build con manifest) ──────
-            'cat > vite.config.js <<\'THEMEFORGE_EOF\'\n'
+            'cat > vite.config.js <<\'PCREATIVE STUDIO_EOF\'\n'
             "import { defineConfig } from 'vite';\n"
             "import vue from '@vitejs/plugin-vue';\n"
             "import tailwindcss from '@tailwindcss/vite';\n"
@@ -412,9 +412,9 @@ STACKS = {
             '    },\n'
             '  },\n'
             '});\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 7. .gitignore ────────────────────────────────────────
-            'cat > .gitignore <<\'THEMEFORGE_EOF\'\n'
+            'cat > .gitignore <<\'PCREATIVE STUDIO_EOF\'\n'
             'vendor/\n'
             'node_modules/\n'
             'build/\n'
@@ -423,25 +423,25 @@ STACKS = {
             'tests/_output/\n'
             'tests/_data/dumps/\n'
             '/coverage/\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 8. README con instrucciones ──────────────────────────
-            'cat > README.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__\n\n'
-            'WordPress plugin generado por ThemeForge.\n\n'
+            'WordPress plugin generado por Pcreative Studio.\n\n'
             '## Stack\n\n'
             '- PHP 8.2 + Composer (autoload PSR-4 `Themeforge\\\\__PASCAL__\\\\`)\n'
-            '- WordPress 6.7+ (entorno Docker levantado por ThemeForge — ver WORDPRESS-DEV.md)\n'
+            '- WordPress 6.7+ (entorno Docker levantado por Pcreative Studio — ver WORDPRESS-DEV.md)\n'
             '- Admin UI: Vue 3.5 + Vite 6 + Tailwind 4\n'
             '- Tests: Pest + Playwright E2E\n\n'
             '## Arrancar\n\n'
             '```bash\n'
             'composer install\n'
             'npm install\n'
-            '# WordPress lo levanta ThemeForge automáticamente (ver WORDPRESS-DEV.md)\n'
+            '# WordPress lo levanta Pcreative Studio automáticamente (ver WORDPRESS-DEV.md)\n'
             'npm run dev             # Vite HMR para admin UI\n'
             '```\n\n'
             '## WordPress de desarrollo\n\n'
-            'ThemeForge levanta WordPress en Docker automáticamente y monta este plugin.\n'
+            'Pcreative Studio levanta WordPress en Docker automáticamente y monta este plugin.\n'
             'URL, credenciales y el helper `./wp` (wp-cli): ver `WORDPRESS-DEV.md`.\n\n'
             '## Tests\n\n'
             '```bash\n'
@@ -454,7 +454,7 @@ STACKS = {
             'composer install --no-dev --optimize-autoloader\n'
             '```\n\n'
             'Luego empaqueta en zip excluyendo `node_modules/`, `tests/`, `build/`.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── 9. composer install (descarga deps, vendor/) ─────────
             'composer install --no-interaction --quiet 2>&1 | tail -5 '
             '|| echo "(composer install falló — instálalo a mano)"',
@@ -465,7 +465,7 @@ STACKS = {
         "min_version": "WordPress 6.7 / PHP 8.2",
         "skills": [],
         "notes": (
-            "Plugin WP. El entorno WordPress (Docker) lo levanta ThemeForge "
+            "Plugin WP. El entorno WordPress (Docker) lo levanta Pcreative Studio "
             "automáticamente al crear el proyecto y monta el plugin (ver WORDPRESS-DEV.md). "
             "El agente opera WP con wp-cli vía ./wp. "
             "Canal de venta: CodeCanyon, Freemius, web propia. "
@@ -483,7 +483,7 @@ STACKS = {
             # personaliza/extiende; NO se copia tal cual.
             "npx --yes @shopify/cli@latest theme init . --clone-url https://github.com/Shopify/dawn",
             # ── package.json: prettier + liquid plugin + scripts útiles
-            'cat > package.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > package.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "__SLUG__",\n'
             '  "version": "0.1.0",\n'
@@ -501,9 +501,9 @@ STACKS = {
             '    "prettier": "^3.4.0"\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── .prettierrc.json con el plugin de Liquid
-            'cat > .prettierrc.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > .prettierrc.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "plugins": ["@shopify/prettier-plugin-liquid"],\n'
             '  "printWidth": 100,\n'
@@ -515,9 +515,9 @@ STACKS = {
             '    }\n'
             '  ]\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── .theme-check.yml estricto para Theme Store
-            'cat > .theme-check.yml <<\'THEMEFORGE_EOF\'\n'
+            'cat > .theme-check.yml <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Theme Check config — recomendado + estricto para Theme Store.\n'
             '# Cambia thresholds o desactiva checks individuales si tu caso lo justifica.\n'
             'extends: theme-check:recommended\n'
@@ -561,10 +561,10 @@ STACKS = {
             '  enabled: true\n'
             'MatchingTranslations:\n'
             '  enabled: true\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── GitHub Actions Lighthouse CI (action oficial de Shopify)
             "mkdir -p .github/workflows",
-            'cat > .github/workflows/lighthouse-ci.yml <<\'THEMEFORGE_EOF\'\n'
+            'cat > .github/workflows/lighthouse-ci.yml <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Lighthouse CI con la action oficial de Shopify.\n'
             '# Necesitas estos secrets en el repo GitHub para que funcione:\n'
             '#   SHOPIFY_AUTH_TOKEN  — Theme Access App password (genérala en la tienda dev)\n'
@@ -589,11 +589,11 @@ STACKS = {
             '          access_token: ${{ secrets.SHOPIFY_AUTH_TOKEN }}\n'
             '          store: ${{ secrets.SHOPIFY_STORE }}\n'
             '          password: ${{ secrets.SHOPIFY_STORE_PWD }}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── .mcp.json: Shopify Dev MCP (admin/storefront/checkout APIs
             #    + Polaris) + Storefront MCP (placeholder con tu shop).
             #    Polaris ya viene integrado en @shopify/dev-mcp — sin flag.
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > .mcp.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "mcpServers": {\n'
             '    "shopify-dev": {\n'
@@ -612,9 +612,9 @@ STACKS = {
             '    }\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # ── README rápido del MCP + comandos CLI ─────────────────
-            'cat > README-MCP.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-MCP.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Shopify Dev MCP + Shopify CLI\n\n'
             'Este proyecto incluye `.mcp.json` configurado con **Shopify Dev MCP**,\n'
             'el servidor MCP oficial de Shopify (`@shopify/dev-mcp`).\n\n'
@@ -655,7 +655,7 @@ STACKS = {
             '## Necesario antes\n\n'
             '- Cuenta Shopify Partners (gratis).\n'
             '- Tienda de desarrollo asociada (Partners → Stores → Add store).\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Online Store 2.0 / Shopify CLI 3.x / Dawn",
         "skills": ["shopify/skills/theme-development"],
@@ -674,7 +674,7 @@ STACKS = {
             # con tu identidad visual única.
             "mkdir -p config layout sections blocks templates/customers snippets locales assets .github/workflows",
             # config/settings_schema.json — tokens + theme info + paletas
-            'cat > config/settings_schema.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > config/settings_schema.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '[\n'
             '  { "name": "theme_info", "theme_name": "__PROJECT__", "theme_version": "0.1.0",\n'
             '    "theme_author": "you", "theme_documentation_url": "https://your-docs.example.com",\n'
@@ -704,13 +704,13 @@ STACKS = {
             '    { "type": "image_picker", "id": "favicon", "label": "Favicon" }\n'
             '  ]}\n'
             ']\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # config/settings_data.json — el editor lo regenera
-            'cat > config/settings_data.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > config/settings_data.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{ "current": "Default", "presets": { "Default": {} } }\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # layout/theme.liquid — canónico OS 2.0 con section groups
-            'cat > layout/theme.liquid <<\'THEMEFORGE_EOF\'\n'
+            'cat > layout/theme.liquid <<\'PCREATIVE STUDIO_EOF\'\n'
             '<!DOCTYPE html>\n'
             '<html lang="{{ request.locale.iso_code }}">\n'
             '  <head>\n'
@@ -731,20 +731,20 @@ STACKS = {
             '    {% sections \'footer-group\' %}\n'
             '  </body>\n'
             '</html>\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # sections/header-group.json y footer-group.json
-            'cat > sections/header-group.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > sections/header-group.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{ "type": "header", "name": "Header group",\n'
             '  "sections": { "header": { "type": "header", "settings": {} } },\n'
             '  "order": ["header"] }\n'
-            'THEMEFORGE_EOF',
-            'cat > sections/footer-group.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > sections/footer-group.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{ "type": "footer", "name": "Footer group",\n'
             '  "sections": { "footer": { "type": "footer", "settings": {} } },\n'
             '  "order": ["footer"] }\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # sections/header.liquid mínimo válido
-            'cat > sections/header.liquid <<\'THEMEFORGE_EOF\'\n'
+            'cat > sections/header.liquid <<\'PCREATIVE STUDIO_EOF\'\n'
             '<header class="site-header">\n'
             '  <a href="{{ routes.root_url }}" class="site-header__logo">{{ shop.name }}</a>\n'
             '  <nav role="navigation" aria-label="{{ \'accessibility.main_nav\' | t }}">\n'
@@ -761,9 +761,9 @@ STACKS = {
             '  "blocks": [{ "type": "@app" }],\n'
             '  "enabled_on": { "groups": ["header"] } }\n'
             '{% endschema %}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # sections/footer.liquid mínimo válido
-            'cat > sections/footer.liquid <<\'THEMEFORGE_EOF\'\n'
+            'cat > sections/footer.liquid <<\'PCREATIVE STUDIO_EOF\'\n'
             '<footer class="site-footer" role="contentinfo">\n'
             '  <p>&copy; {{ "now" | date: "%Y" }} {{ shop.name }}. {{ \'general.rights\' | t }}</p>\n'
             '</footer>\n'
@@ -773,44 +773,44 @@ STACKS = {
             '  "blocks": [{ "type": "@app" }],\n'
             '  "enabled_on": { "groups": ["footer"] } }\n'
             '{% endschema %}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # Templates JSON obligatorios para Theme Store (14)
             "for t in 404 article blog cart collection gift_card index list-collections page password product search; do "
             "echo '{ \"sections\": {}, \"order\": [] }' > templates/${t}.json; done",
             "for t in account addresses login order register reset_password; do "
             "echo '{ \"sections\": {}, \"order\": [] }' > templates/customers/${t}.json; done",
             # locales por defecto (storefront + schema)
-            'cat > locales/en.default.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > locales/en.default.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "accessibility": { "skip_to_content": "Skip to content", "main_nav": "Main navigation" },\n'
             '  "general":       { "rights": "All rights reserved.", "country": "Country", "language": "Language", "update": "Update", "meta": { "page": "Page {{ page }}" } },\n'
             '  "cart":          { "general": { "title": "Cart", "empty_html": "Your cart is empty" } },\n'
             '  "products":      { "product": { "add_to_cart": "Add to cart", "sold_out": "Sold out" } }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > locales/en.default.schema.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > locales/en.default.schema.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{ "settings_schema": { "theme_info": { "theme_name": "Theme name" } } }\n'
-            'THEMEFORGE_EOF',
-            'cat > locales/es.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > locales/es.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "accessibility": { "skip_to_content": "Saltar al contenido", "main_nav": "Navegación principal" },\n'
             '  "general":       { "rights": "Todos los derechos reservados.", "country": "País", "language": "Idioma", "update": "Actualizar", "meta": { "page": "Página {{ page }}" } },\n'
             '  "cart":          { "general": { "title": "Carrito", "empty_html": "Tu carrito está vacío" } },\n'
             '  "products":      { "product": { "add_to_cart": "Añadir al carrito", "sold_out": "Agotado" } }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > locales/es.schema.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > locales/es.schema.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{ "settings_schema": { "theme_info": { "theme_name": "Nombre del tema" } } }\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # CSS base mínimo
-            'cat > assets/base.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > assets/base.css <<\'PCREATIVE STUDIO_EOF\'\n'
             ':root { --color-bg: #fff; --color-text: #1a1a1a; --color-accent: #c56a4d; }\n'
             'body { margin: 0; font-family: var(--font-body, system-ui, sans-serif); color: var(--color-text); background: var(--color-bg); }\n'
             '.skip-link { position: absolute; left: -9999px; }\n'
             '.skip-link:focus { left: 0; top: 0; padding: 1rem; background: var(--color-bg); }\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # package.json + prettier + theme-check + lighthouse (igual que liquid)
-            'cat > package.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > package.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "__SLUG__",\n'
             '  "version": "0.1.0",\n'
@@ -828,15 +828,15 @@ STACKS = {
             '    "prettier": "^3.4.0"\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > .prettierrc.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > .prettierrc.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "plugins": ["@shopify/prettier-plugin-liquid"],\n'
             '  "printWidth": 100,\n'
             '  "singleQuote": false\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > .theme-check.yml <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > .theme-check.yml <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Theme Check — modo Theme Store estricto (apunta a aprobación oficial).\n'
             'extends: theme-check:recommended\n'
             '\n'
@@ -877,8 +877,8 @@ STACKS = {
             '  enabled: true\n'
             'MatchingTranslations:\n'
             '  enabled: true\n'
-            'THEMEFORGE_EOF',
-            'cat > .github/workflows/lighthouse-ci.yml <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > .github/workflows/lighthouse-ci.yml <<\'PCREATIVE STUDIO_EOF\'\n'
             'name: Lighthouse CI\n'
             'on:\n'
             '  push:\n'
@@ -896,9 +896,9 @@ STACKS = {
             '          access_token: ${{ secrets.SHOPIFY_AUTH_TOKEN }}\n'
             '          store: ${{ secrets.SHOPIFY_STORE }}\n'
             '          password: ${{ secrets.SHOPIFY_STORE_PWD }}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # .mcp.json — los 3 MCPs Shopify (mismo que liquid Dawn)
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > .mcp.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "mcpServers": {\n'
             '    "shopify-dev": {\n'
@@ -915,15 +915,15 @@ STACKS = {
             '    }\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > README-THEME-STORE.md <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > README-THEME-STORE.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Shopify Theme (Theme Store route)\n'
             '\n'
             'Stack: **Online Store 2.0 desde cero** (sin Dawn, sin Horizon).\n'
             'Elegible para el **Shopify Theme Store** porque NO se deriva de\n'
             'ninguno de los themes oficiales (Dawn-derived es auto-reject).\n'
             '\n'
-            '## Qué te ha scaffoldeado ThemeForge\n'
+            '## Qué te ha scaffoldeado Pcreative Studio\n'
             '\n'
             'Estructura técnica OS 2.0 mínima válida:\n'
             '- `config/settings_schema.json` + `settings_data.json`\n'
@@ -953,7 +953,7 @@ STACKS = {
             '6. **Documentation HTML** estática para entregar al comprador.\n'
             '\n'
             'El `CLAUDE.md` lleva la checklist completa de submission al final.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Online Store 2.0 / Shopify CLI 3.x",
         "skills": ["shopify/skills/theme-development"],
@@ -972,7 +972,7 @@ STACKS = {
             "npx --yes @shopify/create-hydrogen@latest . --quickstart --no-install || "
             "(echo 'Fallback: ejecuta a mano `npm create @shopify/hydrogen@latest .` y elige las opciones.' && exit 0)",
             # ── .mcp.json: mismo set que Liquid + el storefront URL hint ──
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > .mcp.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "mcpServers": {\n'
             '    "shopify-dev": {\n'
@@ -991,9 +991,9 @@ STACKS = {
             '    }\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # README-HYDROGEN.md con CLI + workflow
-            'cat > README-HYDROGEN.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-HYDROGEN.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Hydrogen (Remix + React 19 + Oxygen)\n\n'
             'Storefront headless de Shopify para tiendas con catálogos\n'
             'grandes (500+ SKUs), multi-mercado o necesidades visuales\n'
@@ -1033,7 +1033,7 @@ STACKS = {
             'menos competencia). El Theme Store de Shopify aún no acepta\n'
             'Hydrogen como tema oficial (sigue siendo Liquid), pero sí como\n'
             'app/template en marketplaces de partners.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Hydrogen 2026.x / React 19 / Node 22+",
         "skills": ["shopify/skills/theme-development"],
@@ -1050,7 +1050,7 @@ STACKS = {
             "npx --yes @shopify/create-app@latest --template remix --name __SLUG__ --no-install || "
             "(echo 'Fallback: ejecuta a mano `npm init @shopify/app@latest` y elige template Remix.' && exit 0)",
             # .mcp.json — Shopify Dev MCP (incluye Polaris) + storefront opcionales
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > .mcp.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "mcpServers": {\n'
             '    "shopify-dev": {\n'
@@ -1060,8 +1060,8 @@ STACKS = {
             '    }\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > README-APP.md <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > README-APP.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Shopify App (Polaris + App Bridge)\n\n'
             'App embebida en el Admin de Shopify, construida con el template\n'
             'oficial **Remix** de Shopify CLI. Incluye Polaris (design system),\n'
@@ -1101,7 +1101,7 @@ STACKS = {
             '## MCP activo\n\n'
             '`shopify-dev` incluye Polaris — el agente puede preguntar por props,\n'
             'variantes y patterns de cada componente Polaris en tiempo real.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Shopify CLI 3.x / Remix v3 / Polaris 13+ / Node 22+",
         "skills": ["shopify/skills/theme-development"],
@@ -1121,7 +1121,7 @@ STACKS = {
             # mkdir para la extension de ejemplo
             "mkdir -p extensions/discount-function/src",
             # shopify.extension.toml del function
-            'cat > extensions/discount-function/shopify.extension.toml <<\'THEMEFORGE_EOF\'\n'
+            'cat > extensions/discount-function/shopify.extension.toml <<\'PCREATIVE STUDIO_EOF\'\n'
             'api_version = "2026-01"\n'
             '\n'
             '[[extensions]]\n'
@@ -1137,9 +1137,9 @@ STACKS = {
             'target = "cart.lines.discounts.generate.run"\n'
             'input_query = "src/run.graphql"\n'
             'export = "run"\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # Cargo.toml mínimo
-            'cat > extensions/discount-function/Cargo.toml <<\'THEMEFORGE_EOF\'\n'
+            'cat > extensions/discount-function/Cargo.toml <<\'PCREATIVE STUDIO_EOF\'\n'
             '[package]\n'
             'name = "discount-function"\n'
             'version = "0.1.0"\n'
@@ -1153,9 +1153,9 @@ STACKS = {
             'serde = { version = "1.0", features = ["derive"] }\n'
             'serde_json = "1.0"\n'
             'shopify_function = "0.10"\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # input.graphql (qué datos recibe la function)
-            'cat > extensions/discount-function/src/run.graphql <<\'THEMEFORGE_EOF\'\n'
+            'cat > extensions/discount-function/src/run.graphql <<\'PCREATIVE STUDIO_EOF\'\n'
             'query RunInput {\n'
             '  cart {\n'
             '    lines {\n'
@@ -1173,9 +1173,9 @@ STACKS = {
             '  }\n'
             '  presentmentCurrencyRate\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # run.rs (la function en Rust)
-            'cat > extensions/discount-function/src/run.rs <<\'THEMEFORGE_EOF\'\n'
+            'cat > extensions/discount-function/src/run.rs <<\'PCREATIVE STUDIO_EOF\'\n'
             'use shopify_function::prelude::*;\n'
             'use shopify_function::Result;\n'
             '\n'
@@ -1197,8 +1197,8 @@ STACKS = {
             '        }],\n'
             '    })\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > README-FUNCTIONS.md <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > README-FUNCTIONS.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Shopify Functions\n'
             '\n'
             'Stack: **app Shopify + Functions en Rust compilados a Wasm**.\n'
@@ -1241,7 +1241,7 @@ STACKS = {
             'Functions deben ejecutar en <5 ms (Shopify lo enforcea). Rust →\n'
             'Wasm es la única manera realista de garantizarlo + binarios\n'
             'pequeños. JS-Wasm también está disponible pero es más lento.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Shopify CLI 3.x / Rust 1.75+ / cargo-wasi",
         "skills": ["shopify/skills/theme-development"],
@@ -1254,7 +1254,7 @@ STACKS = {
         "language": "HTML + JS vanilla",
         "scaffold": [
             "mkdir -p assets",
-            'cat > index.html <<\'THEMEFORGE_EOF\'\n'
+            'cat > index.html <<\'PCREATIVE STUDIO_EOF\'\n'
             '<!DOCTYPE html>\n'
             '<html lang="en">\n'
             '<head>\n'
@@ -1289,16 +1289,16 @@ STACKS = {
             '  </main>\n'
             '</body>\n'
             '</html>\n'
-            'THEMEFORGE_EOF',
-            'cat > assets/main.css <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > assets/main.css <<\'PCREATIVE STUDIO_EOF\'\n'
             ':root { --color-bg: #fff; --color-text: #1a1a1a; --color-accent: #c56a4d; }\n'
             'body { margin: 0; font-family: system-ui, sans-serif; color: var(--color-text); background: var(--color-bg); }\n'
             'main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }\n'
             'shopify-product { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }\n'
             '@media (max-width: 768px) { shopify-product { grid-template-columns: 1fr; } }\n'
             'shopify-product-buy-button::part(button) { background: var(--color-accent); color: white; padding: 1rem 2rem; border: 0; border-radius: 999px; cursor: pointer; }\n'
-            'THEMEFORGE_EOF',
-            'cat > package.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > package.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "__SLUG__",\n'
             '  "version": "0.1.0",\n'
@@ -1312,8 +1312,8 @@ STACKS = {
             '    "vite": "^6.0"\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > .mcp.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "mcpServers": {\n'
             '    "shopify-dev": {\n'
@@ -1330,8 +1330,8 @@ STACKS = {
             '    }\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > README-WEBCOMPONENTS.md <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > README-WEBCOMPONENTS.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Shopify Storefront Web Components\n'
             '\n'
             'Embedded commerce en sites NO-Shopify (blogs, landing pages,\n'
@@ -1384,7 +1384,7 @@ STACKS = {
             '- Landing page de campaña paid ads (separada del store).\n'
             '- WordPress / Webflow / Framer site que embebe productos.\n'
             '- Microsite de colaboración (artist drop, collab).\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Storefront API 2026-01 / Modern browsers (custom elements)",
         "skills": ["shopify/skills/theme-development"],
@@ -1399,7 +1399,7 @@ STACKS = {
             "npx --yes @shopify/create-app@latest --template remix --name __SLUG__ --no-install || "
             "(echo 'Fallback: ejecuta `npm init @shopify/app@latest`' && exit 0)",
             "mkdir -p extensions/checkout-ui-extension/src",
-            'cat > extensions/checkout-ui-extension/shopify.extension.toml <<\'THEMEFORGE_EOF\'\n'
+            'cat > extensions/checkout-ui-extension/shopify.extension.toml <<\'PCREATIVE STUDIO_EOF\'\n'
             'api_version = "2026-01"\n'
             '\n'
             '[[extensions]]\n'
@@ -1416,8 +1416,8 @@ STACKS = {
             'block_progress = false\n'
             'api_access = true\n'
             'collect_buyer_consent.sms_marketing = false\n'
-            'THEMEFORGE_EOF',
-            'cat > extensions/checkout-ui-extension/src/Checkout.tsx <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > extensions/checkout-ui-extension/src/Checkout.tsx <<\'PCREATIVE STUDIO_EOF\'\n'
             'import {\n'
             '  reactExtension,\n'
             '  Banner,\n'
@@ -1441,8 +1441,8 @@ STACKS = {
             '    </BlockStack>\n'
             '  );\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > extensions/checkout-ui-extension/package.json <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > extensions/checkout-ui-extension/package.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "checkout-ui-extension",\n'
             '  "private": true,\n'
@@ -1453,8 +1453,8 @@ STACKS = {
             '    "react": "^18.0.0"\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > README-CHECKOUT.md <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > README-CHECKOUT.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Shopify Checkout UI Extension\n'
             '\n'
             'Stack: **app Shopify + extension UI custom en checkout (solo\n'
@@ -1510,7 +1510,7 @@ STACKS = {
             '- Tracking de PII fuera de los webhooks GDPR.\n'
             '- Custom JS DOM manipulation (sandboxed Worker — solo componentes).\n'
             '- Network access sin declararlo en capabilities.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Shopify CLI 3.x / Shopify Plus / React 18+",
         "skills": ["shopify/skills/theme-development"],
@@ -1538,7 +1538,7 @@ STACKS = {
             "[ -f bin/magento ] && bin/magento setup:upgrade --keep-generated 2>&1 | tail -3 || true",
             "[ -f bin/magento ] && bin/magento cache:flush 2>&1 | tail -3 || true",
             # .mcp.json con el Freento MCP — placeholders YOUR-STORE + YOUR_TOKEN
-            'cat > .mcp.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > .mcp.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "mcpServers": {\n'
             '    "magento": {\n'
@@ -1549,26 +1549,26 @@ STACKS = {
             '    }\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # Crear estructura del child theme
             "mkdir -p app/design/frontend/Pcreative/__SLUG__/{etc,web/{css/source,tailwind,images},Magento_Theme/layout,Magento_Catalog/templates/product}",
             # registration.php
-            'cat > app/design/frontend/Pcreative/__SLUG__/registration.php <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/registration.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             "use Magento\\Framework\\Component\\ComponentRegistrar;\n"
             "ComponentRegistrar::register(ComponentRegistrar::THEME, 'frontend/Pcreative/__SLUG__', __DIR__);\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # theme.xml — declara parent Hyva/default
-            'cat > app/design/frontend/Pcreative/__SLUG__/theme.xml <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/theme.xml <<\'PCREATIVE STUDIO_EOF\'\n'
             "<?xml version=\"1.0\"?>\n"
             "<theme xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"urn:magento:framework:Config/etc/theme.xsd\">\n"
             "    <title>__PROJECT__ (Hyvä child)</title>\n"
             "    <parent>Hyva/default</parent>\n"
             "    <media><preview_image>media/preview.jpg</preview_image></media>\n"
             "</theme>\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # composer.json del child theme
-            'cat > app/design/frontend/Pcreative/__SLUG__/composer.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/composer.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "pcreative/magento2-theme-__SLUG__",\n'
             '  "description": "__PROJECT__ — Hyvä child theme",\n'
@@ -1581,9 +1581,9 @@ STACKS = {
             '  },\n'
             '  "autoload": { "files": ["registration.php"] }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # web/tailwind/package.json — Tailwind v4
-            'cat > app/design/frontend/Pcreative/__SLUG__/web/tailwind/package.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/web/tailwind/package.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "__SLUG__-tailwind",\n'
             '  "private": true,\n'
@@ -1599,9 +1599,9 @@ STACKS = {
             '    "@tailwindcss/typography": "^0.5.10"\n'
             '  }\n'
             '}\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # tailwind.config.js — apunta al parent Hyva
-            'cat > app/design/frontend/Pcreative/__SLUG__/web/tailwind/tailwind.config.js <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/web/tailwind/tailwind.config.js <<\'PCREATIVE STUDIO_EOF\'\n'
             "import path from 'path';\n"
             "import hyvaConfig from '../../../../../../vendor/hyva-themes/magento2-default-theme/Magento_Theme/web/tailwind/tailwind.config.js';\n"
             "\n"
@@ -1623,24 +1623,24 @@ STACKS = {
             "    }\n"
             "  }\n"
             "}\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # tailwind-source.css con @import "tailwindcss"
-            'cat > app/design/frontend/Pcreative/__SLUG__/web/tailwind/tailwind-source.css <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/web/tailwind/tailwind-source.css <<\'PCREATIVE STUDIO_EOF\'\n'
             '@import "tailwindcss";\n'
             '\n'
             '/* Custom global styles del child theme */\n'
             'body { font-family: theme(fontFamily.sans); }\n'
             'h1, h2, h3 { font-family: theme(fontFamily.display); }\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # etc/view.xml (heredado de Hyva, pero file vacío para override)
-            'cat > app/design/frontend/Pcreative/__SLUG__/etc/view.xml <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/etc/view.xml <<\'PCREATIVE STUDIO_EOF\'\n'
             "<?xml version=\"1.0\"?>\n"
             "<view xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"urn:magento:framework:Config/etc/view.xsd\">\n"
             "  <!-- Override de view config si quieres tamaños de imagen distintos -->\n"
             "</view>\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # Magento_Theme/layout/default.xml — ejemplo de layout override
-            'cat > app/design/frontend/Pcreative/__SLUG__/Magento_Theme/layout/default.xml <<\'THEMEFORGE_EOF\'\n'
+            'cat > app/design/frontend/Pcreative/__SLUG__/Magento_Theme/layout/default.xml <<\'PCREATIVE STUDIO_EOF\'\n'
             "<?xml version=\"1.0\"?>\n"
             "<page xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"urn:magento:framework:View/Layout/etc/page_configuration.xsd\">\n"
             "  <body>\n"
@@ -1649,9 +1649,9 @@ STACKS = {
             "    </referenceContainer>\n"
             "  </body>\n"
             "</page>\n"
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             # README-MAGENTO.md
-            'cat > README-MAGENTO.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-MAGENTO.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Magento 2 + Hyvä child theme\n'
             '\n'
             'Stack: **Magento 2.4.8+** (Open Source o Adobe Commerce) +\n'
@@ -1734,7 +1734,7 @@ STACKS = {
             '\n'
             '## MCP — Freento MCP server para Magento 2 (MIT)\n'
             '\n'
-            'ThemeForge ha instalado el módulo `freento/module-mcp` automáticamente.\n'
+            'Pcreative Studio ha instalado el módulo `freento/module-mcp` automáticamente.\n'
             'Esto convierte tu Magento en un **MCP server HTTP**: la IA (Claude\n'
             'Code, Cursor, Windsurf) puede consultar productos, órdenes,\n'
             'inventario, clientes, admins y system health del store con lenguaje\n'
@@ -1780,7 +1780,7 @@ STACKS = {
             '($99-499 por theme). Tu propio sistema de licencias gates updates +\n'
             'features premium vía un módulo helper (ver README.licensing.md\n'
             'si has activado el sistema de licencias).\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Magento 2.4.8+ / Hyvä 1.4.4+ / PHP 8.1+ / Node 22+",
         "skills": [],
@@ -1801,13 +1801,13 @@ STACKS = {
             "if [ -f package.json ] && command -v jq >/dev/null 2>&1; then "
             "jq '.name = \"__SLUG__\" | .version = \"0.1.0\"' package.json > _pkg.tmp && mv _pkg.tmp package.json; fi",
             # .env baseline pointing to demo (user must replace)
-            'cat > .env.example <<\'THEMEFORGE_EOF\'\n'
+            'cat > .env.example <<\'PCREATIVE STUDIO_EOF\'\n'
             '# Apuntar al GraphQL endpoint de tu instancia Saleor (Cloud o self-hosted)\n'
             'NEXT_PUBLIC_SALEOR_API_URL=https://store-public-uefa-iad.saleor.cloud/graphql/\n'
             'NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             "cp .env.example .env 2>/dev/null || true",
-            'cat > README-SALEOR.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-SALEOR.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Saleor Storefront (Next.js)\n'
             '\n'
             'Storefront headless oficial de Saleor — React 18 + Next.js 15 App\n'
@@ -1850,7 +1850,7 @@ STACKS = {
             '| Self-hosted total control | ✓ | sólo Oxygen |\n'
             '| Plug-and-play SaaS | ✗ (self-host esfuerzo) | ✓ |\n'
             '| GraphQL-first | ✓ desde día 0 | ✓ |\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Saleor 3.20+ / Next.js 15 / Node 22+ / GraphQL",
         "skills": [],
@@ -2000,7 +2000,7 @@ STACKS = {
             # cuando se puede; si falla, fallback al user.
             "npx --yes @vendure/create@latest . --quick --skip-confirmation || "
             "(echo '⚠️ scaffold no-interactivo no disponible; ejecuta `npx @vendure/create .` manualmente' && exit 0)",
-            'cat > README-VENDURE.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-VENDURE.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Vendure (headless commerce)\n'
             '\n'
             'Backend de ecommerce headless construido con NestJS + TypeScript +\n'
@@ -2044,7 +2044,7 @@ STACKS = {
             '- **Saleor**: Python backend, GraphQL desde día 1, multi-region\n'
             '  más maduro para enterprise.\n'
             '- **Medusa**: más MVP-friendly, growing fast, plugins más nuevos.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Vendure 3.x / Node 22+ / Postgres 14+",
         "skills": [],
@@ -2063,7 +2063,7 @@ STACKS = {
             "jq '.name = \"__SLUG__\" | .version = \"0.1.0\"' package.json > _pkg.tmp && mv _pkg.tmp package.json; fi",
             # Stencil CLI debe estar instalado global; check + instrucción
             "command -v stencil >/dev/null 2>&1 || echo '⚠️  Stencil CLI no instalado. Instálalo: npm install -g @bigcommerce/stencil-cli'",
-            'cat > README-BIGCOMMERCE.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-BIGCOMMERCE.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — BigCommerce Stencil Theme\n'
             '\n'
             'Cornerstone (theme oficial BigCommerce, MIT) como base. Handlebars +\n'
@@ -2109,7 +2109,7 @@ STACKS = {
             '  Cornerstone tal cual** — hay que diferenciar (igual que Shopify Dawn\n'
             '  en Theme Store).\n'
             '- ThemeForest también vende BigCommerce themes (~900 themes).\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Cornerstone 6.x / Stencil CLI 7.x / Node 22+",
         "skills": [],
@@ -2125,7 +2125,7 @@ STACKS = {
             "TF_PORT=$(python3 -c \"import json,os;d=json.load(open(os.path.expanduser('~/.config/themeforge/ports.json')));print((d.get('__SLUG__') or {}).get('port') or 8080)\" 2>/dev/null || echo 8080)",
             "echo \"→ Puerto asignado: $TF_PORT\"",
             "mkdir -p themes/__SLUG__/config themes/__SLUG__/assets/css themes/__SLUG__/assets/js themes/__SLUG__/assets/img themes/__SLUG__/templates themes/__SLUG__/modules themes/__SLUG__/_dev",
-            'cat > themes/__SLUG__/config/theme.yml <<\'THEMEFORGE_EOF\'\n'
+            'cat > themes/__SLUG__/config/theme.yml <<\'PCREATIVE STUDIO_EOF\'\n'
             'name: __SLUG__\n'
             'display_name: "__PROJECT__"\n'
             'parent: classic\n'
@@ -2158,9 +2158,9 @@ STACKS = {
             '    new-products: layout-left-column\n'
             '    prices-drop:  layout-left-column\n'
             '    sitemap:      layout-left-column\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             "touch themes/__SLUG__/preview.png",
-            'cat > docker-compose.yml <<THEMEFORGE_EOF\n'
+            'cat > docker-compose.yml <<PCREATIVE STUDIO_EOF\n'
             'services:\n'
             '  db:\n'
             '    image: mariadb:11\n'
@@ -2197,7 +2197,7 @@ STACKS = {
             'volumes:\n'
             '  ps-db:\n'
             '  ps-app:\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             "echo '→ Levantando PrestaShop (docker compose up -d — la 1ª vez descarga ~1 GB)…'",
             'if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then '
             'docker compose up -d || echo "  ⚠️ docker compose up falló (revisa puertos/imágenes)"; '
@@ -2215,7 +2215,7 @@ STACKS = {
             'echo "   🔑 Admin:  http://localhost:$TF_PORT/admin-dev/   (admin@__SLUG__.local / prestashop123)"',
             'echo "   📋 Logs:   docker compose logs -f prestashop"',
             'echo "   🤖 Gestión IA (opcional): instala el módulo PrestaShop MCP en el back-office (Módulos) → expone un MCP remoto HTTP+OAuth para el agente. Guía: docs.mcp.prestashop.com"',
-            'cat > themes/__SLUG__/README-PRESTASHOP.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > themes/__SLUG__/README-PRESTASHOP.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — PrestaShop child theme\n'
             '\n'
             'Stack: **PrestaShop 9.x** + child theme heredando del **classic**.\n'
@@ -2223,7 +2223,7 @@ STACKS = {
             '\n'
             '## Tienda ya provisionada (Docker)\n'
             '\n'
-            'ThemeForge ha levantado PrestaShop 9 + MariaDB con `docker-compose.yml`:\n'
+            'Pcreative Studio ha levantado PrestaShop 9 + MariaDB con `docker-compose.yml`:\n'
             '\n'
             '- 🛒 Tienda:  `http://localhost:<puerto>/`\n'
             '- 🔑 Admin:   `http://localhost:<puerto>/admin-dev/`  (admin@__SLUG__.local / prestashop123)\n'
@@ -2263,7 +2263,7 @@ STACKS = {
             '\n'
             '- **PrestaShop Addons** — 2.000+ templates, €40-150.\n'
             '- **ThemeForest** — 900+ PrestaShop themes, $39-89.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "PrestaShop 9.0+ / PHP 8.1+ / Smarty 4",
         "skills": ["anthropics/skills/frontend-design"],
@@ -2281,7 +2281,7 @@ STACKS = {
             "mkdir -p extension/__SLUG__/catalog/controller/startup extension/__SLUG__/catalog/language/en-gb",
             "mkdir -p extension/__SLUG__/catalog/view/template/common extension/__SLUG__/catalog/view/template/product extension/__SLUG__/catalog/view/template/checkout",
             "mkdir -p extension/__SLUG__/catalog/view/stylesheet extension/__SLUG__/catalog/view/javascript extension/__SLUG__/catalog/view/image",
-            'cat > extension/__SLUG__/install.json <<\'THEMEFORGE_EOF\'\n'
+            'cat > extension/__SLUG__/install.json <<\'PCREATIVE STUDIO_EOF\'\n'
             '{\n'
             '  "name": "__PROJECT__",\n'
             '  "version": "0.1.0",\n'
@@ -2291,8 +2291,8 @@ STACKS = {
             '  "code": "__SLUG__",\n'
             '  "compatibility": ">=4.0"\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > extension/__SLUG__/catalog/controller/startup/theme.php <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > extension/__SLUG__/catalog/controller/startup/theme.php <<\'PCREATIVE STUDIO_EOF\'\n'
             '<?php\n'
             'namespace Opencart\\Catalog\\Controller\\Extension\\__SLUG__\\Startup;\n'
             '\n'
@@ -2303,13 +2303,13 @@ STACKS = {
             '        }\n'
             '    }\n'
             '}\n'
-            'THEMEFORGE_EOF',
-            'cat > extension/__SLUG__/catalog/view/stylesheet/__SLUG__.css <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > extension/__SLUG__/catalog/view/stylesheet/__SLUG__.css <<\'PCREATIVE STUDIO_EOF\'\n'
             ':root { --brand: #C56A4D; --brand-accent: #8FA68E; }\n'
             'body { font-family: system-ui, sans-serif; }\n'
             '.btn-primary, .btn-success { background: var(--brand); border-color: var(--brand); }\n'
-            'THEMEFORGE_EOF',
-            'cat > extension/__SLUG__/catalog/view/template/common/header.twig <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > extension/__SLUG__/catalog/view/template/common/header.twig <<\'PCREATIVE STUDIO_EOF\'\n'
             '{# Custom header override #}\n'
             '<!DOCTYPE html>\n'
             '<html dir="{{ direction }}" lang="{{ lang }}">\n'
@@ -2326,8 +2326,8 @@ STACKS = {
             '    {{ navigation }}\n'
             '  </header>\n'
             '  <main class="container">\n'
-            'THEMEFORGE_EOF',
-            'cat > extension/__SLUG__/README-OPENCART.md <<\'THEMEFORGE_EOF\'\n'
+            'PCREATIVE STUDIO_EOF',
+            'cat > extension/__SLUG__/README-OPENCART.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — OpenCart 4 theme extension\n'
             '\n'
             'OpenCart 4 trata los themes como **extensions**. OCMod está obsoleto\n'
@@ -2377,7 +2377,7 @@ STACKS = {
             '\n'
             '- **OpenCart Marketplace** — $30-150 por theme.\n'
             '- **ThemeForest** — 1.500+ OpenCart themes.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "OpenCart 4.0+ / PHP 8.0+ / Twig 3",
         "skills": [],
@@ -2393,7 +2393,7 @@ STACKS = {
             "command -v composer >/dev/null || { echo '❌ composer no instalado'; exit 1; }",
             "composer create-project --no-interaction sylius/sylius-standard . || "
             "echo '⚠️ scaffold fallido — ejecuta a mano `composer create-project sylius/sylius-standard .`'",
-            'cat > README-SYLIUS.md <<\'THEMEFORGE_EOF\'\n'
+            'cat > README-SYLIUS.md <<\'PCREATIVE STUDIO_EOF\'\n'
             '# __PROJECT__ — Sylius 2.x storefront\n'
             '\n'
             'Stack: **Sylius 2.x** (full e-commerce framework basado en\n'
@@ -2472,7 +2472,7 @@ STACKS = {
             '\n'
             '- **Sylius Marketplace** (sylius.com/store).\n'
             '- **Packagist** — composer package.\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Sylius 2.x / Symfony 7.4+ / PHP 8.2+",
         "skills": [],
@@ -2615,7 +2615,7 @@ STACKS = {
         ],
         "min_version": "Compose BOM 2024.10+, Kotlin 2.0+",
         "skills": [],
-        "notes": "Android nativo: Kotlin + Jetpack Compose + Material 3. ThemeForge crea solo la carpeta — el scaffold real necesita Android Studio. Ideal para apps con UX 100% Material y mejor rendimiento que cross-platform.",
+        "notes": "Android nativo: Kotlin + Jetpack Compose + Material 3. Pcreative Studio crea solo la carpeta — el scaffold real necesita Android Studio. Ideal para apps con UX 100% Material y mejor rendimiento que cross-platform.",
     },
     "laravel-inertia": {
         "name": "Laravel + Inertia + Tailwind",
@@ -2946,10 +2946,10 @@ STACKS = {
             "- ⚠️ Para catálogos de ALTO RIESGO (growshop/CBD): NUNCA Stripe/Shopify Payments/Adyen (rechazan). MONEI/GreenexPay/cripto/transferencia/COD. Valida con alta real + transacción de prueba antes de lanzar (las páginas de MONEI/GreenexPay son marketing).\n\n"
             "## 🤖 IA NATIVA (el diferencial)\n"
             "- **Búsqueda semántica/vectorial + recomendaciones** con `pgvector` en el MISMO Postgres (texto→embedding→similitud coseno). Reusa backups/seguridad del Postgres. (pgvector escala bien ~1-10M vectores.)\n"
-            "- **Generación de descripciones** de producto (LLM) e **imágenes** de producto (Runware, ya integrado en ThemeForge).\n"
+            "- **Generación de descripciones** de producto (LLM) e **imágenes** de producto (Runware, ya integrado en Pcreative Studio).\n"
             "- Opcional: asistente de compra / soporte con RAG agéntico.\n\n"
             "## 🌍 COMERCIO\n"
-            "Multi-idioma + multi-moneda + IVA vía Regions de Medusa; promociones/cupones, inventario, envíos por zonas, carrito abandonado, reseñas. Admin de Medusa (+ widgets custom). API headless para web + la app móvil de ThemeForge.\n\n"
+            "Multi-idioma + multi-moneda + IVA vía Regions de Medusa; promociones/cupones, inventario, envíos por zonas, carrito abandonado, reseñas. Admin de Medusa (+ widgets custom). API headless para web + la app móvil de Pcreative Studio.\n\n"
             "## 📦 LICENCIAS\n"
             "Integra el sistema de licencias pcreative (el cliente lo posee pero el producto va protegido/licenciado) siguiendo el patrón anti-nulled de la agencia (JWT RS256 + verify offline).\n\n"
             "Estructura: `backend/` (Medusa, dashboard OFF) + `admin/` (panel Aurora branded por env `NEXT_PUBLIC_STORE_*`) + `storefront/` (Vite/React con framer-motion + efectos) + `docker-compose.yml` + `start.sh`. El panel es **/admin** (admin@forge.local / forgecommerce123), NUNCA el dashboard de Medusa (/app está desactivado). El scaffold deja el sistema ENTERO corriendo y migrado. Tu trabajo: re-tematizar el storefront por nicho (theme.config.ts + demo data) + TODO lo de arriba (seguridad, multi-pasarela, IA, licencias).\n\n"
@@ -2966,7 +2966,7 @@ STACKS = {
             "echo '→ create-medusa-app (backend + storefront Next.js — descarga grande, varios min)…'",
             'npx --yes create-medusa-app@latest backend --db-url "postgres://medusa:medusa@localhost:5433/medusa" --with-nextjs-starter --no-migrations --no-browser --use-npm </dev/null || echo "  ⚠️ create-medusa-app falló (necesita Node 20+ y red)"',
             "echo '→ docker-compose: Postgres(pgvector) + Redis…'",
-            'cat > docker-compose.yml <<THEMEFORGE_EOF\n'
+            'cat > docker-compose.yml <<PCREATIVE STUDIO_EOF\n'
             'services:\n'
             '  db:\n'
             '    image: pgvector/pgvector:pg16\n'
@@ -2986,7 +2986,7 @@ STACKS = {
             '    restart: unless-stopped\n'
             'volumes:\n'
             '  fc-db:\n'
-            'THEMEFORGE_EOF',
+            'PCREATIVE STUDIO_EOF',
             'if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then '
             'docker compose up -d || echo "  ⚠️ docker compose up falló"; '
             'echo "  ⏳ Esperando a Postgres…"; '
@@ -3034,7 +3034,7 @@ STACKS = {
             "Multi-idioma (ES base) + multi-moneda + IVA vía Regions de Medusa; promos/cupones, inventario, envíos por zonas (transportistas con contrarreembolso), wishlist, newsletter, puntos/fidelización opcional. Admin de Medusa para que el cliente gestione productos/stock/pedidos. Integra el sistema de licencias pcreative (JWT RS256 + verify offline).\n\n"
             "El scaffold deja Medusa+Next.js+Postgres(pgvector)+Redis corriendo. Tu trabajo: construir TODO el growshop de arriba. Cuando el usuario te dé el NOMBRE del growshop, personaliza marca/eslogan/ciudad; mientras, usa un placeholder coherente.\n\n"
             "## 🎨 UI / DISEÑO (monorepo)\n"
-            "Todo el diseño va en el storefront `backend-storefront/` (Next.js/React). Los MCP de diseño **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados — úsalos para los componentes. **framer-motion** para animaciones: instálalo en el storefront (`cd backend-storefront && npm install framer-motion`); ThemeForge no lo auto-instala por estar en subcarpeta. Estética growshop: verde natural + oscuro elegante, mobile-first, micro-interacciones suaves (respeta `prefers-reduced-motion`)."
+            "Todo el diseño va en el storefront `backend-storefront/` (Next.js/React). Los MCP de diseño **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados — úsalos para los componentes. **framer-motion** para animaciones: instálalo en el storefront (`cd backend-storefront && npm install framer-motion`); Pcreative Studio no lo auto-instala por estar en subcarpeta. Estética growshop: verde natural + oscuro elegante, mobile-first, micro-interacciones suaves (respeta `prefers-reduced-motion`)."
         ),
     },
 

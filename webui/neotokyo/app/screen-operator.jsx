@@ -1,6 +1,6 @@
 /* ================= NEO-TOKYO · Operator (Hermes Mission Control) =================
  * Paridad COMPLETA con el panel Hermes nativo (hermes_panel.py): 12 pestañas
- * cableadas al bridge (web_shell.py ThemeForgeBridge). Cero mock.
+ * cableadas al bridge (web_shell.py Pcreative StudioBridge). Cero mock.
  */
 
 /* ── helpers de puente ───────────────────────────────────────────────── */

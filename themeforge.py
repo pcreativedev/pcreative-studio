@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ThemeForge — builder de plantillas para ThemeForest.
+Pcreative Studio — builder de plantillas para ThemeForest.
 
 GUI PyQt6 con tres modos:
 
@@ -33,10 +33,10 @@ from pathlib import Path
 # QtWebEngine deja la ventana COMPLETAMENTE en negro en entornos sin GPU
 # (VMs, RDP, servidores). La env var QT_OPENGL tiene que estar puesta ANTES
 # del primer import de Qt — por eso esto va aquí arriba y NO en main().
-# Se activa con THEMEFORGE_SOFTWARE_GL=1 (override) o auto-detectando un
+# Se activa con PCREATIVE STUDIO_SOFTWARE_GL=1 (override) o auto-detectando un
 # adaptador de vídeo virtual en el registro de Windows.
 def _detect_software_gl() -> bool:
-    val = os.environ.get("THEMEFORGE_SOFTWARE_GL")
+    val = os.environ.get("PCREATIVE STUDIO_SOFTWARE_GL")
     if val is not None:
         return val.strip() == "1"
     if sys.platform.startswith("win"):
@@ -108,7 +108,7 @@ def _add_bundled_tools_to_path() -> None:
 
 def _add_user_bin_dirs_to_path() -> None:
     """Añade al PATH las rutas donde los instaladores de CLIs colocan los
-    binarios pero que NO suelen estar en el PATH del sistema. Así ThemeForge
+    binarios pero que NO suelen estar en el PATH del sistema. Así Pcreative Studio
     detecta los CLIs recién instalados sin que el usuario reinicie el shell:
 
       - ~/.local/bin      → Claude Code (instalador nativo), Codex, pipx
@@ -204,10 +204,10 @@ from provider_picker import ProviderPicker
 # Mantenemos referencias vivas a las ProjectWindow abiertas para que Qt no las
 # recolecte mientras el user las usa.
 _OPEN_PROJECT_WINDOWS: list = []
-_MAIN_APP = None  # ref a la ThemeForgeApp principal (para enfocarla desde otras ventanas)
+_MAIN_APP = None  # ref a la PcreativeStudioApp principal (para enfocarla desde otras ventanas)
 
 
-# Skills que ThemeForge instala (autoskills → `.agents/skills/` + symlinks en
+# Skills que Pcreative Studio instala (autoskills → `.agents/skills/` + symlinks en
 # `.claude/skills/`; uipro-cli → carpeta `ui-ux-pro-max`). Una skill genérica de
 # un fork (Medusa: reviewing-prs, writing-docs…) NO cuenta.
 _UIPRO_HINTS = ("ui-ux-pro", "uiux-pro", "uipro")
@@ -245,7 +245,7 @@ def _has_real_skills(root: Path) -> bool:
 
 
 def _maybe_bootstrap_skills(root: Path) -> bool:
-    """Si el proyecto tiene stack pero NO las skills de ThemeForge (autoskills/uipro),
+    """Si el proyecto tiene stack pero NO las skills de Pcreative Studio (autoskills/uipro),
     lánzalas en segundo plano (detached) — así un proyecto adoptado en la galería sin
     pasar por el setup deja de quejarse. Idempotente vía marcador (no re-lanza aunque
     la instalación tarde). NO bloquea la apertura de la ventana."""
@@ -285,7 +285,7 @@ def _maybe_bootstrap_skills(root: Path) -> bool:
 
 
 def _ensure_project_wiring(project_path: Path) -> list[str]:
-    """Auto-cablea el wiring que ThemeForge espera (context/, .mcp.json, skills)
+    """Auto-cablea el wiring que Pcreative Studio espera (context/, .mcp.json, skills)
     en proyectos que NO pasaron por el setup — symlinks, adopciones externas,
     repos clonados a mano. El init-prompt del agente asume que existen; sin esto
     se queja de que `context/` no existe y las skills/MCP no saltan.
@@ -357,7 +357,7 @@ def open_project_window(project_path: Path, initial_cmd: str | None = None,
     try:
         from project_window import ProjectWindow
     except Exception as e:
-        QMessageBox.critical(None, "ThemeForge", f"No se pudo cargar ProjectWindow:\n{e}")
+        QMessageBox.critical(None, "Pcreative Studio", f"No se pudo cargar ProjectWindow:\n{e}")
         return
     w = ProjectWindow(project_path, initial_cmd=initial_cmd,
                       provider_key=provider_key, auto_agent=auto_agent)
@@ -390,7 +390,7 @@ CONTEXT_DIR = BUILDER_DIR / "context"
 CONFIG_DIR = pc.app_config_dir()
 THUMBNAILS_DIR = pc.app_cache_dir() / "thumbnails"
 # Carpeta opcional con versiones privadas de los MDs de context/.
-# Si un MD existe aquí, ThemeForge lo prefiere sobre el del repo. Útil
+# Si un MD existe aquí, Pcreative Studio lo prefiere sobre el del repo. Útil
 # para que el usuario tenga su versión REAL (con secrets, estrategia,
 # análisis de mercado real) fuera del repo público.
 CONTEXT_PRIVATE_DIR = CONFIG_DIR / "context-private"
@@ -912,7 +912,7 @@ _ZIP_EXCLUDE_DIRS: frozenset[str] = frozenset({
     "target", "vendor", ".gradle", ".dart_tool",
     "screenshots-private", "tmp", ".tmp",
 })
-# Directorios que ThemeForge inyecta SOLO en la RAÍZ del proyecto y que no
+# Directorios que Pcreative Studio inyecta SOLO en la RAÍZ del proyecto y que no
 # forman parte del template vendible: contexto/investigación (puede tener datos
 # privados) y la referencia estudiada (copyright ajeno). Se excluyen solo a
 # nivel raíz para no chocar con código legítimo (p.ej. `src/context/` de React).
@@ -922,7 +922,7 @@ _ZIP_EXCLUDE_FILES: frozenset[str] = frozenset({
     ".env.test",
     ".DS_Store", "Thumbs.db", "desktop.ini",
     "CLAUDE.md", "AGENTS.md", "GEMINI.md", "MEMORY.md",
-    ".themeforge-init-prompt",  # prompt inicial que ThemeForge deja en el proyecto
+    ".themeforge-init-prompt",  # prompt inicial que Pcreative Studio deja en el proyecto
     ".eslintcache",
 })
 _ZIP_EXCLUDE_SUFFIXES: tuple[str, ...] = (
@@ -1200,7 +1200,7 @@ Plugins instalados (free): **GreenShift** (animations + dynamic data) · **ACF**
     "wordpress-elementor": """### Builder activo: **Elementor** (sobre Hello Elementor)
 
 El proyecto es un **child theme** que declara `Template: hello-elementor`. El parent
-y Elementor free los instala ThemeForge solos.
+y Elementor free los instala Pcreative Studio solos.
 
 - Diseña en `/wp-admin/admin.php?page=elementor_app/templates` y en la edición de
   páginas (botón "Editar con Elementor").
@@ -1230,7 +1230,7 @@ child), **Novamira Pro** (MCP con soporte Divi 4/5).""",
     "wordpress-breakdance": """### Builder activo: **Breakdance** (plugin de render)
 
 A diferencia de los anteriores, Breakdance es un **plugin** que reemplaza el
-render del front. El theme base es **Kadence** (free, lo instala ThemeForge),
+render del front. El theme base es **Kadence** (free, lo instala Pcreative Studio),
 sirve solo de fallback / wp-admin. El proyecto es un child theme de Kadence.
 
 - Diseña en `/wp-admin/admin.php?page=breakdance_settings` y *Breakdance →
@@ -2717,7 +2717,7 @@ def _render_analysis_block(ai_analysis: str | None, kind: str) -> str:
     if kind == "market":
         return (
             "## Análisis de mercado previo (pestaña Market)\n\n"
-            "> Generado por ThemeForge con IA antes de crear este proyecto. **Léelo "
+            "> Generado por Pcreative Studio con IA antes de crear este proyecto. **Léelo "
             "antes de proponer nada** — contiene el mapa del mercado de productos "
             "digitales 2026 (nichos top, stacks ganadores, gap analysis y "
             "recomendaciones concretas).\n>\n"
@@ -2730,7 +2730,7 @@ def _render_analysis_block(ai_analysis: str | None, kind: str) -> str:
     if kind == "vibe":
         return (
             "## Briefing inicial (Vibe scaffolder)\n\n"
-            "> Generado por ThemeForge con IA a partir de la descripción "
+            "> Generado por Pcreative Studio con IA a partir de la descripción "
             "natural del usuario. Es el norte del producto — no la copia.\n\n"
             + text + "\n"
         )
@@ -2743,7 +2743,7 @@ def _render_analysis_block(ai_analysis: str | None, kind: str) -> str:
             "onboarding, o requisitos de Envato. NADA de eso aplica aquí.** Esto es "
             "una web REAL para UN negocio concreto, que se le entrega a ESE cliente.\n>\n"
             "> **Materia prima REAL del cliente** (extraída de su web y Google por "
-            "ThemeForge + revisada por el usuario): datos, carta/servicios/productos, "
+            "Pcreative Studio + revisada por el usuario): datos, carta/servicios/productos, "
             "horarios, fotos, branding y **EL CONTENIDO COMPLETO de su web actual** "
             "(todas sus páginas: inicio, nosotros/historia, servicios, blog/noticias, "
             "galería, contacto…). Está más abajo en «Contenido REAL de su web».\n>\n"
@@ -2770,7 +2770,7 @@ def _render_analysis_block(ai_analysis: str | None, kind: str) -> str:
     # default: reference
     return (
         "## Análisis IA previo de la referencia\n\n"
-        "> Generado automáticamente por ThemeForge antes de crear el proyecto. "
+        "> Generado automáticamente por Pcreative Studio antes de crear el proyecto. "
         "**Léelo antes de tocar nada** — contiene la lectura técnica del template "
         "original, análisis de mercado y recomendación de stack para tu "
         "reimplementación.\n>\n"
@@ -2873,7 +2873,7 @@ def render_context(
     product_kind = _PRODUCT_KIND[product_format]
     marketplaces = _MARKETPLACES[product_format]
 
-    # Contexto para el agente: si es WordPress, ThemeForge ya levantó WP en
+    # Contexto para el agente: si es WordPress, Pcreative Studio ya levantó WP en
     # Docker (ver bloque WP del setup) y el preview apunta ahí.
     if product_format == "wordpress":
         wp_kind = "plugin" if stack_key == "wordpress-plugin" else "theme"
@@ -2882,15 +2882,15 @@ def render_context(
         wp_dev_block = f"""
 ## Entorno WordPress (Docker) — YA INSTALADO Y FUNCIONAL
 
-ThemeForge ha levantado **WordPress + MariaDB en Docker** y ha **instalado WordPress**
-(admin / admin) **antes** de este setup. **El preview de ThemeForge ya apunta a ese
+Pcreative Studio ha levantado **WordPress + MariaDB en Docker** y ha **instalado WordPress**
+(admin / admin) **antes** de este setup. **El preview de Pcreative Studio ya apunta a ese
 WordPress en vivo** — NO tienes que instalar, configurar ni levantar nada.
 
 - URL, puerto y credenciales exactas: en **`WORDPRESS-DEV.md`** (raíz del proyecto). Léelo.
 - Tu {wp_kind} está montado en `wp-content/{wp_dir}/<slug>`: lo que escribas se ve en vivo.
 - Hay un helper **`./wp`** (wp-cli dentro del contenedor). Activa tu {wp_kind} cuando tenga
   su cabecera: `./wp {wp_kind} activate <slug>`.
-- **Autologueado como admin** en `localhost` (mu-plugin de ThemeForge): abre el preview y vas
+- **Autologueado como admin** en `localhost` (mu-plugin de Pcreative Studio): abre el preview y vas
   directo al wp-admin sin formulario.
 
 ### MCPs disponibles para operar WordPress
@@ -2920,7 +2920,7 @@ ya está corriendo y servido en el preview. Trabaja directamente sobre tu {wp_ki
         wp_dev_block = f"""
 ## Entorno Shopify — provisión y herramientas
 
-ThemeForge ha scaffoldeado este proyecto invocando los tooling oficiales
+Pcreative Studio ha scaffoldeado este proyecto invocando los tooling oficiales
 de Shopify (no se bundlea nada en el repo). Tienes:
 
 - **Shopify CLI** (`@shopify/cli`, MIT) — comandos `shopify theme dev`,
@@ -3161,7 +3161,7 @@ inspiración, jamás marcas ni nombres del template original.
 
 ### Autoskills (lanza tú cuando proceda)
 
-ThemeForge no ha podido ejecutar `npx autoskills` durante el setup porque
+Pcreative Studio no ha podido ejecutar `npx autoskills` durante el setup porque
 la raíz aún estaba vacía. **En cuanto hayas hecho el scaffold del stack
 elegido** (típicamente `create-next-app`, `composer create-project laravel/laravel`,
 `flutter create`, etc.) y tengas `package.json`/`composer.json`/`pubspec.yaml`
@@ -3183,7 +3183,7 @@ que Claude Code escanea.
 `.claude/skills/` del directorio donde **lo lances**. Por eso:
 
 - **Para skills cross-cutting** (accessibility, seo, frontend-design,
-  tailwind-css-patterns): ThemeForge las agrega automáticamente a la
+  tailwind-css-patterns): Pcreative Studio las agrega automáticamente a la
   raíz `<repo>/.claude/skills/`. Disponibles desde cualquier cwd.
 - **Para skills stack-specific** (laravel, next, flutter, react…):
   `cd apps/<app> && claude` para verlas en auto-trigger sin que las de
@@ -3210,7 +3210,7 @@ archivos.
    datos o las rutas se propaga a todos los clientes (web + mobile +
    admin).
 5. **Postgres compartido**: si el proyecto tiene BD provisionada
-   automáticamente por ThemeForge, comparte la misma instancia entre los
+   automáticamente por Pcreative Studio, comparte la misma instancia entre los
    sub-proyectos que la necesiten (admin Laravel + web Next + apps).
 """
     else:  # existing
@@ -3246,7 +3246,7 @@ Los commits que hagas se añaden encima del historial existente.
 > 🎯 Esta web debe quedar a nivel de **ESTUDIO DE DISEÑO**: profesional,
 > animada y pulida — NUNCA una plantilla básica. Es un requisito, no un extra.
 
-Si es una web React (Next/Vite/Remix/…), ThemeForge ya ha instalado
+Si es una web React (Next/Vite/Remix/…), Pcreative Studio ya ha instalado
 **framer-motion**, escrito **`UI-MOTION.md`** en la raíz y cableado (si hay key
 21st.dev) el MCP **`magic`** en `.mcp.json`.
 
@@ -3328,13 +3328,13 @@ Sin que te lo pida el usuario, como parte de la primera versión:
 {_render_analysis_block(ai_analysis, ai_analysis_kind)}
 {uipro_block}
 
-## 🛠️ Estás trabajando DENTRO de ThemeForge
+## 🛠️ Estás trabajando DENTRO de Pcreative Studio
 
-Este proyecto fue creado por **ThemeForge** (un builder GUI Python/PyQt6
+Este proyecto fue creado por **Pcreative Studio** (un builder GUI Python/PyQt6
 que vive en `~/Proyectos/themeforge/`). Antes de tomar decisiones técnicas
 que afecten al setup del proyecto, ten en cuenta:
 
-### Lo que ThemeForge gestiona POR TI
+### Lo que Pcreative Studio gestiona POR TI
 
 - **Preview embebido**: hay una `QWebEngineView` que carga la URL del
   dev server. Cuando el usuario te diga "lanza el preview" o "arranca
@@ -3353,11 +3353,11 @@ que afecten al setup del proyecto, ten en cuenta:
   como `DATABASE_URL`.
 - **Re-detectar perfil**: si el stack cambia (instalas un framework,
   haces scaffold, etc.) el usuario tiene un botón **🔄 Re-detectar**
-  arriba de su ProjectWindow para que ThemeForge actualice el perfil.
+  arriba de su ProjectWindow para que Pcreative Studio actualice el perfil.
 
 ### Mono-repos (apps/* y packages/*)
 
-Si trabajas en un mono-repo, ThemeForge detecta sub-apps automáticamente
+Si trabajas en un mono-repo, Pcreative Studio detecta sub-apps automáticamente
 y muestra un dropdown "Sub-proyecto" arriba del preview. Lanzar el dev
 server de la sub-app correcta es responsabilidad del usuario (al elegir
 en el dropdown). Tú no tienes que tocar nada.
@@ -3369,30 +3369,30 @@ en el dropdown). Tú no tienes que tocar nada.
 - Instalar dependencias (`npm install`, `composer install`).
 - Hacer `git add/commit`.
 
-### Cosas que ThemeForge prefiere que NO hagas
+### Cosas que Pcreative Studio prefiere que NO hagas
 
 - Lanzar `npm run dev` / `vite` / `php artisan serve` en background si
   el usuario ya tiene el botón Start del preview. Duplica procesos y
   ocupa el puerto asignado.
 - Modificar `.claude/settings.json` ni `.claude/skills/` arbitrariamente
-  — ThemeForge ya cableó las skills correctamente al crear el proyecto.
-- Cambiar el `DATABASE_URL` del `.env` si la BD viene de ThemeForge —
+  — Pcreative Studio ya cableó las skills correctamente al crear el proyecto.
+- Cambiar el `DATABASE_URL` del `.env` si la BD viene de Pcreative Studio —
   el container Postgres asociado deja de mapear correctamente.
 
 ### Cómo reportar problemas del setup al usuario
 
 Si detectas que el detector de preview no encajó (lanza puerto incorrecto,
 el stack real es otro, etc.), dile al usuario:
-> "El detector de ThemeForge no pillaron este caso. Si quieres lo arreglo
+> "El detector de Pcreative Studio no pillaron este caso. Si quieres lo arreglo
 > editando `~/Proyectos/themeforge/preview.py` o `themeforge.py` y se lo
 > reportas para futuros proyectos."
 
-ThemeForge es código del propio usuario, no es propietario — todo es
+Pcreative Studio es código del propio usuario, no es propietario — todo es
 editable y los bug fixes se aplican a futuros proyectos creados.
 
 ## Archivos de contexto
 
-Discovery dinámico: ThemeForge copia al proyecto cualquier `*.md` que
+Discovery dinámico: Pcreative Studio copia al proyecto cualquier `*.md` que
 encuentre en `~/.config/themeforge/context-private/` (versiones reales
 del usuario) y los `*.template.md` del repo `context/` que no tengan
 equivalente privado.
@@ -3477,7 +3477,7 @@ adapta el patrón al nicho.
   - "Realtime collaboration · Multi-cursor editing with sub-100ms sync"
 - **Pricing**: 3 tarjetas (Hobby $0, Pro $19/mo, Business $79/mo), middle destacada con badge "Most popular".
 - **Testimonials (4-6)**: nombre + avatar DiceBear + rol + empresa coherente:
-  - "ThemeForge cut our launch time by 80%." — Sarah Chen, Head of Product · Lumen Labs
+  - "Pcreative Studio cut our launch time by 80%." — Sarah Chen, Head of Product · Lumen Labs
   - "Best DX I've had in 5 years of building SaaS." — Marcus Reyes, CTO · Nexus AI
 - **FAQ**: 6-8 preguntas realistas del nicho.
 - **CTA final** + footer con 4 columnas (Product, Company, Resources, Legal).
@@ -3795,7 +3795,7 @@ def write_setup_script(
                        "`.claude/skills/` (si tu provider lo soporta).")
         ctx_md += (
             "\n\n## Skills instaladas — ÚSALAS desde el principio\n\n"
-            "Durante el setup, ThemeForge ha instalado skills de agente en este "
+            "Durante el setup, Pcreative Studio ha instalado skills de agente en este "
             "proyecto:\n\n"
             + "\n".join(_sk)
             + "\n\n**OBLIGATORIO antes de escribir código:** lista `.claude/skills/` "
@@ -3819,7 +3819,7 @@ def write_setup_script(
         parts.append('trap \'EC=$?; echo ""; echo "❌ ERROR en línea $LINENO (exit $EC). La shell sigue activa para que puedas inspeccionar."\' ERR')
     else:
         parts.append('trap \'EC=$?; echo ""; echo "❌ ERROR en línea $LINENO (exit $EC)."; echo "(la ventana queda abierta — pulsa Enter para cerrar)"; read\' ERR')
-    parts.append(f'echo "════ ThemeForge: {project_name} ════"')
+    parts.append(f'echo "════ Pcreative Studio: {project_name} ════"')
 
     if mode == "existing":
         # Clonamos en una carpeta nueva. project_dir aún no debe existir
@@ -3858,10 +3858,10 @@ def write_setup_script(
                 org_id = _load_lic().get("org_id", "com.example")
             except Exception:
                 org_id = "com.example"
-            # Directorio de instalación de ThemeForge (para que un stack pueda
+            # Directorio de instalación de Pcreative Studio (para que un stack pueda
             # copiar plantillas de `templates/<stack>/` con `cp -a __TFDIR__/…`).
             tfdir = str(Path(__file__).resolve().parent)
-            # ThemeForge pre-escribe .mcp.json en la carpeta ANTES del setup, pero
+            # Pcreative Studio pre-escribe .mcp.json en la carpeta ANTES del setup, pero
             # algunos scaffolders (create-next-app, create-vite…) abortan si el
             # directorio no está vacío ("contains files that could conflict").
             # Apartamos esos ficheros, scaffoldeamos en una carpeta limpia y los
@@ -3992,7 +3992,7 @@ def write_setup_script(
 
     parts.append('echo ""')
     parts.append(f'echo "→ Generando {agent["context_file"]}…"')
-    parts.append(f"cat > {agent['context_file']} <<'THEMEFORGE_EOF'\n{ctx_md}\nTHEMEFORGE_EOF")
+    parts.append(f"cat > {agent['context_file']} <<'PCREATIVE STUDIO_EOF'\n{ctx_md}\nPCREATIVE STUDIO_EOF")
 
     if mode == "recreate":
         parts.append('grep -q "^reference/" .gitignore 2>/dev/null || echo "reference/" >> .gitignore')
@@ -4065,7 +4065,7 @@ def write_setup_script(
     # Skill de diseño (161 reasoning rules, 67 estilos, 161 paletas).
     # Solo se ejecuta si el provider mapea a uno soportado por uipro-cli.
     if run_uipro:
-        # ThemeForge agent key → uipro --ai value
+        # Pcreative Studio agent key → uipro --ai value
         UIPRO_AGENT_MAP = {
             "claude": "claude", "claude-api": "claude",
             "codex": "codex", "codex-api": "codex",
@@ -4193,11 +4193,11 @@ def write_setup_script(
         parts.append('echo ""')
         parts.append('echo "→ Inicializando git + commit inicial…"')
         parts.append("[ -d .git ] || git init -q")
-        parts.append("git add -A && git commit -m 'init: scaffold por ThemeForge' -q || true")
+        parts.append("git add -A && git commit -m 'init: scaffold por Pcreative Studio' -q || true")
     else:
         parts.append('echo ""')
         parts.append('echo "→ Añadiendo MDs y CLAUDE.md/AGENTS.md como commit nuevo…"')
-        parts.append("git add -A && git commit -m 'chore: contexto ThemeForge' -q || true")
+        parts.append("git add -A && git commit -m 'chore: contexto Pcreative Studio' -q || true")
 
     # El repo de GitHub se crea bajo demanda desde el botón "📦 GitHub"
     # de la ProjectWindow para evitar publicar accidentalmente código
@@ -4218,14 +4218,14 @@ def write_setup_script(
     skills_hint = ""
     if run_autoskills or run_uipro:
         skills_hint = (
-            f"\n\nIMPORTANTE: ThemeForge ha instalado skills de agente en "
+            f"\n\nIMPORTANTE: Pcreative Studio ha instalado skills de agente en "
             f"`.claude/skills/` (mira la sección '## Skills instaladas' de "
             f"{agent['context_file']}). LÍSTALAS y léelas ANTES de planificar, "
             f"e indícame cuáles vas a usar en tu plan."
         )
     if has_analysis:
         initial_prompt = (
-            f"Acabas de arrancar en un proyecto recién scaffoldeado por ThemeForge. "
+            f"Acabas de arrancar en un proyecto recién scaffoldeado por Pcreative Studio. "
             f"Lee COMPLETAMENTE {agent['context_file']} (especialmente la sección "
             f"'## Análisis IA previo de la referencia' que ya contiene un análisis "
             f"hecho por otra IA sobre el template original). Luego lee context/ si necesitas."
@@ -4238,7 +4238,7 @@ def write_setup_script(
         )
     else:
         initial_prompt = (
-            f"Acabas de arrancar en un proyecto recién scaffoldeado por ThemeForge. "
+            f"Acabas de arrancar en un proyecto recién scaffoldeado por Pcreative Studio. "
             f"Lee COMPLETAMENTE {agent['context_file']} y todo lo que haya en context/."
             f"{skills_hint}"
             f"\n\nAntes de tocar NADA del código:\n"
@@ -4251,15 +4251,15 @@ def write_setup_script(
     # y pasarlo al agente como argumento posicional. Así evitamos problemas
     # de escape de comillas y mantenemos el agente interactivo después.
     parts.append(
-        f"cat > .themeforge-init-prompt <<'THEMEFORGE_PROMPT_EOF'\n"
+        f"cat > .themeforge-init-prompt <<'PCREATIVE STUDIO_PROMPT_EOF'\n"
         f"{initial_prompt}\n"
-        f"THEMEFORGE_PROMPT_EOF"
+        f"PCREATIVE STUDIO_PROMPT_EOF"
     )
     # No queremos versionar ese archivo
     parts.append('grep -q "^\\.themeforge-init-prompt$" .gitignore 2>/dev/null || echo ".themeforge-init-prompt" >> .gitignore')
 
     # Comando interactivo del provider + prompt inicial. Las API keys
-    # se cargan en os.environ al startup de ThemeForge (apply_all_known_keys),
+    # se cargan en os.environ al startup de Pcreative Studio (apply_all_known_keys),
     # así que la terminal embebida ya las hereda.
     cmd, extra_args = aip.interactive_cmd_args(agent_key)
     extra = (" " + " ".join(shell_quote(a) for a in extra_args)) if extra_args else ""
@@ -4777,7 +4777,7 @@ class _ReferenceAnalysisDialog(QDialog):
                 "<div style='background:#1e3a23; border:1px solid #4ade80; "
                 "border-radius:8px; padding:12px; margin:12px 0; "
                 "color:#86efac;'>"
-                f"<b>📋 Análisis guardado en ThemeForge ({n_turns} "
+                f"<b>📋 Análisis guardado en Pcreative Studio ({n_turns} "
                 "turno"
                 + ("s" if n_turns != 1 else "")
                 + ").</b><br>"
@@ -4800,17 +4800,17 @@ class _ReferenceAnalysisDialog(QDialog):
         super().closeEvent(e)
 
 
-class ThemeForge(QWidget):
+class PcreativeStudio(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ThemeForge — ThemeForest builder")
+        self.setWindowTitle("Pcreative Studio — ThemeForest builder")
         self.setMinimumWidth(760)
         self._github_user = gh_username()
         self._build_ui()
         self._update_preview()
 
     def _build_ui(self):
-        title = QLabel("ThemeForge")
+        title = QLabel("Pcreative Studio")
         f = QFont(); f.setPointSize(20); f.setBold(True)
         title.setFont(f)
         subtitle = QLabel(
@@ -4886,7 +4886,7 @@ class ThemeForge(QWidget):
             "📡 Pre-configure MCP servers (.mcp.json for Claude Code / Cursor / Windsurf)"
         )
         self.mcp_check.setToolTip(
-            "ThemeForge generates a `.mcp.json` at the project root with a "
+            "Pcreative Studio generates a `.mcp.json` at the project root with a "
             "curated set of MCP servers relevant to the stack:\n"
             "  · filesystem · fetch · memory · github (always)\n"
             "  · playwright · chrome-devtools · figma-context · browsermcp (web/CMS)\n"
@@ -5013,7 +5013,7 @@ class ThemeForge(QWidget):
         adopt_form.addRow("Carpeta origen:", adopt_row)
         adopt_hint = QLabel(
             "<span style='color:#888;font-size:9pt'>Se copia tal cual al proyecto. "
-            "Soporta: (1) mono-repos CodeCanyon con varios stacks que ThemeForge "
+            "Soporta: (1) mono-repos CodeCanyon con varios stacks que Pcreative Studio "
             "detectará automáticamente, (2) proyectos existentes que quieres "
             "adoptar, (3) exports de diseño tipo claude.ai/design / v0.dev / "
             "Figma Make — pulsa <b>Analizar con IA</b> y te sugerirá stack moderno.</span>"
@@ -5329,7 +5329,7 @@ class ThemeForge(QWidget):
 
         # NOTA: el `theme_hint` es solo una SUGERENCIA estética para el
         # proyecto (ya va escrita dentro del dev_prompt que recibe el
-        # agente). NO tocamos el theme de ThemeForge: la app mantiene el
+        # agente). NO tocamos el theme de Pcreative Studio: la app mantiene el
         # tema que el user tenga elegido en Settings. Antes esto aplicaba
         # y persistía el theme en la propia UI, lo que la dejaba en blanco.
 
@@ -5447,7 +5447,7 @@ class ThemeForge(QWidget):
         )
         self.analysis_status_lbl.setText(
             f"🔌 Referencia WordPress detectada → stack fijado a «{STACKS[wp_stack]['name']}». "
-            f"Al crear, ThemeForge auto-instala WordPress en Docker "
+            f"Al crear, Pcreative Studio auto-instala WordPress en Docker "
             f"(puedes cambiarlo en el selector de stack)."
         )
         self.analysis_status_lbl.setVisible(True)
@@ -5464,11 +5464,11 @@ class ThemeForge(QWidget):
         package.json y la IA recomendará stack moderno."""
         path_str = self.adopt_path_edit.text().strip()
         if not path_str:
-            QMessageBox.warning(self, "ThemeForge", "Specify the folder to adopt first.")
+            QMessageBox.warning(self, "Pcreative Studio", "Specify the folder to adopt first.")
             return
         path = Path(path_str)
         if not path.is_dir():
-            QMessageBox.warning(self, "ThemeForge", f"Folder does not exist:\n{path}")
+            QMessageBox.warning(self, "Pcreative Studio", f"Folder does not exist:\n{path}")
             return
         try:
             from reference_analyzer import gather_facts, build_prompt
@@ -5526,7 +5526,7 @@ class ThemeForge(QWidget):
         en un diálogo modal."""
         path_str = self.ref_path_edit.text().strip()
         if not path_str:
-            QMessageBox.warning(self, "ThemeForge", "Indica primero la ruta de la referencia.")
+            QMessageBox.warning(self, "Pcreative Studio", "Indica primero la ruta de la referencia.")
             return
         path = Path(path_str)
         kind = self.ref_kind_combo.currentData()
@@ -5539,10 +5539,10 @@ class ThemeForge(QWidget):
             )
             return
         if kind == "folder" and not path.is_dir():
-            QMessageBox.warning(self, "ThemeForge", f"Folder does not exist:\n{path}")
+            QMessageBox.warning(self, "Pcreative Studio", f"Folder does not exist:\n{path}")
             return
         if kind == "zip" and not (path.is_file() and path_str.lower().endswith(".zip")):
-            QMessageBox.warning(self, "ThemeForge", "El .zip no existe o no es un .zip.")
+            QMessageBox.warning(self, "Pcreative Studio", "El .zip no existe o no es un .zip.")
             return
 
         # Carga lazy del analyzer
@@ -5576,7 +5576,7 @@ class ThemeForge(QWidget):
                 self._update_preview()
             self.analysis_status_lbl.setText(
                 f"🔌 Referencia WordPress detectada → stack fijado a «{STACKS[_new_stack]['name']}». "
-                f"Al crear, ThemeForge auto-instala WordPress en Docker y el preview apuntará ahí."
+                f"Al crear, Pcreative Studio auto-instala WordPress en Docker y el preview apuntará ahí."
             )
             self.analysis_status_lbl.setVisible(True)
 
@@ -5753,14 +5753,14 @@ class ThemeForge(QWidget):
         if mode == "existing":
             repo_id = self._current_repo_id()
             if not repo_id or "/" not in repo_id:
-                QMessageBox.warning(self, "ThemeForge", "Pick or type a repo as owner/name.")
+                QMessageBox.warning(self, "Pcreative Studio", "Pick or type a repo as owner/name.")
                 return
             slug = repo_id.split("/")[-1]
             if not name:
                 name = slug  # nombre del proyecto = nombre de la repo
         else:
             if not name:
-                QMessageBox.warning(self, "ThemeForge", "Pon un nombre.")
+                QMessageBox.warning(self, "Pcreative Studio", "Pon un nombre.")
                 return
             slug = slugify(name)
 
@@ -5789,20 +5789,20 @@ class ThemeForge(QWidget):
 
         if mode == "recreate":
             if not ref_val:
-                QMessageBox.warning(self, "ThemeForge", "Indica la referencia.")
+                QMessageBox.warning(self, "Pcreative Studio", "Indica la referencia.")
                 return
             if ref_kind == "folder" and not Path(ref_val).is_dir():
-                QMessageBox.warning(self, "ThemeForge", f"Folder does not exist:\n{ref_val}")
+                QMessageBox.warning(self, "Pcreative Studio", f"Folder does not exist:\n{ref_val}")
                 return
             if ref_kind == "zip" and not (Path(ref_val).is_file() and ref_val.lower().endswith(".zip")):
-                QMessageBox.warning(self, "ThemeForge", "El .zip no existe o no es un .zip.")
+                QMessageBox.warning(self, "Pcreative Studio", "El .zip no existe o no es un .zip.")
                 return
             if ref_kind == "url" and not re.match(r"^https?://", ref_val):
-                QMessageBox.warning(self, "ThemeForge", "La URL debe empezar por http:// o https://")
+                QMessageBox.warning(self, "Pcreative Studio", "La URL debe empezar por http:// o https://")
                 return
         elif mode == "adopt":
             if not adopt_src or not Path(adopt_src).is_dir():
-                QMessageBox.warning(self, "ThemeForge", f"Folder to adopt does not exist:\n{adopt_src}")
+                QMessageBox.warning(self, "Pcreative Studio", f"Folder to adopt does not exist:\n{adopt_src}")
                 return
 
         # ── Red de seguridad: stack WordPress sin análisis IA ───────────
@@ -7414,7 +7414,7 @@ class _MultiAgentPanel(QWidget):
             self.splitter.addWidget(self._empty_widget)
 
 
-class ThemeForgeApp(QWidget):
+class PcreativeStudioApp(QWidget):
     """Ventana raíz con pestañas: Nuevo proyecto + Galería."""
 
     def __init__(self):
@@ -7423,20 +7423,20 @@ class ThemeForgeApp(QWidget):
         # "New project" desde una ProjectWindow sin cerrar lo que corre).
         global _MAIN_APP
         _MAIN_APP = self
-        self.setWindowTitle("ThemeForge")
+        self.setWindowTitle("Pcreative Studio")
         self.setMinimumWidth(820)
         self.setMinimumHeight(640)
 
         from settings_panel import SettingsPanel
         from licensing_panel import LicensingPanel
-        self.builder = ThemeForge()
+        self.builder = PcreativeStudio()
         self.gallery = GalleryPanel()
         self.licensing = LicensingPanel()
         self.settings = SettingsPanel()
         self.cost = _CostTrackerPanel()
         self.multi_agent = _MultiAgentPanel()
         # Hermes (centro de control de agentes) — TOTALMENTE OPCIONAL. El tab
-        # solo aparece si Hermes está instalado. Sin Hermes, ThemeForge funciona
+        # solo aparece si Hermes está instalado. Sin Hermes, Pcreative Studio funciona
         # exactamente igual y NO muestra el tab: nunca se fuerza la dependencia.
         self.operator = None
         try:
@@ -7831,19 +7831,19 @@ def main():
 
     # UI principal: por defecto la interfaz Neo-Tokyo (web prototype exacto
     # renderizado en WebEngine con datos reales vía puente). La UI clásica de
-    # widgets sigue disponible con THEMEFORGE_CLASSIC=1 (acceso a todo lo que
+    # widgets sigue disponible con PCREATIVE STUDIO_CLASSIC=1 (acceso a todo lo que
     # aún no está cableado en la web).
     # Modo de UI: 'web' (Neo-Tokyo WebEngine, por defecto) o 'classic' (QWidgets
     # nativo). Lo decide app_prefs.ui_mode() (el usuario lo cambia desde
-    # Settings → Temas) o el env THEMEFORGE_CLASSIC=1 / THEMEFORGE_WEB=1.
+    # Settings → Temas) o el env PCREATIVE STUDIO_CLASSIC=1 / PCREATIVE STUDIO_WEB=1.
     try:
         import app_prefs as _ap
         _mode = _ap.ui_mode()
     except Exception:
         _mode = "web"
-    if os.environ.get("THEMEFORGE_CLASSIC") == "1":
+    if os.environ.get("PCREATIVE STUDIO_CLASSIC") == "1":
         _mode = "classic"
-    elif os.environ.get("THEMEFORGE_WEB") == "1":
+    elif os.environ.get("PCREATIVE STUDIO_WEB") == "1":
         _mode = "web"
     w = None
     if _mode != "classic":
@@ -7851,13 +7851,13 @@ def main():
             from web_shell import WebShell
             w = WebShell()
             w.resize(1320, 860)
-            w.setWindowTitle("ThemeForge // Neo-Tokyo")
+            w.setWindowTitle("Pcreative Studio // Neo-Tokyo")
         except Exception as e:
             print(f"[webshell] UI web no disponible, uso la clásica: {e}",
                   file=sys.stderr)
             w = None
     if w is None:
-        w = ThemeForgeApp()
+        w = PcreativeStudioApp()
 
     def _enter_app():
         # Primer arranque: asistente de bienvenida completo (deps +
@@ -7879,9 +7879,9 @@ def main():
     # multimedia ni OpenGL — así que funciona también en entornos sin GPU
     # (USE_SOFTWARE_GL) sin dejar la ventana negra. El usuario puede saltarlo
     # con clic/tecla; una red de seguridad garantiza la entrada a la app.
-    # THEMEFORGE_NO_SPLASH=1 lo desactiva.
+    # PCREATIVE STUDIO_NO_SPLASH=1 lo desactiva.
     _splash = None
-    _no_splash = os.environ.get("THEMEFORGE_NO_SPLASH") == "1"
+    _no_splash = os.environ.get("PCREATIVE STUDIO_NO_SPLASH") == "1"
     # El splash completo solo el PRIMER arranque (animación de marca). En
     # arranques posteriores se entra directo a la app para abrir más rápido.
     if not _no_splash:

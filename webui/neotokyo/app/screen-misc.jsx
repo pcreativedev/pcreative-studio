@@ -122,7 +122,7 @@ function MarketScreen() {
 
       {loading && <div className="mono" style={{ color: 'var(--accent)', fontSize: 13, padding: 30, textAlign: 'center' }}><span style={{ animation: 'blink 0.8s infinite' }}>◢◣◤◥</span> analizando mercado con IA (OpenRouter) — puede tardar…</div>}
 
-      {/* Análisis REAL: markdown del motor de ThemeForge (OpenRouter). */}
+      {/* Análisis REAL: markdown del motor de Pcreative Studio (OpenRouter). */}
       {done && real && (
         <div className="fade-in panel" style={{ padding: 24 }}>
           <div className="eyebrow" style={{ marginBottom: 12 }}>ANÁLISIS · {niche || 'general'} · 判定</div>
@@ -175,7 +175,7 @@ function MarketScreen() {
 /* ---------------- SETTINGS / THEME EDITOR ---------------- */
 const _MOCK_APP_THEMES = [];
 
-// Temas REALES de ThemeForge (inyectados por el shell) con fallback al mock.
+// Temas REALES de Pcreative Studio (inyectados por el shell) con fallback al mock.
 const _TFD = (typeof window !== 'undefined' && window.__TF_DATA__) || {};
 const APP_THEMES = (_TFD.themes && _TFD.themes.length) ? _TFD.themes : _MOCK_APP_THEMES;
 
@@ -218,7 +218,7 @@ function SysAndSetup() {
       <div className="panel" style={{ padding: 20 }}>
         <div className="eyebrow" style={{ marginBottom: 12 }}>ATAJOS · 近道</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {[['themeforge', 'folderOpen', 'Carpeta ThemeForge'], ['context', 'folderOpen', 'context/'], ['stacks', 'penTool', 'Editar stacks.py']].map(([k, ic, l]) => <Btn key={k} icon={ic} variant="ghost" onClick={() => call('open_shortcut', k)}>{l}</Btn>)}
+          {[['themeforge', 'folderOpen', 'Carpeta Pcreative Studio'], ['context', 'folderOpen', 'context/'], ['stacks', 'penTool', 'Editar stacks.py']].map(([k, ic, l]) => <Btn key={k} icon={ic} variant="ghost" onClick={() => call('open_shortcut', k)}>{l}</Btn>)}
         </div>
       </div>
     </div>
@@ -254,7 +254,7 @@ function SettingsScreen() {
       <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 22 }}>
         <div className="panel" style={{ padding: 22 }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>TEMAS WEB · ウェブ <span className="faint">· recolor en vivo (Neo-Tokyo)</span></div>
-          <div className="faint" style={{ fontSize: 11, marginBottom: 12 }}>Los <b style={{ color: 'var(--accent)' }}>web</b> recolorean esta UI al instante. Los <b style={{ color: 'var(--gemini)' }}>clásicos · 古典</b> usan la UI nativa de QWidgets → ThemeForge se reinicia para cargarlos.</div>
+          <div className="faint" style={{ fontSize: 11, marginBottom: 12 }}>Los <b style={{ color: 'var(--accent)' }}>web</b> recolorean esta UI al instante. Los <b style={{ color: 'var(--gemini)' }}>clásicos · 古典</b> usan la UI nativa de QWidgets → Pcreative Studio se reinicia para cargarlos.</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {APP_THEMES.map(t => (
               <button key={t.k} onClick={() => {
@@ -265,7 +265,7 @@ function SettingsScreen() {
                   // Pack recolor: aplica CSS vars en vivo sobre el diseño actual.
                   setTheme(t.k); if (window.tfApplyTheme && t.vars) window.tfApplyTheme(t.vars); if (window.tfBridge) window.tfBridge.set_theme(t.k);
                 } else if (window.tfBridge && window.tfBridge.switch_to_classic) {
-                  if (confirm('Cambiar al tema clásico «' + t.label + '» (UI nativa). ThemeForge se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k);
+                  if (confirm('Cambiar al tema clásico «' + t.label + '» (UI nativa). Pcreative Studio se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k);
                 }
               }}
                 className={theme === t.k ? 'neon-edge' : ''}
@@ -414,7 +414,7 @@ function LicensingScreen() {
       refresh();
     });
   };
-  // Vista REAL del sistema de licencias anti-nulled de ThemeForge.
+  // Vista REAL del sistema de licencias anti-nulled de Pcreative Studio.
   if (real) {
     return (
       <div style={{ padding: '34px 40px 60px', position: 'relative', zIndex: 2, maxWidth: 1040 }}>

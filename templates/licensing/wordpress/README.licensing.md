@@ -18,7 +18,7 @@ En el archivo principal del plugin o `functions.php` del theme:
 require_once __DIR__ . '/inc/class-license.php';
 require_once __DIR__ . '/inc/admin-license-page.php';
 
-$license = new \ThemeForge\Licensing\License('__SLUG__');
+$license = new \Pcreative Studio\Licensing\License('__SLUG__');
 
 add_action('admin_menu', function () use ($license) {
     licensing_register_admin_page($license, '__PROJECT__');

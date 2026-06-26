@@ -2,7 +2,7 @@
   "name": "themeforge-mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "App nativa (Capacitor) que envuelve la PWA de ThemeForge: CRM Leads + generador con cámara/OCR + push.",
+  "description": "App nativa (Capacitor) que envuelve la PWA de Pcreative Studio: CRM Leads + generador con cámara/OCR + push.",
   "scripts": {
     "sync-web": "node scripts/sync-web.mjs",
     "sync": "npm run sync-web && cap sync",

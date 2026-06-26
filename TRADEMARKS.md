@@ -1,11 +1,11 @@
 # Trademarks
 
-ThemeForge is an independent open-source project published under GPL v3
+Pcreative Studio is an independent open-source project published under GPL v3
 by the **pcreativedev** team. It is **not affiliated with, endorsed by,
 sponsored by, or otherwise connected to** any of the third-party
 products, brands, or marketplaces it references for integration.
 
-This file lists the third-party marks referenced in ThemeForge source
+This file lists the third-party marks referenced in Pcreative Studio source
 code, documentation, scaffold templates, and prompts, and clarifies the
 basis on which they are used.
 
@@ -13,7 +13,7 @@ basis on which they are used.
 
 All third-party trademarks are used here strictly under the doctrine of
 **nominative fair use**: the marks identify the corresponding products
-so users and developers know which product ThemeForge integrates with
+so users and developers know which product Pcreative Studio integrates with
 or analyses. Specifically:
 
 - Only the wordmark / name is used. **No logos** of third-party products
@@ -21,9 +21,9 @@ or analyses. Specifically:
 - Usage is **factual and descriptive** (e.g., *"WordPress (Elementor
   Child Theme)"*, *"installs Bricks parent theme if declared in
   `wp_packs.json`"*, *"compatible with Divi"*).
-- ThemeForge does **not** suggest sponsorship, partnership, certification,
+- Pcreative Studio does **not** suggest sponsorship, partnership, certification,
   or any commercial relationship with the trademark owners.
-- ThemeForge does **not** bundle, redistribute, modify, or sublicense any
+- Pcreative Studio does **not** bundle, redistribute, modify, or sublicense any
   of the products listed below. Where auto-installation is offered, the
   product is downloaded from its **official source** (WordPress.org plugin
   repository, the project's own GitHub releases, or — for premium items —
@@ -37,9 +37,9 @@ neither by us of them nor by them of us.
 
 ### WordPress ecosystem
 
-| Mark | Owner / Author | Use in ThemeForge |
+| Mark | Owner / Author | Use in Pcreative Studio |
 |---|---|---|
-| WordPress® | WordPress Foundation | Core CMS that ThemeForge auto-provisions in Docker for the WordPress stacks. Independent open-source platform under GPL v2+. |
+| WordPress® | WordPress Foundation | Core CMS that Pcreative Studio auto-provisions in Docker for the WordPress stacks. Independent open-source platform under GPL v2+. |
 | WooCommerce® | Automattic, Inc. | Mentioned as a representative e-commerce plugin for WordPress in scaffold notes and market-analysis prompts. |
 | Bricks Builder™ | Bricks Builder GmbH | Named as the parent theme/builder targeted by the `wordpress-bricks` stack. Bricks itself is NOT bundled — the end user supplies their own purchased ZIP via `~/.config/themeforge/wp_packs.json`. |
 | Elementor® | Elementor Ltd. | Free Elementor (from WordPress.org) is auto-installed for the `wordpress-elementor` stack. Elementor Pro is referenced by name only and requires a license obtained directly from elementor.com. |
@@ -64,7 +64,7 @@ neither by us of them nor by them of us.
 
 ### Shopify ecosystem
 
-| Mark | Owner | Use in ThemeForge |
+| Mark | Owner | Use in Pcreative Studio |
 |---|---|---|
 | Shopify® | Shopify Inc. | E-commerce platform that the Shopify stacks (`shopify-liquid`, `shopify-hydrogen`) target. |
 | Liquid® | Shopify Inc. | Templating language used by Online Store 2.0 themes. |
@@ -74,7 +74,7 @@ neither by us of them nor by them of us.
 | Oxygen | Shopify Inc. | Hosting/edge platform for Hydrogen, referenced in scaffold notes. |
 | Polaris® | Shopify Inc. | Design system for Shopify Admin embedded apps, used by the `shopify-polaris-app` stack and accessible via `@shopify/dev-mcp`. |
 | App Bridge | Shopify Inc. | Embedded-app runtime (`@shopify/app-bridge-react`) used by the `shopify-polaris-app` stack. |
-| Shopify CLI | Shopify Inc. | Developer CLI invoked by ThemeForge to scaffold themes and apps. |
+| Shopify CLI | Shopify Inc. | Developer CLI invoked by Pcreative Studio to scaffold themes and apps. |
 | Shopify App Store | Shopify Inc. | Marketplace for public Shopify apps, mentioned descriptively in scaffold notes for `shopify-polaris-app`. |
 
 ### Marketplaces & ecosystems referenced in market-analysis prompts
@@ -118,10 +118,10 @@ We will respond promptly and in good faith.
 
 ## Our own marks
 
-"ThemeForge" and "pcreativedev" are project / team names. We do not
+"Pcreative Studio" and "pcreativedev" are project / team names. We do not
 register them as trademarks and offer no objection to descriptive,
 non-misleading use of these names by third parties (e.g., *"built with
-ThemeForge"*).
+Pcreative Studio"*).
 
 ---
 

@@ -3,7 +3,7 @@ reference_analyzer — analiza una carpeta/zip de referencia, recoge datos
 objetivos del stack y prepara un prompt para que la IA (Claude/Codex)
 recomiende qué stack moderno usar al reimplementar.
 
-Uso típico desde ThemeForge:
+Uso típico desde Pcreative Studio:
 
     facts = gather_facts(Path("/ruta/al/template"))
     prompt = build_prompt(facts)
@@ -620,7 +620,7 @@ def build_prompt(facts: dict[str, Any], target: str = "gumroad+web") -> str:
     # el código original NO es producto vendido por nadie — es tu propio
     # diseño exportado.
     if facts.get("kind") == "design-export":
-        return f"""ThemeForge ha clasificado el contenido de `{facts.get("root", "?")}`
+        return f"""Pcreative Studio ha clasificado el contenido de `{facts.get("root", "?")}`
 como un **export de diseño** (estilo claude.ai/design, v0.dev, Figma Make):
 HTML/JSX/CSS sin build system, sin marcadores de producto comercial
 detectables. La asunción de trabajo es que **es diseño tuyo** (no código
@@ -723,7 +723,7 @@ Sé directo, técnico, en español. No formules con disclaimer.
         _wp_what = "theme" if kind == "wordpress-theme" else "plugin"
         wp_constraint = (
             "\n## ⚠️ La referencia es WordPress — recomienda SOLO WordPress\n\n"
-            f"ThemeForge ha detectado que la referencia es un **{_wp_what} de WordPress** "
+            f"Pcreative Studio ha detectado que la referencia es un **{_wp_what} de WordPress** "
             "y el producto se construirá y venderá COMO WordPress. Por tanto:\n\n"
             "- Recomienda **EXCLUSIVAMENTE** enfoques WordPress: **block theme (FSE)**, "
             "**classic/hybrid theme**, o basado en page-builder si la referencia lo usa "
@@ -743,7 +743,7 @@ estudiar funcionalidades**, NO como código a copiar.
 {wp_constraint}
 ## ⚠️ Pre-acuerdo — la licencia NO es objeto del análisis
 
-Estás en el modo **"recrear"** de ThemeForge. Al elegir este modo el
+Estás en el modo **"recrear"** de Pcreative Studio. Al elegir este modo el
 usuario YA HA DECLARADO y aceptado lo siguiente — **no requiere
 confirmación tuya** y **no es parte del análisis**:
 

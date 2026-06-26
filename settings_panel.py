@@ -69,7 +69,7 @@ class SettingsPanel(QWidget):
 
         self.btn_deps = QPushButton("🔧 Setup dependencies…")
         self.btn_deps.setToolTip(
-            "Detecta e instala las herramientas que ThemeForge necesita "
+            "Detecta e instala las herramientas que Pcreative Studio necesita "
             "(Node, git, GitHub CLI, los CLIs de IA, netlify) vía "
             "winget / brew / paru según tu sistema operativo."
         )
@@ -150,7 +150,7 @@ class SettingsPanel(QWidget):
             self.btn_use_web = QPushButton("🌐 Cambiar a UI Neo-Tokyo (web)")
             self.btn_use_web.setToolTip(
                 "Cambia al sistema de temas WEB (UI Neo-Tokyo en WebEngine). "
-                "ThemeForge se reinicia para cargarlo.")
+                "Pcreative Studio se reinicia para cargarlo.")
             self.btn_use_web.clicked.connect(self._switch_to_web_ui)
 
             theme_box = QGroupBox("🎨 App theme")
@@ -443,7 +443,7 @@ class SettingsPanel(QWidget):
             from PyQt6.QtWidgets import QDialog, QVBoxLayout
             from credentials_panel import CredentialsWidget
             dlg = QDialog(self)
-            dlg.setWindowTitle("ThemeForge — Credenciales de IA")
+            dlg.setWindowTitle("Pcreative Studio — Credenciales de IA")
             dlg.setMinimumSize(640, 480)
             lay = QVBoxLayout(dlg)
             lay.addWidget(CredentialsWidget(dlg))
@@ -462,7 +462,7 @@ class SettingsPanel(QWidget):
             QMessageBox.critical(self, "Setup wizard", f"Error: {e}")
 
     def _switch_to_web_ui(self):
-        """Cambia a la UI web Neo-Tokyo (ui_mode=web) y reinicia ThemeForge."""
+        """Cambia a la UI web Neo-Tokyo (ui_mode=web) y reinicia Pcreative Studio."""
         import sys
         try:
             import app_prefs as ap
@@ -470,7 +470,7 @@ class SettingsPanel(QWidget):
             from PyQt6.QtWidgets import QApplication
             if QMessageBox.question(
                 self, "UI Neo-Tokyo (web)",
-                "Cambiar al sistema de temas WEB (UI Neo-Tokyo). ThemeForge se "
+                "Cambiar al sistema de temas WEB (UI Neo-Tokyo). Pcreative Studio se "
                 "reiniciará. ¿Continuar?") != QMessageBox.StandardButton.Yes:
                 return
             ap.set_ui_mode("web")

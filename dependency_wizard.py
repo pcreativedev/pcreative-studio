@@ -24,11 +24,11 @@ import platform_compat as pc
 
 
 class DependencyWizard(QDialog):
-    """Detecta + instala las herramientas externas de ThemeForge."""
+    """Detecta + instala las herramientas externas de Pcreative Studio."""
 
     def __init__(self, parent=None, only_missing: bool = True):
         super().__init__(parent)
-        self.setWindowTitle("ThemeForge — Setup de dependencias")
+        self.setWindowTitle("Pcreative Studio — Setup de dependencias")
         self.setMinimumSize(640, 560)
 
         self._checks: dict[str, QCheckBox] = {}
@@ -39,7 +39,7 @@ class DependencyWizard(QDialog):
         root = QVBoxLayout(self)
 
         # Cabecera
-        title = QLabel("🔧 Dependencias de ThemeForge")
+        title = QLabel("🔧 Dependencias de Pcreative Studio")
         f = QFont(); f.setPointSize(15); f.setBold(True)
         title.setFont(f)
         root.addWidget(title)
@@ -313,7 +313,7 @@ class DependencyWizard(QDialog):
             "echo '' ; "
             "echo '════════════════════════════════════════════════' ; "
             "echo '  ✅ Runtimes instalados.' ; "
-            "echo '  Cierra esta ventana y pulsa 🔄 Re-detectar en ThemeForge.' ; "
+            "echo '  Cierra esta ventana y pulsa 🔄 Re-detectar en Pcreative Studio.' ; "
             "echo '════════════════════════════════════════════════'"
         )
         cmds_with_banner = f"{cmds} ; {banner}"

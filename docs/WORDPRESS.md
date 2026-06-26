@@ -1,6 +1,6 @@
-# WordPress integration in ThemeForge
+# WordPress integration in Pcreative Studio
 
-ThemeForge ships **five WordPress theme stacks** plus one plugin stack,
+Pcreative Studio ships **five WordPress theme stacks** plus one plugin stack,
 each one bootstrapping a dev WordPress + MariaDB environment in Docker
 with the right builder, plugin set, and MCPs preinstalled, plus a thick
 per-stack `CLAUDE.md` context block so the AI agent can build at a
@@ -46,7 +46,7 @@ professional level out of the gate.
 
 ### Common to every WordPress theme stack
 
-ThemeForge invokes `wp_provisioner.py`, which:
+Pcreative Studio invokes `wp_provisioner.py`, which:
 
 1. **Starts a dedicated Docker network** (`themeforge-wpnet-<slug>`) so
    each project is isolated.
@@ -99,7 +99,7 @@ and UID. Use it like the regular CLI:
 
 ## 3. The `wp_packs.json` premium-pack file
 
-ThemeForge auto-installs every **free** WordPress plugin/theme from its
+Pcreative Studio auto-installs every **free** WordPress plugin/theme from its
 official source. To extend a stack with **premium** items you have a
 license for, declare them in **`~/.config/themeforge/wp_packs.json`**
 (this file lives in your `$HOME`, **never** in the repo). The schema
@@ -155,14 +155,14 @@ For each entry:
 
 - **`name`** — informational label that appears in the install log.
 - **`zip`** — absolute path to a local ZIP **or** an HTTPS URL. Leave
-  empty to skip that item. ThemeForge passes the value straight to
+  empty to skip that item. Pcreative Studio passes the value straight to
   `wp-cli plugin install` (or `theme install` for the `theme` key).
 
 The file is created with empty placeholders the first time you launch
 a WordPress stack. It is **gitignored by definition** (it never lives
 in the repo).
 
-> **Responsibility**: ThemeForge does not verify licenses. If you point
+> **Responsibility**: Pcreative Studio does not verify licenses. If you point
 > a `zip:` at a copy of a commercial plugin or theme, you must hold a
 > valid license for it. The repo neither ships nor links to premium
 > ZIPs.
@@ -171,7 +171,7 @@ in the repo).
 
 Every WordPress project's `.mcp.json` is generated with the **Automattic
 WordPress MCP bridge** preconfigured against the freshly provisioned
-store, authenticated via the application password ThemeForge created at
+store, authenticated via the application password Pcreative Studio created at
 provisioning time:
 
 ```json
@@ -254,8 +254,8 @@ Per-stack context (`_WP_BUILDER_CONTEXT`):
 ## 6. Workflow
 
 ```bash
-# 1) Create the project in ThemeForge (pick e.g. "WordPress (Block Theme)").
-#    → ThemeForge starts MariaDB + WordPress in Docker, installs WP,
+# 1) Create the project in Pcreative Studio (pick e.g. "WordPress (Block Theme)").
+#    → Pcreative Studio starts MariaDB + WordPress in Docker, installs WP,
 #      installs the free pack + Novamira (free), writes WORDPRESS-DEV.md
 #      + WORDPRESS-LEGAL.md + .mcp.json, drops the autologin mu-plugin.
 
@@ -340,7 +340,7 @@ Official references the context block distils:
 - <https://developer.wordpress.org/news/2026/02/from-abilities-to-ai-agents-introducing-the-wordpress-mcp-adapter/>
   — the WordPress MCP adapter (Abilities API + WP 6.9 core).
 - <https://github.com/Automattic/wordpress-mcp> — the MCP plugin
-  ThemeForge installs.
+  Pcreative Studio installs.
 - <https://wordpress.org/plugins/royal-mcp/> — Royal MCP.
 - <https://github.com/use-novamira/novamira> — Novamira free.
 - Bricks: <https://bricksbuilder.io/>

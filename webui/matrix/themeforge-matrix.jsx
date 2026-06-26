@@ -1,4 +1,4 @@
-/* ===================== ThemeForge // MATRIX ===================== */
+/* ===================== Pcreative Studio // MATRIX ===================== */
 const { useState, useEffect, useRef } = React;
 
 /* agentes IA como daemons */
@@ -1039,7 +1039,7 @@ function Operator() {
 }
 
 /* ---- Settings ---- */
-// Temas REALES de ThemeForge (prototipos web + packs recolor + clásicos),
+// Temas REALES de Pcreative Studio (prototipos web + packs recolor + clásicos),
 // inyectados por el shell. Fallback mínimo si se abre suelto.
 const THEMES = ((typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.themes) || [
   { k: 'matrix', label: 'Matrix', acc: '#00ff41', acc2: '#008f11', bg: '#040804', proto: true, web: true },
@@ -1078,7 +1078,7 @@ function SysAndSetup() {
       </>}
       <h2 className="sec" style={{ margin: '26px 0 14px' }}>↗ Atajos <span style={{ fontFamily: 'var(--term)', fontSize: 13, color: 'var(--tx-dim)' }}>近道</span></h2>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[['themeforge', '📁 Carpeta ThemeForge'], ['context', '📚 context/'], ['stacks', '📝 Editar stacks.py']].map(([k, l]) => <button key={k} className="btn" onClick={() => call('open_shortcut', k)}>{l}</button>)}
+        {[['themeforge', '📁 Carpeta Pcreative Studio'], ['context', '📚 context/'], ['stacks', '📝 Editar stacks.py']].map(([k, l]) => <button key={k} className="btn" onClick={() => call('open_shortcut', k)}>{l}</button>)}
       </div>
     </div>
   );
@@ -1093,7 +1093,7 @@ function Settings() {
       if (window.tfApplyTheme && t.vars) window.tfApplyTheme(t.vars);
       if (window.tfBridge && window.tfBridge.set_theme) window.tfBridge.set_theme(t.k);
     } else if (window.tfBridge && window.tfBridge.switch_to_classic) {  // clásico → reinicia
-      if (confirm('Tema clásico «' + t.label + '» (UI nativa). ThemeForge se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k);
+      if (confirm('Tema clásico «' + t.label + '» (UI nativa). Pcreative Studio se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k);
     }
   };
   return (
@@ -1653,7 +1653,7 @@ function MatrixBoot({ onDone }) {
     }}>
       <div style={{ textAlign: 'center', position: 'relative', zIndex: 2, width: 'min(440px,88vw)' }}>
         <div style={{ fontFamily: 'var(--term)', fontSize: 92, lineHeight: 1, color: 'var(--accent)', textShadow: 'var(--glow)', animation: 'flick 2.4s infinite' }}>鍛</div>
-        <div style={{ fontFamily: 'var(--display)', fontSize: 44, lineHeight: 1, color: 'var(--accent)', marginTop: 10, textShadow: 'var(--glow)' }}>ThemeForge</div>
+        <div style={{ fontFamily: 'var(--display)', fontSize: 44, lineHeight: 1, color: 'var(--accent)', marginTop: 10, textShadow: 'var(--glow)' }}>Pcreative Studio</div>
         <div style={{ fontFamily: 'var(--term)', color: 'var(--tx-dim)', letterSpacing: '.42em', fontSize: 12, marginTop: 6 }}>// SISTEMA DE FORJA v3.0</div>
         <div style={{ minHeight: 24, marginTop: 26, fontFamily: 'var(--term)', color: n >= steps.length ? 'var(--accent)' : 'var(--tx)', fontSize: 14.5, textShadow: n >= steps.length ? 'var(--glow)' : 'none' }}>
           {n < steps.length
@@ -1736,7 +1736,7 @@ function App() {
     <div className="app">
       {!booted && <MatrixBoot onDone={() => setBooted(true)} />}
       <div className="side">
-        <div className="brand"><span className="gl">ThemeForge</span><small>// MATRIX BUILD</small></div>
+        <div className="brand"><span className="gl">Pcreative Studio</span><small>// MATRIX BUILD</small></div>
         <div className="nav">
           {NAV.concat(privateNav()).map(n => (
             <button key={n.id} className={'navi' + (route === n.id ? ' on' : '')} onClick={() => nav(n.id)}>

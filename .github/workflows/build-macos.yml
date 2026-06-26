@@ -1,6 +1,6 @@
 name: Build macOS .app
 
-# Builds a macOS .app bundle of ThemeForge using PyInstaller on a
+# Builds a macOS .app bundle of Pcreative Studio using PyInstaller on a
 # GitHub-hosted macos-latest runner. The .app is uploaded as a
 # workflow artifact; when triggered by a `v*` tag, it's also attached
 # to a GitHub Release.
@@ -76,7 +76,7 @@ jobs:
           # QtMultimedia backend (AVFoundation) needed for the video splash.
           pyinstaller --noconfirm --clean \
             --windowed \
-            --name ThemeForge \
+            --name Pcreative Studio \
             --icon assets/themeforge.icns \
             --osx-bundle-identifier dev.pcreative.themeforge \
             --add-data "assets:assets" \
@@ -93,20 +93,20 @@ jobs:
       - name: Zip the .app for distribution
         run: |
           cd dist
-          zip -r --symlinks ThemeForge-macOS.zip ThemeForge.app
-          ls -la ThemeForge-macOS.zip
+          zip -r --symlinks Pcreative Studio-macOS.zip Pcreative Studio.app
+          ls -la Pcreative Studio-macOS.zip
 
       - name: Upload .app as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ThemeForge-macOS
-          path: dist/ThemeForge-macOS.zip
+          name: Pcreative Studio-macOS
+          path: dist/Pcreative Studio-macOS.zip
           retention-days: 30
 
       - name: Attach to GitHub Release (only on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/ThemeForge-macOS.zip
+          files: dist/Pcreative Studio-macOS.zip
           draft: true
           generate_release_notes: true

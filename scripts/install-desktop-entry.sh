@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs a user-local .desktop launcher for ThemeForge so it shows up
+# Installs a user-local .desktop launcher for Pcreative Studio so it shows up
 # in your DE's app menu / dock. Idempotent — re-run to refresh.
 #
 # Usage: bash scripts/install-desktop-entry.sh
@@ -36,4 +36,4 @@ sed "s|__INSTALL_PATH__|$REPO_DIR|g" \
 update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 
 echo "✓ installed → $DESKTOP_FILE"
-echo "  Open your app menu and search for 'ThemeForge'."
+echo "  Open your app menu and search for 'Pcreative Studio'."

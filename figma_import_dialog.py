@@ -1,6 +1,6 @@
 """Figma import dialog — paste DTCG JSON or fetch from Figma REST API,
 preview the auto-detected token mappings in an editable table, then
-save as a new ThemeForge theme.
+save as a new Pcreative Studio theme.
 
 Two-tab interface:
 
@@ -12,7 +12,7 @@ Two-tab interface:
     endpoint and translate to the DTCG intermediate shape.
 
 The mapping table is fully editable: the user can re-target a row
-to a different ThemeForge slot, edit the hex value, or uncheck rows
+to a different Pcreative Studio slot, edit the hex value, or uncheck rows
 to exclude them. Save writes the resulting ThemePack to
 `~/.config/themeforge/themes/<slug>.json` and switches the active
 theme.
@@ -62,7 +62,7 @@ class FigmaImportDialog(QDialog):
         # ── Mappings preview table ─────────────────────────────────
         self.mappings_table = QTableWidget(0, 5)
         self.mappings_table.setHorizontalHeaderLabels(
-            ["✓", "Figma path", "Score", "→ ThemeForge slot", "Valor"]
+            ["✓", "Figma path", "Score", "→ Pcreative Studio slot", "Valor"]
         )
         self.mappings_table.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.Stretch

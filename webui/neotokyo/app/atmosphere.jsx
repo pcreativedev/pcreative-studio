@@ -88,7 +88,7 @@ function BootSequence({ onDone }) {
         <div className="neon-text" style={{
           fontFamily: 'var(--font-mega)', fontSize: 46, letterSpacing: '0.04em',
           marginBottom: 6, animation: 'flicker 2.5s infinite',
-        }}>THEMEFORGE</div>
+        }}>PCREATIVE STUDIO</div>
         <div className="jp" style={{ color: 'var(--tx-faint)', letterSpacing: '0.5em', fontSize: 13, marginBottom: 30 }}>
           ネオ東京 ・ 鍛造システム
         </div>

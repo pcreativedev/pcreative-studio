@@ -96,7 +96,7 @@ function TopChrome({ onPalette }) {
         <span style={{ width: 11, height: 11, borderRadius: 99, background: '#9dff3c' }} />
       </div>
       <span className="mono" style={{ fontSize: 12, color: 'var(--tx-dim)', letterSpacing: '0.02em' }}>
-        ThemeForge<span style={{ color: 'var(--tx-faint)' }}> — ThemeForest builder</span>
+        Pcreative Studio<span style={{ color: 'var(--tx-faint)' }}> — ThemeForest builder</span>
       </span>
       <span className="jp faint" style={{ fontSize: 11 }}>ネオ東京 v2.6</span>
       <div style={{ flex: 1 }} />

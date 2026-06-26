@@ -1,6 +1,6 @@
-# ThemeForge plugins — examples
+# Pcreative Studio plugins — examples
 
-User plugins extend ThemeForge with custom stacks, template types and
+User plugins extend Pcreative Studio with custom stacks, template types and
 AI agents **without forking the repo**. Each plugin is a `.py` file
 placed under:
 
@@ -8,7 +8,7 @@ placed under:
 ~/.config/themeforge/plugins/
 ```
 
-ThemeForge auto-loads every `*.py` from that directory at startup
+Pcreative Studio auto-loads every `*.py` from that directory at startup
 (files starting with `_` are ignored — convention for "disabled").
 
 This folder ships **example plugins** you can copy to your local
@@ -19,7 +19,7 @@ plugins directory.
 ```bash
 mkdir -p ~/.config/themeforge/plugins
 cp examples/plugins/my-custom-vite.py ~/.config/themeforge/plugins/
-# Edit the copy with your own stack details, then restart ThemeForge.
+# Edit the copy with your own stack details, then restart Pcreative Studio.
 ```
 
 ## Public API
@@ -40,11 +40,11 @@ Required fields: `name`, `category`, `language`, `min_version`, `scaffold`.
 Optional: `skills` (list, default `[]`), `notes` (str, default `""`).
 
 `scaffold` is a list of bash commands run in order at project creation.
-Supports placeholders that ThemeForge substitutes: `__SLUG__`,
+Supports placeholders that Pcreative Studio substitutes: `__SLUG__`,
 `__PROJECT__`, `__PASCAL__`, `__ORG_ID__`.
 
 If `key` matches an existing stack from the repo, the plugin's
-version **overrides** it. ThemeForge logs the override to stderr.
+version **overrides** it. Pcreative Studio logs the override to stderr.
 
 ### `register_template_type(name)`
 
@@ -59,10 +59,10 @@ Required fields: `name`, `command`, `context_file`. Optional:
 ## Tips
 
 - Disable a plugin without deleting it: rename `foo.py` → `_foo.py`.
-- Errors in one plugin don't break the rest — ThemeForge prints the
+- Errors in one plugin don't break the rest — Pcreative Studio prints the
   exception to stderr and keeps loading the others.
 - Your plugin file IS Python: you can `import` anything you need,
-  read JSON / YAML configs, etc. ThemeForge doesn't sandbox plugins.
+  read JSON / YAML configs, etc. Pcreative Studio doesn't sandbox plugins.
 - Stacks registered via plugins behave identically to repo stacks —
   same scaffold substitution, same autoskills flow, same UI picker
   category.

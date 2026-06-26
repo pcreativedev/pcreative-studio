@@ -1,5 +1,5 @@
 """hermes_skill_pack.py — pack curado de skills del registro relevantes para los
-templates web de ThemeForge y TODOS sus stacks.
+templates web de Pcreative Studio y TODOS sus stacks.
 
 De las ~36k skills del registro de Hermes, esta es una selección verificada en vivo
 (`hermes skills search --source skills-sh/official --json`, 2026-05-30), priorizando

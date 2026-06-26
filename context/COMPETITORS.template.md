@@ -7,7 +7,7 @@ IA del proyecto, crea tu versión privada en:
 
     ~/.config/themeforge/context-private/COMPETITORS.md
 
-ThemeForge la priorizará.
+Pcreative Studio la priorizará.
 
 ## Estructura sugerida
 

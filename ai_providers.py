@@ -1,5 +1,5 @@
 """
-ai_providers — registro de proveedores de IA soportados por ThemeForge.
+ai_providers — registro de proveedores de IA soportados por Pcreative Studio.
 
 Cada provider mapea a un CLI subyacente + método de autenticación.
 
@@ -285,7 +285,7 @@ def apply_env(provider_key: str) -> None:
 
 def apply_all_known_keys() -> None:
     """Carga TODAS las keys conocidas a os.environ. Se llama una vez al
-    arrancar ThemeForge para que cualquier terminal embebida tenga las
+    arrancar Pcreative Studio para que cualquier terminal embebida tenga las
     keys disponibles según el provider que el usuario elija allí."""
     keys = load_keys()
     for key_id, value in keys.items():
@@ -341,7 +341,7 @@ def interactive_cmd_args(provider_key: str) -> tuple[str, list[str]]:
 
     Claude siempre arranca con `--dangerously-skip-permissions` para
     que el agente pueda editar/ejecutar todo dentro del proyecto sin
-    pedir confirmación a cada paso. ThemeForge ya sandboxea el agente
+    pedir confirmación a cada paso. Pcreative Studio ya sandboxea el agente
     dentro de la carpeta del proyecto (cwd del terminal embebido), así
     que el riesgo es controlado — el user explícitamente pidió que sea
     el comportamiento por defecto en cualquier modo / proyecto."""

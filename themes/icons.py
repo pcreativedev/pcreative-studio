@@ -67,7 +67,7 @@ ICON_MAP_LUCIDE: dict[str, str] = {
     "play":          "play",
     "stop":          "square",
     "rocket":        "rocket",
-    # ThemeForge tabs / domains
+    # Pcreative Studio tabs / domains
     "box":           "box",
     "gallery":       "grid-2x2",
     "dollar":        "dollar-sign",

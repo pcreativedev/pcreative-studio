@@ -1,4 +1,4 @@
-"""boot_splash.py — Neo-Tokyo boot sequence splash for ThemeForge.
+"""boot_splash.py — Neo-Tokyo boot sequence splash for Pcreative Studio.
 
 A PyQt6 port of the prototype's `BootSequence` (handoff design pack): a
 terminal-style cold-boot animation over a cyberpunk grid/glow atmosphere —
@@ -117,7 +117,7 @@ class BootSplash(QWidget):
         root.addStretch()
 
         # Wordmark neón.
-        self.wordmark = QLabel("THEMEFORGE")
+        self.wordmark = QLabel("PCREATIVE STUDIO")
         self.wordmark.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.wordmark.setFont(_font(_MEGA, 46, bold=True, spacing_pct=104))
         self.wordmark.setStyleSheet(f"color: {ACCENT}; background: transparent;")

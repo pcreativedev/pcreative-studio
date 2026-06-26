@@ -1,4 +1,4 @@
-# ThemeForge — User Guide
+# Pcreative Studio — User Guide
 
 A GUI builder (PyQt6) for scaffolding modern template projects that you
 can sell on marketplaces like ThemeForest, CodeCanyon, Creative Market
@@ -15,7 +15,7 @@ system, and troubleshooting.
 
 ## Table of contents
 
-1. [What is ThemeForge](#1-what-is-themeforge)
+1. [What is Pcreative Studio](#1-what-is-themeforge)
    - [The Web UI (Neo-Tokyo · Matrix · Kawaii)](#the-web-ui-neo-tokyo--matrix--kawaii)
 2. [System requirements](#2-system-requirements)
 3. [Installation](#3-installation)
@@ -35,7 +35,7 @@ system, and troubleshooting.
 17. [App themes](#17-app-themes)
 18. [Vibe scaffolder](#18-vibe-scaffolder)
 19. [MCP servers](#19-mcp-servers)
-20. [ThemeForge mobile (remote engine)](#20-themeforge-mobile-remote-engine)
+20. [Pcreative Studio mobile (remote engine)](#20-themeforge-mobile-remote-engine)
 21. [Optional licensing system](#21-optional-licensing-system)
 22. [Configuration files](#22-configuration-files)
 23. [Troubleshooting](#23-troubleshooting)
@@ -44,12 +44,12 @@ system, and troubleshooting.
 
 ---
 
-## 1. What is ThemeForge
+## 1. What is Pcreative Studio
 
-ThemeForge is a PyQt6 desktop application that automates the boring
+Pcreative Studio is a PyQt6 desktop application that automates the boring
 parts of starting a new template project:
 
-- Scaffolds 60+ modern stacks (Next.js, Astro, Laravel, WordPress
+- Scaffolds 80+ modern stacks (Next.js, Astro, Laravel, WordPress
   themes/plugins, Shopify, Flutter, Tauri, Spring, Ktor, Phaser, R3F…)
   with up-to-date defaults and security patches.
 - Drops a CLAUDE.md/AGENTS.md context file in the project so any AI
@@ -69,15 +69,15 @@ parts of starting a new template project:
 - Optionally shows your active AI sessions as pixel-art avatars in a
   virtual office (via the bundled `pixel-office` visualizer).
 
-ThemeForge does **not** generate the actual code of your templates —
-the AI agent does. ThemeForge prepares the ground so the agent starts
+Pcreative Studio does **not** generate the actual code of your templates —
+the AI agent does. Pcreative Studio prepares the ground so the agent starts
 with maximum context and minimum boilerplate.
 
 ---
 
 ## The Web UI (Neo-Tokyo · Matrix · Kawaii)
 
-Since **v1.6.0** ThemeForge runs by default in a **web interface** rendered
+Since **v1.6.0** Pcreative Studio runs by default in a **web interface** rendered
 inside QtWebEngine and connected to the same Python backend via a `QWebChannel`
 bridge — so every screen below works exactly like the classic UI (real
 scaffolding, preview, cost, licensing, Operator… nothing is mocked).
@@ -86,8 +86,8 @@ scaffolding, preview, cost, licensing, Operator… nothing is mocked).
   splash: **Neo-Tokyo** (cyberpunk, default), **Matrix** (green terminal),
   **Kawaii** (pastel). Web themes recolor instantly; choosing a *classic*
   theme restarts the app into the native QWidget UI.
-- **Switching UI mode**: `THEMEFORGE_CLASSIC=1 themeforge` forces the classic
-  native UI; `THEMEFORGE_WEB=1` forces the web UI. The choice is saved in
+- **Switching UI mode**: `PCREATIVE STUDIO_CLASSIC=1 themeforge` forces the classic
+  native UI; `PCREATIVE STUDIO_WEB=1` forces the web UI. The choice is saved in
   `~/.config/themeforge/app_prefs.json` (`ui_mode`).
 - **Opening a project** pops it in its **own window/modal** (like the native
   ProjectWindow) — it doesn't replace the gallery. When you forge a new
@@ -124,14 +124,14 @@ For the AI agents you'll want at least one of:
 - `gemini` (Google Gemini CLI, Apache 2.0)
 - `opencode` (OpenCode CLI)
 
-All four are invoked as external processes; ThemeForge does not bundle
+All four are invoked as external processes; Pcreative Studio does not bundle
 them. Install whichever you plan to use.
 
 ---
 
 ## 3. Installation
 
-ThemeForge is currently distributed as a Python project that you clone
+Pcreative Studio is currently distributed as a Python project that you clone
 and run with `launch.sh`. No PyPI package yet.
 
 ```bash
@@ -162,7 +162,29 @@ to create it manually pointing at your `launch.sh` location).
 
 ## 4. Initial setup
 
-The first time you launch ThemeForge, it creates `~/.config/themeforge/`
+### Onboarding wizard (first run)
+
+The **first time** you launch Pcreative Studio, a welcome wizard runs
+automatically (`maybe_run_onboarding`) to get you to a working state in a
+few steps:
+
+1. **Welcome.**
+2. **Dependencies** — checks for Node / git / the AI CLIs and offers a
+   button to the dependency installer for anything missing.
+3. **AI credentials** — set your provider API keys inline (the same
+   `keys.json` editor as the Settings panel; see §8).
+4. **Form defaults** — pick your default stack, provider and template
+   type so the new-project form is pre-filled to your taste.
+5. **Done.**
+
+The wizard persists a "seen" flag plus your defaults in
+`~/.config/themeforge/app_prefs.json`, so it won't pop up again. You can
+**re-open it any time from Settings**. None of the steps are mandatory —
+you can skip straight through and configure things later.
+
+### Config files
+
+The first time you launch Pcreative Studio, it creates `~/.config/themeforge/`
 with:
 
 ```
@@ -172,7 +194,7 @@ with:
 └── (you create the rest)
 ```
 
-Optional files you can add to extend ThemeForge to your workflow:
+Optional files you can add to extend Pcreative Studio to your workflow:
 
 - `~/.config/themeforge/keys.json` — API keys for AI providers
   (Anthropic, OpenAI, Google, OpenRouter). Permissions are auto-set to
@@ -194,7 +216,7 @@ None of these are required for basic use.
 
 ## 5. Quickstart — your first project
 
-1. Launch ThemeForge.
+1. Launch Pcreative Studio.
 2. In the main form:
    - **Nombre** (Name): `My First Template`
    - **Stack**: click the button and pick *Next.js + Tailwind* (the
@@ -206,7 +228,7 @@ None of these are required for basic use.
 
 What happens behind the scenes:
 
-1. ThemeForge creates `~/Proyectos/themes/my-first-template/`.
+1. Pcreative Studio creates `~/Proyectos/themes/my-first-template/`.
 2. Runs the Next.js scaffolder (`npx create-next-app@latest …`).
 3. Copies the context MDs (`context/*.md`) into the project.
 4. Generates `CLAUDE.md` (or `AGENTS.md` depending on provider) with:
@@ -239,8 +261,8 @@ project. Best for new ideas that don't reference any existing template.
 
 ### Recrear referencia (recreate-from-reference)
 
-You point ThemeForge at a folder, ZIP, or URL that contains the
-"reference" template. ThemeForge:
+You point Pcreative Studio at a folder, ZIP, or URL that contains the
+"reference" template. Pcreative Studio:
 
 1. Runs the stack scaffolder.
 2. Drops the reference contents in `reference/` (added to `.gitignore`).
@@ -259,18 +281,18 @@ stack, gaps, plan) that gets injected into CLAUDE.md.
 ### Adoptar template local (adopt)
 
 You already have a template in a folder and want to work on it
-in-place with the ThemeForge workflow. ThemeForge:
+in-place with the Pcreative Studio workflow. Pcreative Studio:
 
 1. Copies the contents of your local folder into
    `~/Proyectos/themes/<slug>/`.
 2. Adds the context MDs and CLAUDE.md on top, so the agent inherits
-   the ThemeForge conventions without altering your existing code.
+   the Pcreative Studio conventions without altering your existing code.
 3. Detects mono-repos automatically and gives you a sub-project
    selector in the ProjectWindow.
 
 ### Trabajar sobre repo existente (existing)
 
-You point at a GitHub repo (`owner/name`). ThemeForge:
+You point at a GitHub repo (`owner/name`). Pcreative Studio:
 
 1. `gh repo clone owner/name <slug>`.
 2. Detects the stack from the repo contents.
@@ -278,14 +300,14 @@ You point at a GitHub repo (`owner/name`). ThemeForge:
 4. Opens the ProjectWindow.
 
 This is best when you want to continue an existing project under the
-ThemeForge umbrella — same preview/terminal/agent UI as new projects.
+Pcreative Studio umbrella — same preview/terminal/agent UI as new projects.
 
 ---
 
 ## 7. Supported stacks
 
-The full list lives in `stacks.py`. As of the current version, 60+
-stacks are supported including (non-exhaustive):
+The full list lives in `stacks.py`. As of the current version, **84
+stacks** are supported including (non-exhaustive):
 
 - **Web frontend**: Next.js (Tailwind / shadcn / Mantine / HeroUI),
   Astro (Tailwind / shadcn), Remix, Nuxt, SvelteKit, Qwik,
@@ -434,7 +456,7 @@ constant. Pull requests welcome.
 
 ## 8. AI providers
 
-ThemeForge invokes external AI agent CLIs as subprocesses. Supported:
+Pcreative Studio invokes external AI agent CLIs as subprocesses. Supported:
 
 | Provider | CLI binary | API key env var | License of CLI |
 |---|---|---|---|
@@ -458,11 +480,11 @@ showing them.
 
 ### Skills auto-install (`autoskills`)
 
-If the **npx autoskills** checkbox is on (default), ThemeForge runs
+If the **npx autoskills** checkbox is on (default), Pcreative Studio runs
 `npx autoskills -a <provider>` after scaffolding to install the
 provider-specific skills declared by the stack. Skills are official
 packages from Anthropic / Vercel / WordPress / Shopify referenced by
-slug; ThemeForge doesn't redistribute them.
+slug; Pcreative Studio doesn't redistribute them.
 
 `autoskills` itself is by **midudev**
 (<https://github.com/midudev/autoskills>) under **CC BY-NC 4.0**. See
@@ -480,25 +502,25 @@ pairings, anti-patterns to avoid.
 
 When the **uipro UI/UX Pro Max** checkbox is on (auto-checked for any
 stack with a visual surface — disabled by default only for
-backend-only stacks), ThemeForge runs
+backend-only stacks), Pcreative Studio runs
 `npx --yes uipro-cli init --ai <agent>` immediately after autoskills.
 This drops 161 reasoning rules + 67 UI styles + 161 palettes + 57
 font pairings into the agent's context — so when the agent starts
 writing CSS / Tailwind / SwiftUI / Flutter widgets, it does so with
 a coherent design system already in mind.
 
-Supported agents (auto-mapped by ThemeForge):
+Supported agents (auto-mapped by Pcreative Studio):
 `claude`, `claude-api` → `claude` · `codex`, `codex-api` → `codex` ·
 `gemini` → `gemini` · `opencode`, `openrouter` → `opencode`.
 
 UI UX Pro Max is **MIT** licensed and invoked at runtime (never
 bundled), so it imposes no extra licensing constraints on themes
-generated with ThemeForge.
+generated with Pcreative Studio.
 
 ### Visual stack — framer-motion + component libraries (`UI-MOTION.md`)
 
 For every **React** project (any stack whose `package.json` has
-`react` / `next`), ThemeForge wires a third layer on top of
+`react` / `next`), Pcreative Studio wires a third layer on top of
 `autoskills` / `uipro`: a curated set of UI component libraries and
 animation tooling, plus two guide files the agent reads *before*
 writing any UI. This is what makes generated sites look like studio
@@ -565,7 +587,7 @@ preloader + page transitions + custom cursor).
 
 Everything above is invoked **at runtime** — MCPs via `npx`, npm
 packages installed into *your* project — never bundled into
-ThemeForge. All sources are MIT / Apache-2.0, so they impose no
+Pcreative Studio. All sources are MIT / Apache-2.0, so they impose no
 licensing constraint on the themes you generate.
 
 ---
@@ -575,7 +597,7 @@ licensing constraint on the themes you generate.
 In `recrear` or `adopt` mode, the form shows a **🔍 Analizar
 referencia con IA** button (and **🔍 Analizar con IA** for adopt).
 
-When clicked, ThemeForge:
+When clicked, Pcreative Studio:
 
 1. Scans the reference folder/zip with `reference_analyzer.py`:
    detects build-system markers (package.json, composer.json,
@@ -598,7 +620,7 @@ When clicked, ThemeForge:
    TTFT and cost in real time (for stream-json capable CLIs like
    `claude --output-format=stream-json`).
 4. When the turn ends, the **reply input** below the output enables.
-   Type a follow-up and press **➡ Enviar respuesta**: ThemeForge
+   Type a follow-up and press **➡ Enviar respuesta**: Pcreative Studio
    builds a multi-turn prompt that includes the original prompt +
    full conversation history + your new reply, and relaunches the
    CLI. Each turn is appended to the same panel with visual
@@ -664,7 +686,7 @@ server commands. Each sub-project gets its own port assigned in
 ### Terminal tabs
 
 Backed by an embedded Node server (`terminal/server.js`) using
-xterm.js + node-pty. On startup, ThemeForge spawns the server on a
+xterm.js + node-pty. On startup, Pcreative Studio spawns the server on a
 random port and creates the configured tabs:
 
 - **Setup** (if the project just scaffolded) — runs the setup script
@@ -686,7 +708,7 @@ code 0 because the containers are still up — Stop will invoke the
 ### Dev server logs
 
 The bottom pane is a live tail of stdout/stderr from the dev server.
-Useful for catching compile errors without leaving ThemeForge.
+Useful for catching compile errors without leaving Pcreative Studio.
 
 ### 🔬 Pre-flight checker
 
@@ -821,7 +843,7 @@ static hosts don't provide. For those, use the **📦 ZIP** + manual FTP
 or a server provider (Render, Railway, Fly.io, etc.).
 
 **Auth troubleshooting:** Most providers open the browser the first
-time. If you're using ThemeForge over SSH or in a headless setup,
+time. If you're using Pcreative Studio over SSH or in a headless setup,
 the deploy will fail with an auth error. Run the CLI's `login` command
 in a real terminal first:
 
@@ -865,7 +887,7 @@ entry per slug).
 ### Last AI session
 
 Each project row shows the time since the last Claude Code session
-(e.g. `🤖 hace 2h`, `🤖 hace 3 d`, `🤖 sin sesiones`). ThemeForge
+(e.g. `🤖 hace 2h`, `🤖 hace 3 d`, `🤖 sin sesiones`). Pcreative Studio
 inspects `~/.claude/projects/<encoded-path>/*.jsonl` and reports the
 most recent file mtime.
 
@@ -903,7 +925,7 @@ Sources of thumbnails (in priority order):
 
 1. **Cached screenshot**: every time you click 📸 in a ProjectWindow,
    a 200×120 crop is saved as the project's thumbnail.
-2. **Generated placeholder**: if no real thumbnail exists, ThemeForge
+2. **Generated placeholder**: if no real thumbnail exists, Pcreative Studio
    draws one with QPainter — vertical gradient using the stack's
    brand colour (60+ stacks mapped) + project initials centred + stack
    name at the bottom. Looks clean even with zero captures.
@@ -917,7 +939,7 @@ To capture a real thumbnail for a project:
 
 ### Command palette (Ctrl+K)
 
-Press **Ctrl+K** from anywhere in the ThemeForge main window to open
+Press **Ctrl+K** from anywhere in the Pcreative Studio main window to open
 a spotlight-style command palette. Fuzzy-finder over:
 
 - **Navigation**: jump to any tab (Nuevo proyecto, Galería,
@@ -1012,7 +1034,7 @@ with the provider's official dashboard.
 
 All three charts use the dark theme with transparent background,
 series animations on refresh, and native hover tooltips. They scale
-with the window — resize the ThemeForge window to enlarge them.
+with the window — resize the Pcreative Studio window to enlarge them.
 
 ### Filter
 
@@ -1063,7 +1085,7 @@ side-by-side in resizable panes.
 
 Agents whose CLI is not on PATH are shown disabled with the label
 `<agent> (no instalado)`. Each agent has a consistent color across the
-ThemeForge UI (claude blue, codex green, gemini amber, opencode purple).
+Pcreative Studio UI (claude blue, codex green, gemini amber, opencode purple).
 
 ### Flow
 
@@ -1161,21 +1183,21 @@ Optional. Visualises your active AI agent sessions as pixel-art
 avatars in a virtual office, served as a web dashboard on
 `localhost:3002`.
 
-ThemeForge integrates with the MIT-licensed fork at
+Pcreative Studio integrates with the MIT-licensed fork at
 `pcreativedev/pixel-office-openclaw` (based on
 `neomatrix25/pixel-office-openclaw`), with an additional reader for
 Claude Code sessions added to its `server.js`.
 
 ### First run
 
-The first time ThemeForge launches, if it doesn't find Pixel Office
+The first time Pcreative Studio launches, if it doesn't find Pixel Office
 installed, it asks:
 
 > Pixel Office no está instalado. ¿Instalar ahora? (clones the repo
 > to `~/.local/share/themeforge/pixel-office-openclaw/`, runs npm
 > install + npm run build. Takes ~1-2 min.)
 
-If you accept, ThemeForge installs and auto-launches `node server.js`
+If you accept, Pcreative Studio installs and auto-launches `node server.js`
 in background. The dashboard is then embedded in every
 ProjectWindow's "🎮 Office" tab.
 
@@ -1218,7 +1240,7 @@ The Settings tab in the main window exposes:
 
 ## 17. App themes
 
-> **TL;DR.** ThemeForge's own UI is fully themable: 8 builtin
+> **TL;DR.** Pcreative Studio's own UI is fully themable: 8 builtin
 > themes, a visual editor, and a Figma DTCG importer.
 > This section is about **how the app you're using looks** — not
 > about themes you generate for marketplaces. The latter is what
@@ -1230,8 +1252,8 @@ The `themes/` module ships **8 builtin themes**:
 
 | Theme | Mode | Vibe |
 |---|---|---|
-| **ThemeForge Dark** (default) | 🌑 | VSCode-inspired, blue accent |
-| **ThemeForge Light** | ☀️ | Paper-white, blue accent |
+| **Pcreative Studio Dark** (default) | 🌑 | VSCode-inspired, blue accent |
+| **Pcreative Studio Light** | ☀️ | Paper-white, blue accent |
 | **Dracula** | 🌑 | Purple + green pastel |
 | **Nord** | 🌑 | Cool polar blues |
 | **Tokyo Night** | 🌑 | Deep blues + neon accents |
@@ -1304,7 +1326,7 @@ opens a two-tab dialog:
 3. Export to JSON (Tokens Studio's "Export" button) — output is W3C
    [DTCG v2025.10](https://www.designtokens.org/tr/drafts/format/)
    compatible.
-4. Paste the JSON in the ThemeForge dialog tab, or click **📂 Abrir
+4. Paste the JSON in the Pcreative Studio dialog tab, or click **📂 Abrir
    archivo JSON…**.
 5. Click **⚡ Parsear y proponer mapeos**.
 
@@ -1315,7 +1337,7 @@ Requires Figma Enterprise + a Personal Access Token with
 
 1. Paste the Figma file URL (or just the file key).
 2. Paste your PAT.
-3. Click **🌐 Fetch + parsear** — ThemeForge calls
+3. Click **🌐 Fetch + parsear** — Pcreative Studio calls
    `GET /v1/files/<key>/variables/local` and translates the response
    to DTCG.
 
@@ -1323,7 +1345,7 @@ Requires Figma Enterprise + a Personal Access Token with
 
 In both paths, after parsing you get a table:
 
-| ✓ | Figma path | Score | → ThemeForge slot | Valor |
+| ✓ | Figma path | Score | → Pcreative Studio slot | Valor |
 |---|---|---|---|---|
 | ☑ | `color.brand.primary` | 90 🟡 | `color.accent` | `#6366f1` |
 | ☑ | `color.bg.base` | 95 🟢 | `color.bg_primary` | `#0d0d10` |
@@ -1377,21 +1399,21 @@ A complete theme JSON looks like:
 
 Themes live in two locations:
 
-- **Builtins** (read-only, shipped with ThemeForge):
+- **Builtins** (read-only, shipped with Pcreative Studio):
   `themes/presets/*.json` inside the repo.
 - **User-installed** (read-write):
   `~/.config/themeforge/themes/*.json`.
 
 User themes **override** builtins with the same `name`, so you can
-customize ThemeForge Dark without forking the repo. Forward-
+customize Pcreative Studio Dark without forking the repo. Forward-
 compatible: unknown JSON keys are ignored silently, missing keys
 fall back to the dark defaults.
 
 ### 17.6 Round-trip back to Figma
 
-ThemeForge exposes `themepack_to_dtcg()` (see `themes/figma_import.py`)
+Pcreative Studio exposes `themepack_to_dtcg()` (see `themes/figma_import.py`)
 which converts any ThemePack back to a DTCG JSON tree. The reverse
-flow is: edit a theme in ThemeForge → save → re-import to Figma via
+flow is: edit a theme in Pcreative Studio → save → re-import to Figma via
 Tokens Studio. This closes the loop between designers and the dev
 team.
 
@@ -1400,7 +1422,7 @@ team.
 - Typography tokens are not yet editable from the visual editor
   (you can hand-edit the JSON in `~/.config/themeforge/themes/`).
 - DTCG `typography` composite tokens (font family + size + weight in
-  one) are parsed but not currently mapped to ThemeForge slots.
+  one) are parsed but not currently mapped to Pcreative Studio slots.
 - Motion / animation tokens are not yet implemented (Sprint 6).
 - Glassmorphism / neumorphism effects are not yet supported (Sprint 7).
 
@@ -1420,12 +1442,12 @@ Landing premium para clínica dental en Madrid, paleta cálida
 confianza, conversion-optimized
 ```
 
-Click **✨ Pre-rellenar form con IA** and ThemeForge:
+Click **✨ Pre-rellenar form con IA** and Pcreative Studio:
 
 1. Sends the description to the active AI provider (the one selected
    in the Provider field — defaults to Claude).
 2. Receives a structured JSON proposal with:
-   - `stack_key` — one of the 60+ stacks (e.g. `astro-tailwind`).
+   - `stack_key` — one of the 80+ stacks (e.g. `astro-tailwind`).
    - `template_type` — Landing / SaaS / Portfolio / …
    - `theme_hint` — one of the 8 builtin themes that fits the vibe.
    - `dev_prompt` — a polished 150-300 word brief in the user's
@@ -1476,23 +1498,23 @@ productivity accelerator, not a requirement.
 
 ## 19. MCP servers
 
-ThemeForge participates in the **Model Context Protocol (MCP)**
+Pcreative Studio participates in the **Model Context Protocol (MCP)**
 ecosystem in two ways:
 
-### 19.1 ThemeForge as an MCP server
+### 19.1 Pcreative Studio as an MCP server
 
 `mcp_server.py` exposes 8 tools to any MCP client (Claude Code,
 Cursor, Windsurf, OpenCode, etc.). Once registered, the client can
-invoke ThemeForge actions from its own conversation window — no need
+invoke Pcreative Studio actions from its own conversation window — no need
 to switch to the GUI.
 
 #### Tools exposed
 
 | Tool | What it returns |
 |---|---|
-| `list_stacks` | The 60+ scaffold targets with key + name + category + language |
+| `list_stacks` | The 80+ scaffold targets with key + name + category + language |
 | `list_themes` | The 8 builtin themes + any user-installed custom themes |
-| `list_recent_projects` | Recent ThemeForge projects sorted by last-modified (with git status, AI session age, etc.) |
+| `list_recent_projects` | Recent Pcreative Studio projects sorted by last-modified (with git status, AI session age, etc.) |
 | `list_supported_providers` | The 7 AI providers + per-provider auth status |
 | `estimate_cost` | USD cost for `(model, in_tokens, out_tokens)` via the pricing table |
 | `suggest_stack` | Natural-language → recommended `{stack_key, template_type, theme_hint, dev_prompt, reasoning}` (same engine as the Vibe scaffolder) |
@@ -1533,10 +1555,10 @@ Stdio (JSON-RPC over stdin/stdout). The client launches `mcp_server.py`
 as a subprocess on demand. **No network, no VPS, no remote endpoint.**
 Built on Anthropic's official `mcp` Python SDK (FastMCP).
 
-### 19.2 ThemeForge configures community MCPs in each scaffolded project
+### 19.2 Pcreative Studio configures community MCPs in each scaffolded project
 
 When the **📡 Pre-configurar MCP servers** checkbox in the Setup
-sub-tab is on (default), ThemeForge writes a `.mcp.json` at the root
+sub-tab is on (default), Pcreative Studio writes a `.mcp.json` at the root
 of every new project pointing at a curated subset of community
 MCP servers, selected based on the stack:
 
@@ -1546,7 +1568,7 @@ MCP servers, selected based on the stack:
 | **fetch** (modelcontextprotocol) | MIT | Always — web content with HTML→md |
 | **memory** (modelcontextprotocol) | MIT | Always — knowledge-graph persistence |
 | **github** (official) | MIT | Always — issues / PRs / Actions |
-| **themeforge** | GPL-3.0 | Always — ThemeForge's own MCP |
+| **themeforge** | GPL-3.0 | Always — Pcreative Studio's own MCP |
 | **playwright** (Microsoft official) | Apache-2.0 | Web frontend / WordPress / Shopify |
 | **chrome-devtools** (Google official) | Apache-2.0 | Web frontend / WordPress / Shopify |
 | **figma-context** (GLips) | MIT | Web frontend (design-driven) |
@@ -1583,11 +1605,11 @@ the catalog is a pure-Python edit — see the module docstring.
 Some MCPs require user-provided tokens (env vars):
 
 - **github**: `GH_TOKEN` env var with a fine-grained PAT.
-  ThemeForge inherits the token from `gh auth token` if you ran
+  Pcreative Studio inherits the token from `gh auth token` if you ran
   `gh auth login` previously.
 - **figma-context**: `FIGMA_API_KEY` env var with a Figma personal
   access token.
-- **postgres**: `DATABASE_URL` env var. ThemeForge's Postgres
+- **postgres**: `DATABASE_URL` env var. Pcreative Studio's Postgres
   toggle (Extras sub-tab) injects this automatically when a
   per-project container is provisioned.
 
@@ -1596,10 +1618,10 @@ The agent will tell you which env vars are missing on first use.
 #### License compatibility
 
 All catalog entries are MIT or Apache-2.0 (verified at curation
-time, see `NOTICE.md` for the full table). ThemeForge **never bundles**
+time, see `NOTICE.md` for the full table). Pcreative Studio **never bundles**
 their source — `.mcp.json` is a configuration pointer; the client
 downloads each MCP at runtime via `npx` / `uvx` / `docker`. GPL v3 of
-ThemeForge is therefore unaffected (subprocess invocation, not
+Pcreative Studio is therefore unaffected (subprocess invocation, not
 linking).
 
 Discovery reference for catalog curation:
@@ -1613,15 +1635,15 @@ If you don't want `.mcp.json` written:
 - Uncheck **📡 Pre-configurar MCP servers** in the Setup sub-tab
   before clicking Create.
 
-If you want to remove ThemeForge's MCP from your Claude Code config
+If you want to remove Pcreative Studio's MCP from your Claude Code config
 later, just delete the `themeforge` entry from
 `~/.claude.json` → `mcpServers`.
 
 ---
 
-## 20. ThemeForge mobile (remote engine)
+## 20. Pcreative Studio mobile (remote engine)
 
-> **TL;DR.** Since **v1.8.0** you can drive the ThemeForge engine
+> **TL;DR.** Since **v1.8.0** you can drive the Pcreative Studio engine
 > **from your phone**. A small FastAPI gateway (`api_gateway.py`)
 > exposes the engine over HTTP/WebSocket; a PWA (and an optional
 > Capacitor app) talks to it. The **same Web UI** documented in this
@@ -1630,7 +1652,7 @@ later, just delete the `themeforge` entry from
 > the public internet.**
 
 The heavy lifting (scaffolding, Docker, the AI agents) stays on the
-machine where ThemeForge is installed — your desktop, laptop or a VPS.
+machine where Pcreative Studio is installed — your desktop, laptop or a VPS.
 The phone is just a **thin client** of that engine.
 
 ### 20.1 Start the gateway
@@ -1651,7 +1673,7 @@ streaming actions (agent output, setup logs) and an upload endpoint.
 Every request is authenticated with a **bearer token**. The gateway
 resolves it in this order:
 
-1. The `THEMEFORGE_API_TOKEN` environment variable, if set.
+1. The `PCREATIVE STUDIO_API_TOKEN` environment variable, if set.
 2. Otherwise `~/.config/themeforge/api_token.txt`.
 3. If neither exists, the gateway **generates a random token on first
    start**, writes it to `~/.config/themeforge/api_token.txt` and
@@ -1659,14 +1681,14 @@ resolves it in this order:
 
    ```
    [gateway] token generado → ~/.config/themeforge/api_token.txt
-   [gateway] THEMEFORGE_API_TOKEN=<the-token>
+   [gateway] PCREATIVE STUDIO_API_TOKEN=<the-token>
    ```
 
 Copy that token into the mobile client (it's stored locally on the
 phone). HTTP requests must send `Authorization: Bearer <token>`;
 requests with a missing or wrong token get **401**. Pick your own
 token instead of the auto-generated one by exporting
-`THEMEFORGE_API_TOKEN=…` before launching, or by editing
+`PCREATIVE STUDIO_API_TOKEN=…` before launching, or by editing
 `api_token.txt` (keep it private — anyone with the token can drive
 your engine).
 
@@ -1698,7 +1720,7 @@ token** from §20.2.
 ### 20.4 The same Web UI, against the remote engine
 
 The phone does **not** run a second, cut-down UI. The mobile client
-loads the regular ThemeForge Web UI and swaps the in-process
+loads the regular Pcreative Studio Web UI and swaps the in-process
 `QWebChannel` bridge for **`webui/remote/tfbridge-remote.js`**, which
 re-implements the exact same `window.tfBridge` API on top of the
 gateway's HTTP/WebSocket endpoints. So gallery, project creation,
@@ -1752,10 +1774,10 @@ required on the server.
 
 > **TL;DR — what's bundled and what isn't.**
 >
-> ThemeForge ships the **client side** of a license verification flow:
+> Pcreative Studio ships the **client side** of a license verification flow:
 > setup wizard UI, middleware guard, and a small HTTP client that
 > calls your verification endpoint with a documented request/response
-> schema. ThemeForge does **NOT** ship the backend (the verify endpoint,
+> schema. Pcreative Studio does **NOT** ship the backend (the verify endpoint,
 > the license database, the admin panel, the Gumroad/Stripe webhook).
 > You bring your own, or you point the client at a third-party service
 > (Lemon Squeezy License API, Polar, Paddle, Gumroad License Verify…)
@@ -1763,7 +1785,7 @@ required on the server.
 > all, leave the checkbox off and nothing licensing-related is added
 > to the project.
 
-ThemeForge can scaffold a **license verification client** into every
+Pcreative Studio can scaffold a **license verification client** into every
 new theme — useful if you sell on Gumroad / your own web store and
 want each downloaded theme to verify the purchase code before
 running.
@@ -1854,11 +1876,11 @@ Under `~/.config/themeforge/`:
 | `known-product-slugs.txt` | Your product catalogue, one slug per line. Used to auto-tick the licensing checkbox. | 0644 |
 | `context-private/*.md` | Your private versions of context MDs (market research, competitor analysis, licensing spec). Overrides the public stubs in `context/`. | 0644 |
 
-ThemeForge also persists state outside `~/.config/`:
+Pcreative Studio also persists state outside `~/.config/`:
 
 | Location | Purpose |
 |---|---|
-| `~/Proyectos/themes/` | All active projects you've created with ThemeForge. |
+| `~/Proyectos/themes/` | All active projects you've created with Pcreative Studio. |
 | `~/Proyectos/themes-archive/` | Projects archived from the gallery (§11). Reversible. |
 | `~/Proyectos/themes-builds/` | Marketplace ZIPs produced by **📦 ZIP** in ProjectWindow (§10). |
 | `~/.cache/themeforge/thumbnails/<slug>.png` | Card-view thumbnails for the gallery (200×120). Generated from screenshots or as placeholders. Safe to delete — they regenerate. |
@@ -1866,7 +1888,7 @@ ThemeForge also persists state outside `~/.config/`:
 
 ### Context override pattern
 
-When ThemeForge generates a new project, it copies context MDs to
+When Pcreative Studio generates a new project, it copies context MDs to
 `<project>/context/`. Discovery is dynamic:
 
 1. Each `*.md` under `~/.config/themeforge/context-private/`.
@@ -1886,7 +1908,7 @@ names, no domains, no strategies leak from the repo.
 
 ## 23. Troubleshooting
 
-### ThemeForge does not start (ImportError on PyQt6)
+### Pcreative Studio does not start (ImportError on PyQt6)
 
 Install `python-pyqt6` and `python-pyqt6-webengine` from your distro.
 On Arch: `sudo pacman -S python-pyqt6 python-pyqt6-webengine`. On
@@ -1925,35 +1947,35 @@ to your install location.
 
 ### Project shows the "Connect to OpenClaw" gateway screen
 
-ThemeForge's `pixel_office.py` serves the SPA at `localhost:3002`. The
+Pcreative Studio's `pixel_office.py` serves the SPA at `localhost:3002`. The
 SPA auto-connects to same-origin if `/sessions_list` responds. If the
 gateway screen appears anyway, reload (Ctrl+R). If it persists, clear
 browser cache for `localhost:3002`.
 
 ### `wp-env start` exits with `Error: No plugins activated`
 
-A previous version of ThemeForge's wp-env config injected a buggy
+A previous version of Pcreative Studio's wp-env config injected a buggy
 `afterStart` hook. Open the `.wp-env.json` in your WordPress project
 and delete the entire `lifecycleScripts` block — wp-env auto-activates
-plugins listed in `plugins`. ThemeForge no longer emits the broken
+plugins listed in `plugins`. Pcreative Studio no longer emits the broken
 hook for new projects.
 
 ### `start preview` succeeds but Stop is greyed out
 
 For detached profiles (wp-env, `docker compose -d`), the start command
-exits with code 0 after launching containers. Recent ThemeForge keeps
+exits with code 0 after launching containers. Recent Pcreative Studio keeps
 Stop enabled when the profile defines a `stop` command. Make sure
 you're on the latest commit.
 
 ### `📦 GitHub` says "No estás autenticado en gh"
 
-Run `gh auth login` in any terminal and complete the flow. ThemeForge
+Run `gh auth login` in any terminal and complete the flow. Pcreative Studio
 will pick up the auth on the next click. The OAuth token lives in
-`~/.config/gh/hosts.yml` (managed by gh, NOT touched by ThemeForge).
+`~/.config/gh/hosts.yml` (managed by gh, NOT touched by Pcreative Studio).
 
 ### Brave / Chromium does not detect as installed
 
-ThemeForge looks for one of: `brave`, `brave-browser`, `chromium`,
+Pcreative Studio looks for one of: `brave`, `brave-browser`, `chromium`,
 `google-chrome-stable`, `google-chrome`, `microsoft-edge`, `vivaldi`,
 `firefox`, `xdg-open`. If none are found, the 🚀 button errors out.
 
@@ -1975,11 +1997,11 @@ OAuth, or set the key via the Settings panel.
 
 The **Operator** is an **optional** integration that lets
 [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research, MIT)
-act as an **autonomous orchestration brain** for ThemeForge: you give it a brief
+act as an **autonomous orchestration brain** for Pcreative Studio: you give it a brief
 in natural language and it plans, creates/builds, quality-checks, packages — and
 **learns from each project** — without you driving every step.
 
-> **100% optional.** ThemeForge works fully without Hermes. The Operator tab and
+> **100% optional.** Pcreative Studio works fully without Hermes. The Operator tab and
 > the 🚀 buttons only appear **if Hermes is installed**. If you never install
 > Hermes, nothing changes.
 
@@ -1987,14 +2009,14 @@ in natural language and it plans, creates/builds, quality-checks, packages — a
 
 - **Brain** = Hermes. It reasons/plans using an LLM provider (see below) and calls
   tools. It runs as a local CLI (`hermes`).
-- **Hands** = ThemeForge's engine, exposed to Hermes as an **MCP server**
-  (`mcp_server.py`), plus the AI coding agents ThemeForge already drives
+- **Hands** = Pcreative Studio's engine, exposed to Hermes as an **MCP server**
+  (`mcp_server.py`), plus the AI coding agents Pcreative Studio already drives
   (Codex, Claude Code, OpenCode…). Hermes calls `create_project`,
   `run_agent_build`, `run_preflight`, `build_zip`, `list_recent_projects`, etc.
 - The autoskills + UI/UX Pro Max quality layer is inherited automatically.
 
 ```
-You (brief) → Hermes (plan) → MCP → ThemeForge tools → your agent CLIs (build)
+You (brief) → Hermes (plan) → MCP → Pcreative Studio tools → your agent CLIs (build)
                     │                                         │
                     └── QA loop (preflight) ── package (zip) ─┘
 ```
@@ -2003,7 +2025,7 @@ You (brief) → Hermes (plan) → MCP → ThemeForge tools → your agent CLIs (
 
 Two ways (both optional):
 
-- **From ThemeForge:** *Settings → 🔧 Setup dependencies → check
+- **From Pcreative Studio:** *Settings → 🔧 Setup dependencies → check
   “🚀 Hermes Agent (Operator)” → Install.* (Linux/macOS; on Windows it needs WSL.)
 - **Manual:**
   ```bash
@@ -2033,9 +2055,9 @@ Direct providers also work: `anthropic` / `openai` (`ANTHROPIC_API_KEY` /
 > Using your own subscription (e.g. Codex logged in with ChatGPT) is your own
 > decision and risk. This is not legal advice — check your plan's current terms.
 
-### 24.4 Register the ThemeForge MCP server in Hermes
+### 24.4 Register the Pcreative Studio MCP server in Hermes
 
-Add to `~/.hermes/config.yaml` so Hermes can call ThemeForge:
+Add to `~/.hermes/config.yaml` so Hermes can call Pcreative Studio:
 
 ```yaml
 mcp_servers:
@@ -2118,7 +2140,7 @@ hermes chat -q "Build ONE Envato-ready ... " -s themeforge-operator
 
 ### 24.9 Figma integration (related)
 
-ThemeForge can build **from a Figma design**: in *New project → Recreate from
+Pcreative Studio can build **from a Figma design**: in *New project → Recreate from
 reference* choose **“Figma (URL del frame)”** and paste the frame link
 (right-click in Figma → *Copy link to selection*). The build agent reads it via
 the **figma-context MCP** (read-only Figma→code, MIT). Set your Figma token at
@@ -2128,7 +2150,7 @@ token, scope: read). See §19 (MCP servers).
 ### 24.10 Troubleshooting
 
 - **No Operator tab / buttons:** Hermes isn't installed (it's optional). Install it
-  (23.2) and restart ThemeForge.
+  (23.2) and restart Pcreative Studio.
 - **`list_stacks` count not returned / MCP errors:** the `themeforge` MCP isn't
   registered or `python3` lacks deps. Check `~/.hermes/config.yaml` (23.4) and that
   `python3 mcp_server.py` runs.
@@ -2141,7 +2163,7 @@ token, scope: read). See §19 (MCP servers).
 
 ## 25. Credits and third-party licenses
 
-ThemeForge is licensed under **GPL v3** (forced by the PyQt6
+Pcreative Studio is licensed under **GPL v3** (forced by the PyQt6
 dependency which is GPL v3 or commercial). See `LICENSE`.
 
 ### Direct integrations
@@ -2153,12 +2175,12 @@ dependency which is GPL v3 or commercial). See `LICENSE`.
 | [`@xterm/addon-fit`](https://xtermjs.org/) | MIT | Resize support for the terminal. |
 | [`node-pty`](https://github.com/microsoft/node-pty) | MIT | PTY backend for the terminal. |
 | [`ws`](https://github.com/websockets/ws) | MIT | WebSocket transport between the terminal frontend and `node-pty`. |
-| [`autoskills`](https://github.com/midudev/autoskills) (midudev) | **CC BY-NC 4.0** | Invoked via `npx autoskills -a <provider>` to install skills declared by each stack. **Non-commercial license** — if you ship a commercial build of ThemeForge, the autoskills checkbox must be off-by-default or replaced with a permissive alternative. |
+| [`autoskills`](https://github.com/midudev/autoskills) (midudev) | **CC BY-NC 4.0** | Invoked via `npx autoskills -a <provider>` to install skills declared by each stack. **Non-commercial license** — if you ship a commercial build of Pcreative Studio, the autoskills checkbox must be off-by-default or replaced with a permissive alternative. |
 | [`pixel-office-openclaw`](https://github.com/neomatrix25/pixel-office-openclaw) (neomatrix25) | MIT | Visualizer dashboard. Fork at `pcreativedev/pixel-office-openclaw` adds the Claude Code session reader. |
 
 ### Invoked-as-subprocess
 
-These are external CLIs ThemeForge invokes; they're not bundled.
+These are external CLIs Pcreative Studio invokes; they're not bundled.
 
 | Tool | License |
 |---|---|
@@ -2189,14 +2211,14 @@ These are external CLIs ThemeForge invokes; they're not bundled.
 
 ## Appendix A — Directory layout of a generated project
 
-After ThemeForge creates a project, the on-disk layout looks like
+After Pcreative Studio creates a project, the on-disk layout looks like
 this (for a Next.js + licensing example):
 
 ```
 ~/Proyectos/themes/my-template/
 ├── .git/
 ├── .gitignore
-├── CLAUDE.md                    # injected by ThemeForge
+├── CLAUDE.md                    # injected by Pcreative Studio
 ├── README.md                    # from the stack scaffolder
 ├── context/                     # market/competitors/requirements MDs
 │   ├── REQUIREMENTS-THEMEFOREST.md
@@ -2228,7 +2250,7 @@ the active preview between them.
 If you hit a bug:
 
 1. Check §23 (Troubleshooting) first.
-2. Run ThemeForge from a terminal so you can capture stack traces:
+2. Run Pcreative Studio from a terminal so you can capture stack traces:
    `python3 ~/Proyectos/themeforge/themeforge.py`.
 3. Report at the repo's Issues tracker including:
    - Distro + kernel (`uname -a`).

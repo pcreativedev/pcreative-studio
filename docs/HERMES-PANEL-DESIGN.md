@@ -14,10 +14,10 @@ phased plan (§9) is approved per-phase.
 
 ## 1. Vision
 
-ThemeForge already scaffolds 77 stacks and drives them with AI coding
+Pcreative Studio already scaffolds 77 stacks and drives them with AI coding
 agents. The Hermes tab elevates that into an **agent platform**:
 
-- **Hermes = a web-design specialist** that knows every ThemeForge stack.
+- **Hermes = a web-design specialist** that knows every Pcreative Studio stack.
 - The user picks a **specialized sub-agent** ("Shopify Liquid expert",
   "WordPress block-theme expert", "Magento+Hyvä expert", …) — or lets
   Hermes auto-pick — and builds a marketplace-ready site/app.
@@ -44,7 +44,7 @@ hard parts we'd otherwise build ourselves:
 | Multi-model, no lock-in | 200+ models via OpenRouter etc. |
 
 **Design principle:** *don't reimplement what Hermes ships.* We wrap and
-embed Hermes features; we only build the **ThemeForge-specific layer**
+embed Hermes features; we only build the **Pcreative Studio-specific layer**
 (specialist agents, the MCP action tools, the GUI shell).
 
 ---
@@ -325,9 +325,9 @@ GUI maps specialists ↔ stacks. Hermes ignores unknown metadata.
 `~/.hermes/skill-bundles/themeforge.yaml`:
 ```yaml
 name: themeforge
-description: "Full ThemeForge web-design workflow."
+description: "Full Pcreative Studio web-design workflow."
 skills: [themeforge-operator, popular-web-designs, claude-design, dogfood]
-instruction: "You are building marketplace-ready templates with ThemeForge. Use the themeforge MCP tools."
+instruction: "You are building marketplace-ready templates with Pcreative Studio. Use the themeforge MCP tools."
 ```
 `/themeforge` in any Hermes chat loads the whole workflow at once.
 
@@ -335,7 +335,7 @@ instruction: "You are building marketplace-ready templates with ThemeForge. Use 
 
 ## 6. New MCP tools (in `mcp_server.py`)
 
-So Hermes can *operate* ThemeForge fully (not just read):
+So Hermes can *operate* Pcreative Studio fully (not just read):
 
 | Tool | Signature | Wraps |
 |---|---|---|
@@ -418,7 +418,7 @@ Each phase is independently shippable and leaves the tab working.
 - **Local vs public:** all Hermes/skill/MCP/licensing wiring is **local**
   to the user's machine. The public GitHub repo ships only placeholders;
   the pcreative backend is never referenced in committed code.
-- **Hermes is optional:** the rest of ThemeForge must keep working with
+- **Hermes is optional:** the rest of Pcreative Studio must keep working with
   Hermes absent — every Hermes feature degrades to an "install Hermes"
   hint, exactly as today.
 - **Don't reimplement Hermes:** wrap/embed swarm, cron, dashboard, skills.

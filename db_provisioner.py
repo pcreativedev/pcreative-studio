@@ -1,6 +1,6 @@
 """
 db_provisioner — aprovisiona automáticamente BDs en containers Docker para
-cada proyecto que cree ThemeForge.
+cada proyecto que cree Pcreative Studio.
 
 Detecta si el proyecto necesita Postgres (drizzle/prisma/etc.) y, en ese caso:
   1. Lanza un container `themeforge-pg-<slug>` con puerto único.

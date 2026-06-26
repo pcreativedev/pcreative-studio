@@ -1,7 +1,7 @@
 name: Build Linux
 
 # Builds Linux distribution packages from a single PyInstaller bundle:
-#   - ThemeForge-x86_64.AppImage  — universal, runs on most distros
+#   - Pcreative Studio-x86_64.AppImage  — universal, runs on most distros
 #   - themeforge_<ver>_amd64.deb  — Debian / Ubuntu
 #   - themeforge-<ver>-1.x86_64.rpm — Fedora / RHEL / openSUSE
 #
@@ -67,7 +67,7 @@ jobs:
           set -e
           pyinstaller --noconfirm --clean \
             --windowed \
-            --name ThemeForge \
+            --name Pcreative Studio \
             --icon assets/themeforge-256.png \
             --add-data "assets:assets" \
             --add-data "context:context" \
@@ -82,12 +82,12 @@ jobs:
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
 
-          APPDIR=ThemeForge.AppDir
+          APPDIR=Pcreative Studio.AppDir
           rm -rf $APPDIR
           mkdir -p $APPDIR/usr/bin
 
           # Copy the PyInstaller output
-          cp -r dist/ThemeForge/* $APPDIR/usr/bin/
+          cp -r dist/Pcreative Studio/* $APPDIR/usr/bin/
 
           # Icon at AppDir root + standard usr/share path
           cp assets/themeforge-256.png $APPDIR/themeforge.png
@@ -98,16 +98,16 @@ jobs:
           cat > $APPDIR/themeforge.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
-          Name=ThemeForge
+          Name=Pcreative Studio
           GenericName=Theme Project Builder
           Comment=PyQt6 GUI for scaffolding template projects
-          Exec=ThemeForge %F
+          Exec=Pcreative Studio %F
           Icon=themeforge
           Terminal=false
           Categories=Development;IDE;
           Keywords=template;theme;scaffold;ai;claude;codex;
           StartupNotify=true
-          StartupWMClass=ThemeForge
+          StartupWMClass=Pcreative Studio
           EOF
           mkdir -p $APPDIR/usr/share/applications
           cp $APPDIR/themeforge.desktop $APPDIR/usr/share/applications/
@@ -116,7 +116,7 @@ jobs:
           cat > $APPDIR/AppRun <<'EOF'
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "$0")")"
-          exec "$HERE/usr/bin/ThemeForge" "$@"
+          exec "$HERE/usr/bin/Pcreative Studio" "$@"
           EOF
           chmod +x $APPDIR/AppRun
 
@@ -125,7 +125,7 @@ jobs:
 
           # Build it
           ARCH=x86_64 ./appimagetool-x86_64.AppImage --no-appstream $APPDIR \
-            ThemeForge-${{ steps.ver.outputs.version }}-x86_64.AppImage
+            Pcreative Studio-${{ steps.ver.outputs.version }}-x86_64.AppImage
 
       # ──────────────── .deb ────────────────
       - name: Build .deb
@@ -136,11 +136,11 @@ jobs:
           mkdir -p pkgroot/opt/themeforge pkgroot/usr/bin \
                    pkgroot/usr/share/applications \
                    pkgroot/usr/share/icons/hicolor/256x256/apps
-          cp -r dist/ThemeForge/* pkgroot/opt/themeforge/
+          cp -r dist/Pcreative Studio/* pkgroot/opt/themeforge/
           # Wrapper in /usr/bin
           cat > pkgroot/usr/bin/themeforge <<'EOF'
           #!/bin/sh
-          exec /opt/themeforge/ThemeForge "$@"
+          exec /opt/themeforge/Pcreative Studio "$@"
           EOF
           chmod +x pkgroot/usr/bin/themeforge
           # Icon + .desktop for system menu
@@ -148,14 +148,14 @@ jobs:
           cat > pkgroot/usr/share/applications/themeforge.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
-          Name=ThemeForge
+          Name=Pcreative Studio
           GenericName=Theme Project Builder
           Comment=PyQt6 GUI for scaffolding template projects
           Exec=themeforge %F
           Icon=themeforge
           Terminal=false
           Categories=Development;IDE;
-          StartupWMClass=ThemeForge
+          StartupWMClass=Pcreative Studio
           EOF
 
           fpm -s dir -t deb \
@@ -197,9 +197,9 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ThemeForge-Linux-${{ steps.ver.outputs.version }}
+          name: Pcreative Studio-Linux-${{ steps.ver.outputs.version }}
           path: |
-            ThemeForge-*-x86_64.AppImage
+            Pcreative Studio-*-x86_64.AppImage
             themeforge_*_amd64.deb
             themeforge-*.x86_64.rpm
           retention-days: 30
@@ -209,7 +209,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ThemeForge-*-x86_64.AppImage
+            Pcreative Studio-*-x86_64.AppImage
             themeforge_*_amd64.deb
             themeforge-*.x86_64.rpm
           draft: true

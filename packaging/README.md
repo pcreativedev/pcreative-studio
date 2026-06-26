@@ -1,6 +1,6 @@
 # Packaging
 
-Distribution recipes for ThemeForge. CI (GitHub Actions) builds
+Distribution recipes for Pcreative Studio. CI (GitHub Actions) builds
 AppImage / .deb / .rpm / .app automatically on tag pushes. The
 files here are for **manual** distribution channels that CI can't
 or shouldn't drive directly.

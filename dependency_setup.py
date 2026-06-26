@@ -1,7 +1,7 @@
 """dependency_setup.py — Detección e instalación automática de las
-herramientas externas que ThemeForge invoca como subprocesos.
+herramientas externas que Pcreative Studio invoca como subprocesos.
 
-ThemeForge bundlea Python + PyQt6 (vía PyInstaller en Win/Mac, o el system
+Pcreative Studio bundlea Python + PyQt6 (vía PyInstaller en Win/Mac, o el system
 python en Linux), pero en runtime necesita binarios externos que NO van en
 el bundle: Node.js, git, GitHub CLI y los CLIs de los agentes de IA
 (Claude / Codex / Gemini / OpenCode) más netlify-cli para deploys.
@@ -165,7 +165,7 @@ TOOLS: list[Tool] = [
          win_kind="exe", win_args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"),
     # ── Operator (OPCIONAL) ─────────────────────────────────────────────
     # Hermes Agent: cerebro orquestador del "Operator" (misiones autónomas).
-    # ThemeForge funciona perfectamente SIN esto; solo se instala si el user
+    # Pcreative Studio funciona perfectamente SIN esto; solo se instala si el user
     # quiere el modo Operator. Instalador oficial Unix (curl|bash). En Windows
     # requiere WSL (el wizard avisará).
     Tool("hermes", "Hermes Agent (Operator)", "hermes",
@@ -425,7 +425,7 @@ def install_plan(tools: list[Tool]) -> tuple[list[InstallStep], list[str]]:
         warnings.insert(
             0,
             "winget no está disponible — usando descarga directa de los "
-            "instaladores oficiales. Reinicia ThemeForge al terminar para "
+            "instaladores oficiales. Reinicia Pcreative Studio al terminar para "
             "que el PATH actualizado (Node/git) se vea."
         )
 

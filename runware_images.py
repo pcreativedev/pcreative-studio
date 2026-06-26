@@ -1,6 +1,6 @@
 """runware_images.py — generación de imágenes vía Runware (https://runware.ai).
 
-Sistema de imágenes de ThemeForge para los templates: **API key, pay-as-you-go**
+Sistema de imágenes de Pcreative Studio para los templates: **API key, pay-as-you-go**
 (NO suscripción) → encaja con el modelo de compliance. La key se guarda en el
 mismo almacén que el resto (`~/.config/themeforge/keys.json`, chmod 0600) bajo el
 id `runware`, o por env `RUNWARE_API_KEY`.

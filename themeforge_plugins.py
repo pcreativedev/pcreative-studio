@@ -1,10 +1,10 @@
 """
-ThemeForge plugin loader.
+Pcreative Studio plugin loader.
 
 User-defined plugins live at `~/.config/themeforge/plugins/*.py`. Each
 plugin imports the registration helpers from this module and calls
 them at import time to add custom stacks / template types / agents
-without touching the ThemeForge repo.
+without touching the Pcreative Studio repo.
 
 Plugins load once at startup, BEFORE the form is built. Errors are
 caught individually — a broken plugin logs a warning and the rest

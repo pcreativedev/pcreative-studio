@@ -1,4 +1,4 @@
-# ThemeForge Móvil — app nativa (Capacitor)
+# Pcreative Studio Móvil — app nativa (Capacitor)
 
 Envuelve la PWA de `webui/mobile` en una app nativa Android/iOS. Aporta sobre la
 PWA: **push notifications fiables** (FCM/APNs), splash, e instalación como app.
@@ -39,7 +39,7 @@ npm run ios                  # sync + abre Xcode → Run
    `POST /push/register`.
 3. **Probar:** `POST /push/test` → debería llegarte una push.
 4. La entrega real de "build terminado" se enganchará cuando los builds corran
-   en el servidor (Fase 3): `push_service.send("ThemeForge", "Build terminado ✅")`.
+   en el servidor (Fase 3): `push_service.send("Pcreative Studio", "Build terminado ✅")`.
 
 ## Desarrollo rápido (live-reload)
 En `capacitor.config.ts` descomenta `server.url` apuntando a la PWA servida en tu

@@ -413,7 +413,7 @@ def _enrich_with_extras(project_path: Path, profile: PreviewProfile, deps: dict 
 
 def detect_preview_profile(project_path: Path) -> PreviewProfile | None:
     """Heurística → devuelve cómo levantar y dónde ver el preview."""
-    # WordPress provisionado por ThemeForge en Docker → preview directo al
+    # WordPress provisionado por Pcreative Studio en Docker → preview directo al
     # contenedor, sin dev server (no_server). La URL/puerto vienen de
     # ~/.config/themeforge/wp_provisions.json (keyed por slug = nombre de dir).
     try:

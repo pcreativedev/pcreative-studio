@@ -319,7 +319,7 @@ def validate(project_dir: Path, profile: MarketplaceProfile) -> list[Issue]:
                 "fail", "Documentation",
                 f"{profile.name} requires a documentation folder; none found.",
                 hint=("Create `documentation/` with an index.html or "
-                      "documentation.pdf. ThemeForge can generate a starter "
+                      "documentation.pdf. Pcreative Studio can generate a starter "
                       "via the AI agent — ask for 'documentation HTML for "
                       "buyers' in CLAUDE.md."),
             ))
@@ -391,7 +391,7 @@ def validate(project_dir: Path, profile: MarketplaceProfile) -> list[Issue]:
                 f"Preview ({spec.name})",
                 f"No image found matching {dim_req}.",
                 hint=(f"Place a {dim_req} {'/'.join(spec.formats).upper()} in "
-                      f"`screenshots/`. ThemeForge's screenshot button (📸 in "
+                      f"`screenshots/`. Pcreative Studio's screenshot button (📸 in "
                       f"ProjectWindow) captures the preview pane; resize as needed."),
             ))
 

@@ -1,7 +1,7 @@
-"""Curated catalog of community MCP servers that ThemeForge can
+"""Curated catalog of community MCP servers that Pcreative Studio can
 auto-configure for scaffolded projects.
 
-These are NOT distributed with ThemeForge. We only generate a
+These are NOT distributed with Pcreative Studio. We only generate a
 `.mcp.json` in the project root pointing at the right packages /
 binaries. The user's AI client (Claude Code, Cursor, Windsurf)
 launches each MCP on demand via `npx`, `uvx`, or `go run`, the same
@@ -9,7 +9,7 @@ way it would for any other MCP.
 
 License: every entry below has its upstream license documented and
 verified at curation time (see NOTICE.md). All entries are MIT or
-Apache-2.0, both fully compatible with ThemeForge's GPL v3 since we
+Apache-2.0, both fully compatible with Pcreative Studio's GPL v3 since we
 never bundle their source — we only generate a config file that the
 client uses to spawn them at runtime.
 
@@ -194,7 +194,7 @@ CATALOG: list[MCPEntry] = [
         },
         env_hint=(
             "Requiere TWENTYFIRST_API_KEY (gratis en 21st.dev → Settings → "
-            "API). Guárdala en ThemeForge (Credenciales) o como env var. Con "
+            "API). Guárdala en Pcreative Studio (Credenciales) o como env var. Con "
             "ella, en el proyecto el agente usa `/ui <descripción>` para "
             "generar componentes profesionales del registro 21st.dev."
         ),
@@ -394,7 +394,7 @@ CATALOG: list[MCPEntry] = [
             "env": {"DATABASE_URI": "${DATABASE_URL}"},
         },
         env_hint=(
-            "Requires DATABASE_URL env var. ThemeForge's Postgres "
+            "Requires DATABASE_URL env var. Pcreative Studio's Postgres "
             "toggle (Extras tab) injects this automatically."
         ),
         requires_auth=False,
@@ -419,18 +419,18 @@ CATALOG: list[MCPEntry] = [
     ),
     MCPEntry(
         key="themeforge",
-        name="ThemeForge (this repo)",
+        name="Pcreative Studio (this repo)",
         license="GPL-3.0",
         repo="https://github.com/pcreativedev/themeforge",
         description=(
-            "ThemeForge's own MCP server: list_stacks, list_themes, "
+            "Pcreative Studio's own MCP server: list_stacks, list_themes, "
             "estimate_cost, run_preflight, build_zip, suggest_stack, "
             "list_recent_projects, list_supported_providers."
         ),
         relevance=["any"],
         install={
             "command": "python3",
-            "args": ["__THEMEFORGE_HOME__/mcp_server.py"],
+            "args": ["__PCREATIVE STUDIO_HOME__/mcp_server.py"],
         },
     ),
 
@@ -533,8 +533,8 @@ def generate_mcp_json(
     """Builds the `.mcp.json` file content for a scaffolded project.
 
     The `__PROJECT_PATH__` placeholder in any entry's install args is
-    replaced with the absolute project path. `__THEMEFORGE_HOME__` is
-    replaced with the location of THIS repo (so the ThemeForge MCP
+    replaced with the absolute project path. `__PCREATIVE STUDIO_HOME__` is
+    replaced with the location of THIS repo (so the Pcreative Studio MCP
     server entry points at the right `mcp_server.py`).
     """
     project_str = str(Path(project_path).resolve())
@@ -543,7 +543,7 @@ def generate_mcp_json(
     def _substitute(value):
         if isinstance(value, str):
             return value.replace("__PROJECT_PATH__", project_str).replace(
-                "__THEMEFORGE_HOME__", tf_home_str
+                "__PCREATIVE STUDIO_HOME__", tf_home_str
             )
         if isinstance(value, list):
             return [_substitute(v) for v in value]

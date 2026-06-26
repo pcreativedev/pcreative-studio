@@ -1,8 +1,8 @@
 {
-  "name": "ThemeForge Dark",
+  "name": "Pcreative Studio Dark",
   "author": "pcreativedev",
   "is_dark": true,
-  "description": "Default ThemeForge theme — dark VSCode-inspired with blue accent.",
+  "description": "Default Pcreative Studio theme — dark VSCode-inspired with blue accent.",
   "color": {
     "bg_primary":      "#1e1e1e",
     "bg_secondary":    "#252526",

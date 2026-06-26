@@ -1,6 +1,6 @@
 {
-  "name": "ThemeForge Móvil",
-  "short_name": "ThemeForge",
+  "name": "Pcreative Studio Móvil",
+  "short_name": "Pcreative Studio",
   "description": "CRM de captación + generador de webs, en el móvil.",
   "start_url": "./index.html",
   "display": "standalone",

@@ -1,5 +1,5 @@
 """
-market_tab — pestaña «Mercado» del main window de ThemeForge.
+market_tab — pestaña «Mercado» del main window de Pcreative Studio.
 
 Botones de análisis IA (vía OpenRouter + Gemini 2.5 Pro por defecto):
   · Mercado 2026 general

@@ -1,4 +1,4 @@
-/* ===================== ThemeForge ♡ Kawaii ===================== */
+/* ===================== Pcreative Studio ♡ Kawaii ===================== */
 const { useState, useEffect, useRef } = React;
 
 /* agentes IA como mascotas kawaii */
@@ -1024,7 +1024,7 @@ function Operator() {
 }
 
 /* ---- Settings (themes) ---- */
-// Temas REALES de ThemeForge inyectados por el shell (prototipos + packs + clásicos).
+// Temas REALES de Pcreative Studio inyectados por el shell (prototipos + packs + clásicos).
 const THEMES = ((typeof window !== 'undefined' && window.__TF_DATA__ && window.__TF_DATA__.themes) || [
   { k: 'kawaii', label: 'Kawaii 🌸', acc: '#ff8fc7', acc2: '#b9a3ff', bg: '#fff5fa', proto: true, web: true },
 ]);
@@ -1062,7 +1062,7 @@ function SysAndSetup() {
       </>}
       <h2 className="sec" style={{ margin: '26px 0 14px' }}>↗️ Atajos <span style={{ fontFamily: 'var(--jp)', fontSize: 14, color: 'var(--tx-dim)' }}>近道</span></h2>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[['themeforge', '📁 Carpeta ThemeForge'], ['context', '📚 context/'], ['stacks', '📝 Editar stacks.py']].map(([k, l]) => <button key={k} className="btn" onClick={() => call('open_shortcut', k)}>{l}</button>)}
+        {[['themeforge', '📁 Carpeta Pcreative Studio'], ['context', '📚 context/'], ['stacks', '📝 Editar stacks.py']].map(([k, l]) => <button key={k} className="btn" onClick={() => call('open_shortcut', k)}>{l}</button>)}
       </div>
     </div>
   );
@@ -1073,7 +1073,7 @@ function Settings() {
     setTh(t.k);
     if (t.proto) { if (window.tfBridge && window.tfBridge.use_web_theme) window.tfBridge.use_web_theme(t.k); }
     else if (t.web) { if (window.tfApplyTheme && t.vars) window.tfApplyTheme(t.vars); if (window.tfBridge && window.tfBridge.set_theme) window.tfBridge.set_theme(t.k); }
-    else if (window.tfBridge && window.tfBridge.switch_to_classic) { if (confirm('Tema clásico «' + t.label + '» (UI nativa). ThemeForge se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k); }
+    else if (window.tfBridge && window.tfBridge.switch_to_classic) { if (confirm('Tema clásico «' + t.label + '» (UI nativa). Pcreative Studio se reiniciará. ¿Continuar?')) window.tfBridge.switch_to_classic(t.k); }
   };
   return (
     <div className="page fade" style={{ maxWidth: 820 }}>
@@ -1628,7 +1628,7 @@ function KawaiiBoot({ onDone }) {
     }}>
       <div style={{ textAlign: 'center', position: 'relative', zIndex: 2, width: 'min(420px,86vw)' }}>
         <div style={{ fontSize: 78, animation: 'bounce 1.4s ease-in-out infinite', filter: 'drop-shadow(0 8px 18px rgba(255,143,199,.5))' }}>🌸</div>
-        <div style={{ fontFamily: 'var(--cute)', fontSize: 32, color: 'var(--accent)', marginTop: 6, textShadow: '2px 2px 0 #fff,3px 3px 0 var(--line)' }}>ThemeForge</div>
+        <div style={{ fontFamily: 'var(--cute)', fontSize: 32, color: 'var(--accent)', marginTop: 6, textShadow: '2px 2px 0 #fff,3px 3px 0 var(--line)' }}>Pcreative Studio</div>
         <div style={{ fontFamily: 'var(--jp)', color: 'var(--tx-dim)', letterSpacing: '.36em', fontSize: 13, marginTop: 4 }}>かわいいビルダー</div>
         {/* loading line */}
         <div style={{ minHeight: 26, marginTop: 26, fontWeight: 700, color: 'var(--tx)', fontSize: 15 }}>
@@ -1712,7 +1712,7 @@ function App() {
     <div className="app">
       {!booted && <KawaiiBoot onDone={() => setBooted(true)} />}
       <div className="side">
-        <div className="brand">🌸 ThemeForge<small>かわいいビルダー · kawaii</small></div>
+        <div className="brand">🌸 Pcreative Studio<small>かわいいビルダー · kawaii</small></div>
         <div className="nav">
           {NAV.concat(privateNav()).map(n => (
             <button key={n.id} className={'navi' + (route === n.id ? ' on' : '')} onClick={() => nav(n.id)}>

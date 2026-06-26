@@ -1,6 +1,6 @@
 """
 wp_provisioner — levanta un WordPress de desarrollo en Docker (WordPress +
-MariaDB + wp-cli) para los stacks WordPress de ThemeForge.
+MariaDB + wp-cli) para los stacks WordPress de Pcreative Studio.
 
 Qué hace (idempotente por slug, análogo a db_provisioner):
   1. Crea una red `themeforge-wpnet-<slug>` y un MariaDB `themeforge-wpdb-<slug>`.
@@ -181,7 +181,7 @@ def _write_project_files(project_dir: str, prov: dict) -> None:
     # Helper ./wp → wp-cli dentro del contenedor (comparte sus volúmenes).
     wp_helper = (
         "#!/usr/bin/env bash\n"
-        "# wp-cli contra el WordPress de desarrollo de este proyecto (ThemeForge).\n"
+        "# wp-cli contra el WordPress de desarrollo de este proyecto (Pcreative Studio).\n"
         f'exec docker run --rm -i --volumes-from {prov["wp_container"]} '
         f'--network {prov["network"]} --user 33:33 -e HOME=/tmp '
         f'-e WORDPRESS_DB_HOST=wpdb -e WORDPRESS_DB_USER=wordpress '
@@ -199,14 +199,14 @@ def _write_project_files(project_dir: str, prov: dict) -> None:
     pack_section = _ux_pack_doc(ux_pack_name, ux_pack_info, prov)
     doc = f"""# WordPress de desarrollo (Docker) — ya instalado y funcional
 
-ThemeForge ha levantado WordPress + MariaDB en Docker y **ha instalado WordPress**.
-**El preview de ThemeForge ya apunta a este WordPress.** No hay que instalar nada.
+Pcreative Studio ha levantado WordPress + MariaDB en Docker y **ha instalado WordPress**.
+**El preview de Pcreative Studio ya apunta a este WordPress.** No hay que instalar nada.
 
 - URL:    {prov["url"]}
 - Admin:  {prov["url"]}/wp-admin  (usuario: `{prov["admin_user"]}` · contraseña: `{prov["admin_password"]}`)
 - Tu {kind} está montado en `wp-content/{"themes" if kind == "theme" else "plugins"}/{slug}` —
   lo que edites aquí se ve en vivo en el WordPress del preview.
-- **Autologueado como admin** desde localhost (mu-plugin de ThemeForge): abre la URL del
+- **Autologueado como admin** desde localhost (mu-plugin de Pcreative Studio): abre la URL del
   preview y entras directo al wp-admin.
 
 ## Activar tu {kind}
@@ -248,17 +248,17 @@ Cuando tenga su cabecera ({"style.css" if kind == "theme" else "cabecera de plug
         pass
 
     # WORDPRESS-LEGAL.md — disclaimer único por proyecto sobre licencias y
-    # marcas de los plugins/themes WordPress que ThemeForge auto-instala o
+    # marcas de los plugins/themes WordPress que Pcreative Studio auto-instala o
     # menciona. Idéntico para todos los stacks WP. NO se commitea (vive en
     # gitignore con el resto del entorno local).
     legal = """# Licencia y terceros (entorno WordPress)
 
 Este proyecto es **tuyo** — el código que escribas aquí va bajo la licencia
 que tú elijas. Lo que sigue se refiere SOLO al entorno de desarrollo que
-ThemeForge ha levantado (WordPress + MariaDB en Docker) y a los plugins/temas
+Pcreative Studio ha levantado (WordPress + MariaDB en Docker) y a los plugins/temas
 instalados dentro de ese entorno.
 
-## ThemeForge no bundlea código de terceros
+## Pcreative Studio no bundlea código de terceros
 
 - **Free plugins/temas** (ACF, Pods, GenerateBlocks, Spectra, Elementor free,
   Hello Elementor, GreenShift, Breakdance free, Kadence, Royal MCP, plugin
@@ -272,17 +272,17 @@ instalados dentro de ese entorno.
   Motion.page, Novamira Pro, ACF Pro, GenerateBlocks Pro, Kadence Blocks
   Pro, etc.): se instalan **solo si** declaraste un zip que **tú hayas
   licenciado legalmente** en `~/.config/themeforge/wp_packs.json`.
-  ThemeForge ni verifica ni provee licencias.
+  Pcreative Studio ni verifica ni provee licencias.
 
 ## Marcas
 
 Bricks®, Elementor®, Divi®, Breakdance®, JetEngine®, ACF®, WooCommerce®,
 WordPress®, Motion.page y cualquier otra marca mencionada son de sus
 propietarios. Aparecen aquí solo para identificar el producto al que se
-refieren (uso nominativo justo). ThemeForge no está afiliado a ninguno y
+refieren (uso nominativo justo). Pcreative Studio no está afiliado a ninguno y
 no implica patrocinio.
 
-Ver `TRADEMARKS.md` y `NOTICE.md` en el repo de ThemeForge para el detalle.
+Ver `TRADEMARKS.md` y `NOTICE.md` en el repo de Pcreative Studio para el detalle.
 
 ## Si publicas este proyecto
 
@@ -416,7 +416,7 @@ def _configure_wp(wp: str, net: str, db_pw: str, port: int, slug: str, admin_pw:
 # ─── UX packs: plugins/temas por builder de WordPress ──────────────────
 #
 # IMPORTANTE — política legal:
-#   1) ThemeForge NUNCA bundlea código de terceros en este repo.
+#   1) Pcreative Studio NUNCA bundlea código de terceros en este repo.
 #   2) Los items "free" se instalan llamando a wp-cli, que los descarga
 #      desde su FUENTE OFICIAL (WordPress.org o el releases público del
 #      proyecto), igual que haría un usuario manualmente desde wp-admin.
@@ -430,7 +430,7 @@ def _configure_wp(wp: str, net: str, db_pw: str, port: int, slug: str, admin_pw:
 #
 # Estructura por pack:
 #   "themes":  [(slug, label), ...]   — parent themes (no se activan; los
-#                                       activa el child de ThemeForge).
+#                                       activa el child de Pcreative Studio).
 #   "plugins": [(slug, label), ...]   — plugins activados automáticamente.
 
 FREE_PACKS: dict[str, dict] = {
@@ -677,10 +677,10 @@ def _install_zip(
 
 _AUTOLOGIN_MU_PLUGIN = r"""<?php
 /**
- * Plugin Name: ThemeForge Autologin (dev)
+ * Plugin Name: Pcreative Studio Autologin (dev)
  * Description: Loguea automáticamente como admin cuando accedes desde
  *              localhost. Se instala solo en el entorno de desarrollo
- *              de ThemeForge — NO subir a producción.
+ *              de Pcreative Studio — NO subir a producción.
  * Version: 1.0
  */
 if (!defined('ABSPATH')) { exit; }

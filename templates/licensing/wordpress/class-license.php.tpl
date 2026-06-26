@@ -11,7 +11,7 @@
  * Uso desde el bootstrap del theme/plugin:
  *
  *   require_once __DIR__ . '/inc/class-license.php';
- *   $license = new \ThemeForge\Licensing\License('__SLUG__');
+ *   $license = new \Pcreative Studio\Licensing\License('__SLUG__');
  *   if (!$license->is_active()) {
  *       add_action('admin_notices', [$license, 'render_inactive_notice']);
  *   }
@@ -20,7 +20,7 @@
  * generar el proyecto (de tu licensing.json). Cada usuario usa SU backend.
  */
 
-namespace ThemeForge\Licensing;
+namespace Pcreative Studio\Licensing;
 
 defined('ABSPATH') || exit;
 

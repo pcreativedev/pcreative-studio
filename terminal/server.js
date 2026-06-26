@@ -1,4 +1,4 @@
-// Servidor local para ThemeForge:
+// Servidor local para Pcreative Studio:
 //   GET /        → index.html con xterm.js
 //   GET /xterm.css | /xterm.js | /addon-fit.js → estáticos
 //   WS  /?cwd=&cmd=&args=  → pty bidireccional

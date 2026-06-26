@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * App nativa que envuelve la PWA de ThemeForge (webui/mobile).
+ * App nativa que envuelve la PWA de Pcreative Studio (webui/mobile).
  * La URL del gateway + token los mete el usuario en la pantalla de config
  * (se guardan en localStorage), así que NO se hardcodean aquí.
  *
@@ -9,7 +9,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'dev.pcreative.themeforge',
-  appName: 'ThemeForge',
+  appName: 'Pcreative Studio',
   webDir: 'www',
   plugins: {
     PushNotifications: { presentationOptions: ['badge', 'sound', 'alert'] },

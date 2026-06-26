@@ -27,7 +27,7 @@ from credentials_panel import CredentialsWidget
 class OnboardingWizard(QWizard):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("ThemeForge — Configuración inicial")
+        self.setWindowTitle("Pcreative Studio — Configuración inicial")
         self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
         self.setMinimumSize(720, 560)
         self.setOption(QWizard.WizardOption.NoBackButtonOnStartPage, True)
@@ -48,11 +48,11 @@ class OnboardingWizard(QWizard):
     # ── Página 1: bienvenida ────────────────────────────────────────────
     def _welcome_page(self) -> QWizardPage:
         page = QWizardPage()
-        page.setTitle("Bienvenido a ThemeForge")
+        page.setTitle("Bienvenido a Pcreative Studio")
         page.setSubTitle("Vamos a dejar todo listo en unos pasos.")
         lay = QVBoxLayout(page)
         lbl = QLabel(
-            "ThemeForge forja plantillas web premium con agentes de IA.\n\n"
+            "Pcreative Studio forja plantillas web premium con agentes de IA.\n\n"
             "Este asistente te ayudará a:\n"
             "  1.  Instalar las dependencias que falten (Node, git, CLIs).\n"
             "  2.  Configurar las credenciales de tu proveedor de IA.\n"
@@ -69,7 +69,7 @@ class OnboardingWizard(QWizard):
     def _deps_page(self) -> QWizardPage:
         page = QWizardPage()
         page.setTitle("Dependencias")
-        page.setSubTitle("Herramientas externas que ThemeForge necesita.")
+        page.setSubTitle("Herramientas externas que Pcreative Studio necesita.")
         lay = QVBoxLayout(page)
 
         self._deps_status = QLabel("…")
@@ -132,7 +132,7 @@ class OnboardingWizard(QWizard):
             "💡 <b>Pestaña «Market»</b> — análisis de mercado con IA (Gemini 2.5 Pro por defecto).<br>"
             "Requiere <b>OPENROUTER_API_KEY</b> (gratis crearla en "
             "<a href='https://openrouter.ai/keys' style='color:#93c5fd;'>openrouter.ai/keys</a>). "
-            "Sin esa key la pestaña queda inactiva — el resto de ThemeForge funciona igual.</div>"
+            "Sin esa key la pestaña queda inactiva — el resto de Pcreative Studio funciona igual.</div>"
         )
         market_hint.setOpenExternalLinks(True)
         market_hint.setWordWrap(True)
@@ -188,7 +188,7 @@ class OnboardingWizard(QWizard):
             "Configuración guardada.\n\n"
             "Puedes volver a abrir este asistente o ajustar credenciales y "
             "dependencias en cualquier momento desde la pestaña <b>Settings</b>.\n\n"
-            "Pulsa «Finalizar» para entrar en ThemeForge."
+            "Pulsa «Finalizar» para entrar en Pcreative Studio."
         )
         lbl.setTextFormat(Qt.TextFormat.RichText)
         lbl.setWordWrap(True)

@@ -1,5 +1,5 @@
 """
-push_service.py — Notificaciones push (FCM HTTP v1) para ThemeForge móvil.
+push_service.py — Notificaciones push (FCM HTTP v1) para Pcreative Studio móvil.
 
 Avisa al teléfono ("build terminado", "lead caliente"…) vía Firebase Cloud
 Messaging. El cliente Capacitor registra su token con POST /push/register; el

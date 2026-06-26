@@ -13,7 +13,7 @@ dialog) are reused from `operator_panel.py`. Tabs not yet implemented show a
 later phases drop functionality in without restructuring.
 
 Hermes is **fully optional** — if it isn't installed the tab degrades to an
-"install Hermes" hint and the rest of ThemeForge works exactly the same.
+"install Hermes" hint and the rest of Pcreative Studio works exactly the same.
 """
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ from operator_panel import (
 
 HERMES_HOME = Path.home() / ".hermes"
 SKILLS_DIR = HERMES_HOME / "skills"          # raíz de skills (categorías dentro)
-TF_SKILLS_DIR = SKILLS_DIR / "themeforge"    # skills creadas desde ThemeForge
+TF_SKILLS_DIR = SKILLS_DIR / "themeforge"    # skills creadas desde Pcreative Studio
 MEMORIES_DIR = HERMES_HOME / "memories"
 CRON_JOBS = HERMES_HOME / "cron" / "jobs.json"
 
@@ -472,7 +472,7 @@ class MissionTab(QWidget):
             info = QLabel(
                 "ℹ️ <b>Hermes no activado</b> (opcional). Instálalo desde "
                 "Settings → 🔧 Setup dependencies para habilitar las misiones "
-                "autónomas. El resto de ThemeForge funciona igual.")
+                "autónomas. El resto de Pcreative Studio funciona igual.")
             info.setTextFormat(Qt.TextFormat.RichText)
             info.setStyleSheet("color:#7aa2f7; background:#1a1a22; "
                                "padding:8px; border-radius:6px;")
@@ -487,7 +487,7 @@ class MissionTab(QWidget):
         self.brief.setMaximumHeight(90)
         root.addWidget(self.brief)
 
-        # Stack: TODOS los de ThemeForge (Hermes los detecta vía el MCP, aquí
+        # Stack: TODOS los de Pcreative Studio (Hermes los detecta vía el MCP, aquí
         # el usuario puede fijar uno o dejar que Hermes elija).
         row_stack = QHBoxLayout()
         row_stack.addWidget(QLabel("Stack:"))
@@ -628,7 +628,7 @@ class MissionTab(QWidget):
                     "browser smoke test of the multipage nav. "
                     if self.cb_visualqa.isChecked() else "")
         return (
-            f"Run a ThemeForge Operator mission. Build agent (provider): {prov}. "
+            f"Run a Pcreative Studio Operator mission. Build agent (provider): {prov}. "
             f"Number of variants: {n}. {stack_line}Mission brief: {brief}\n\n"
             "Follow the themeforge-operator skill (web/UX-UI specialized). " + research +
             "Plan a MULTIPAGE web template with a DISTINCT UI/UX Pro Max style+palette "
@@ -673,7 +673,7 @@ class MissionTab(QWidget):
             lambda _e: self._append("✗ no se pudo ejecutar hermes."))
         args = ["chat", "-q", self._build_prompt(), "-s", self.SKILL]
         # Toolsets extra según los toggles (web/browser research, imágenes, visión).
-        # Imágenes van por la tool MCP de ThemeForge (Runware), no por el toolset
+        # Imágenes van por la tool MCP de Pcreative Studio (Runware), no por el toolset
         # image_gen del Portal de Hermes.
         tsets = ["terminal", "delegation"]
         if self.cb_research.isChecked() or self.cb_visualqa.isChecked():
@@ -721,7 +721,7 @@ class MissionTab(QWidget):
                               and not p.name.startswith(".")]
                         if ps:
                             proj = max(ps, key=lambda p: p.stat().st_mtime).name
-                    msg = (f"✅ ThemeForge: misión terminada (exit {code})."
+                    msg = (f"✅ Pcreative Studio: misión terminada (exit {code})."
                            + (f" Proyecto: {proj}." if proj else ""))
                     rc, out = run_hermes(["send", "--to", target, msg], timeout=30)
                     self._append(f"🔔 Aviso a «{target}»: "
@@ -1249,7 +1249,7 @@ class SkillPackDialog(QDialog):
 # ───────────────────────── 🤖 Agentes (skills) ──────────────────────────
 class AgentsTab(QWidget):
     """Galería de skills/agentes de Hermes. Lista las instaladas en
-    `~/.hermes/skills/`, resalta las de ThemeForge, y permite buscar/instalar
+    `~/.hermes/skills/`, resalta las de Pcreative Studio, y permite buscar/instalar
     del registro (`hermes skills search/install/inspect`)."""
 
     def __init__(self, parent=None):
@@ -1264,7 +1264,7 @@ class AgentsTab(QWidget):
         bar.addWidget(title)
         self.cb_webonly = QCheckBox("Solo web/diseño")
         self.cb_webonly.setChecked(True)
-        self.cb_webonly.setToolTip("Muestra solo los agentes de ThemeForge "
+        self.cb_webonly.setToolTip("Muestra solo los agentes de Pcreative Studio "
                                    "(web/UX-UI), no toda la librería de Hermes.")
         self.cb_webonly.stateChanged.connect(lambda _s: self.refresh())
         bar.addWidget(self.cb_webonly)
@@ -1278,7 +1278,7 @@ class AgentsTab(QWidget):
         self.btn_search.clicked.connect(self._do_search)
         bar.addWidget(self.btn_search)
         self.btn_seed = QPushButton("🌱 Sembrar agentes web")
-        self.btn_seed.setToolTip("(Re)instala el pack de agentes web/UX-UI de ThemeForge.")
+        self.btn_seed.setToolTip("(Re)instala el pack de agentes web/UX-UI de Pcreative Studio.")
         self.btn_seed.clicked.connect(self._seed)
         bar.addWidget(self.btn_seed)
         self.btn_pack = QPushButton("📦 Pack web")
@@ -1365,7 +1365,7 @@ class AgentsTab(QWidget):
         skills = self._scan()
         webonly = self.cb_webonly.isChecked()
         shown = [s for s in skills if s["tf"]] if webonly else skills
-        # ThemeForge primero (⭐), luego el resto.
+        # Pcreative Studio primero (⭐), luego el resto.
         shown = sorted(shown, key=lambda s: (not s["tf"], s["name"]))
         for s in shown:
             label = f"{'⭐ ' if s['tf'] else ''}{s['name']}  ·  {s['category']}"
@@ -1376,12 +1376,12 @@ class AgentsTab(QWidget):
         tf = sum(1 for s in skills if s["tf"])
         if webonly:
             self.status.setText(
-                f"{len(shown)} agente(s) web/diseño de ThemeForge ⭐  "
+                f"{len(shown)} agente(s) web/diseño de Pcreative Studio ⭐  "
                 f"· desmarca «Solo web/diseño» para ver las {len(skills)} skills de Hermes."
                 if shown else "No hay agentes web — pulsa 🌱 Sembrar agentes web.")
         else:
             self.status.setText(f"{len(skills)} skill(s) instalada(s) · {tf} de "
-                                "ThemeForge ⭐")
+                                "Pcreative Studio ⭐")
         if not self.list.currentItem() and self.list.count():
             self.list.setCurrentRow(0)
 
@@ -1589,7 +1589,7 @@ class CreateAgentTab(QWidget):
     def _fill_template(self):
         name = (self.in_name.text().strip() or "mi-agente").lower().replace(" ", "-")
         stacks = self.in_stacks.text().strip() or "—"
-        desc = self.in_desc.text().strip() or "Agente especializado de ThemeForge."
+        desc = self.in_desc.text().strip() or "Agente especializado de Pcreative Studio."
         tags = ", ".join(t.strip() for t in self.in_stacks.text().split(",") if t.strip())
         self.editor.setPlainText(_SKILL_TEMPLATE.format(
             name=name, desc=desc, title=name.replace("-", " ").title(),
@@ -1607,7 +1607,7 @@ class CreateAgentTab(QWidget):
             return
         stacks = self.in_stacks.text().strip()
         prompt = (
-            "Write a Hermes SKILL.md for a ThemeForge specialized agent. Output ONLY "
+            "Write a Hermes SKILL.md for a Pcreative Studio specialized agent. Output ONLY "
             "the file content (YAML frontmatter + markdown), no commentary. "
             f"name: {name}. category: themeforge. Base stacks: {stacks or 'any web'}. "
             f"Specialty: {desc}. Include sections: When to use, Procedure, Pitfalls, "
@@ -2524,10 +2524,10 @@ class AdvancedTab(QWidget):
         pl.addLayout(prow)
         root.addWidget(pbox)
 
-        # ── Perfil + bundle ThemeForge ──
+        # ── Perfil + bundle Pcreative Studio ──
         prbox = QFrame(); prbox.setFrameShape(QFrame.Shape.StyledPanel)
         prl = QVBoxLayout(prbox)
-        prl.addWidget(QLabel("<b>👤 Perfil + bundle ThemeForge</b>"))
+        prl.addWidget(QLabel("<b>👤 Perfil + bundle Pcreative Studio</b>"))
         prl.addWidget(QLabel("Perfil Hermes aislado (config/skills/memoria propias) y "
                             "un bundle <code>/themeforge</code> que agrupa los agentes web."))
         prow2 = QHBoxLayout()

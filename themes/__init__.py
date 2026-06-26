@@ -1,4 +1,4 @@
-"""ThemeForge themes package — UI theming for the app itself.
+"""Pcreative Studio themes package — UI theming for the app itself.
 
 Public API:
 

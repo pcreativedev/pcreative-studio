@@ -1,6 +1,6 @@
-# E-commerce stacks in ThemeForge
+# E-commerce stacks in Pcreative Studio
 
-ThemeForge ships **16 e-commerce stacks** under a single "E-commerce"
+Pcreative Studio ships **16 e-commerce stacks** under a single "E-commerce"
 category in the stack picker. They cover the full spectrum from
 SaaS-themed (Shopify, BigCommerce) to self-hosted PHP frameworks
 (Magento, PrestaShop, OpenCart, Sylius) and headless TypeScript backends
@@ -247,7 +247,7 @@ to a typed commerce MVP.
 **Licence:** MIT.
 
 Refer to the upstream [Medusa docs](https://docs.medusajs.com/) for the
-runtime commands. ThemeForge scaffolds the standard structure and wires
+runtime commands. Pcreative Studio scaffolds the standard structure and wires
 the dev preview on port 9000 (backend) + 8000 (storefront).
 
 ## 6. PrestaShop child theme (`prestashop-theme`)
@@ -453,7 +453,7 @@ top is yours under the licence of your choice.
 4. Writes a `CLAUDE.md` blueprint with the security, payments and AI
    guidance for the agent: multi-gateway checkout (incl. high-risk
    providers), pgvector-backed semantic product search, and the
-   pcreative licensing hooks shared by the other ThemeForge stacks.
+   pcreative licensing hooks shared by the other Pcreative Studio stacks.
 5. Writes `README-FORGECOMMERCE.md` with the run workflow.
 
 ### Run

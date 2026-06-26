@@ -1,6 +1,6 @@
-; ThemeForge — instalador profesional para Windows (Inno Setup 6).
+; Pcreative Studio — instalador profesional para Windows (Inno Setup 6).
 ;
-; Genera un único Setup .exe que instala ThemeForge "como cualquier app
+; Genera un único Setup .exe que instala Pcreative Studio "como cualquier app
 ; de Windows": carpeta en Program Files, entrada en Agregar/quitar
 ; programas (con icono, editor y URLs), accesos directos en el menú
 ; Inicio (+ escritorio opcional), registro App Paths (para lanzarla desde
@@ -16,10 +16,10 @@
   #define AppVersion "0.0.0"
 #endif
 
-#define MyAppName      "ThemeForge"
+#define MyAppName      "Pcreative Studio"
 #define MyAppPublisher "pcreativedev"
 #define MyAppURL       "https://github.com/pcreativedev/themeforge"
-#define MyAppExeName   "ThemeForge.exe"
+#define MyAppExeName   "Pcreative Studio.exe"
 
 [Setup]
 ; AppId único e inmutable — identifica la app para upgrades/uninstall.
@@ -46,7 +46,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 
 ; ── Salida del instalador ────────────────────────────────────────────
 OutputDir=..\..\dist\installer
-OutputBaseFilename=ThemeForge-Setup-{#AppVersion}
+OutputBaseFilename=Pcreative Studio-Setup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -86,7 +86,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; Bundle del output PyInstaller --onedir (incluye Qt, vendor/node+git,
 ; terminal/, assets). Inno recurre subdirs y crea los vacíos.
-Source: "..\..\dist\ThemeForge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\Pcreative Studio\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; Menú Inicio

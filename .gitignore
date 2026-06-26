@@ -44,7 +44,7 @@ icon.iconset/
 assets/themeforge.icns
 # AppImage build outputs
 *.AppImage
-ThemeForge.AppDir/
+Pcreative Studio.AppDir/
 appimagetool-*.AppImage
 pkgroot/
 # .deb / .rpm outputs (built locally)
@@ -90,7 +90,7 @@ Thumbs.db
 *.swo
 *~
 
-# ─── Temporales del propio ThemeForge ──────────────────────────────
+# ─── Temporales del propio Pcreative Studio ──────────────────────────────
 *.tmp
 *.bak
 tmp/

@@ -78,10 +78,10 @@ def _licensing_github_org() -> str:
 BUILDER_DIR = Path(__file__).resolve().parent
 # El servidor de terminal (xterm.js + node-pty) vive en `terminal/`. node-pty
 # es un módulo NATIVO (binario por OS), así que `terminal/node_modules` debe
-# estar compilado para el OS actual. Override con THEMEFORGE_TERMINAL_DIR para
+# estar compilado para el OS actual. Override con PCREATIVE STUDIO_TERMINAL_DIR para
 # apuntar a una copia con los binarios correctos (p.ej. al correr desde un
 # shared folder cuyo node_modules es de otro OS).
-TERMINAL_DIR = Path(os.environ.get("THEMEFORGE_TERMINAL_DIR") or (BUILDER_DIR / "terminal"))
+TERMINAL_DIR = Path(os.environ.get("PCREATIVE STUDIO_TERMINAL_DIR") or (BUILDER_DIR / "terminal"))
 
 
 class _TermClipboard(QObject):
@@ -195,7 +195,7 @@ class ProjectWindow(QWidget):
         self._build_ui()
         self._update_status()
         self._start_terminal_server()
-        self.setWindowTitle(f"ThemeForge — {self.project_path.name}")
+        self.setWindowTitle(f"Pcreative Studio — {self.project_path.name}")
         self.resize(1500, 900)
 
         # WordPress (Docker) ya provisionado → cargar el preview de entrada.
@@ -390,7 +390,7 @@ class ProjectWindow(QWidget):
             self.btn_operator.setVisible(operator_available())
         except Exception:
             self.btn_operator.setVisible(False)
-        # Abrir/crear MÁS proyectos sin cerrar este (ThemeForge soporta varias
+        # Abrir/crear MÁS proyectos sin cerrar este (Pcreative Studio soporta varias
         # ProjectWindow a la vez).
         self.btn_new_project = QPushButton("➕ Nuevo")
         self.btn_new_project.setToolTip("Crear otro proyecto (abre 'New project' "
@@ -551,7 +551,7 @@ class ProjectWindow(QWidget):
         # una shell interactiva. Si no, shell bash plana.
         if self._initial_cmd:
             wrapper = (
-                f"clear; echo '─── ThemeForge: ejecutando setup ───'; "
+                f"clear; echo '─── Pcreative Studio: ejecutando setup ───'; "
                 f"bash {self._initial_cmd}; "
                 f"echo ''; echo '─── setup terminado. Shell lista. ───'; "
                 f"exec bash -i"
@@ -642,7 +642,7 @@ class ProjectWindow(QWidget):
                 self.pixel_view.setHtml(
                     "<body style='background:#0c0c0d;color:#888;font:13px monospace;padding:2em'>"
                     "<h2 style='color:#fff'>🎮 Pixel Office not installed</h2>"
-                    "<p>Enable from ThemeForge Settings → 🎮 Office → Install.</p>"
+                    "<p>Enable from Pcreative Studio Settings → 🎮 Office → Install.</p>"
                     "<p style='color:#555'>Upstream MIT: "
                     "<a style='color:#62b4ff' href='https://github.com/neomatrix25/pixel-office-openclaw'>"
                     "neomatrix25/pixel-office-openclaw</a></p>"
@@ -716,7 +716,7 @@ class ProjectWindow(QWidget):
 
         OJO: NO cuenta skills genéricas que trae un fork (p. ej. las de Medusa
         —reviewing-prs, writing-docs…— en `.claude/skills/`), solo las que
-        ThemeForge instala: autoskills escribe en `.agents/skills/` y crea
+        Pcreative Studio instala: autoskills escribe en `.agents/skills/` y crea
         SYMLINKS en `.claude/skills/`; uipro-cli crea una carpeta `ui-ux-pro-max`.
         Detectar cualquier `.claude/skills/*` daba un falso positivo y hacía que
         el prompt afirmara skills que el agente luego no encontraba.
@@ -785,7 +785,7 @@ class ProjectWindow(QWidget):
             )
         name = self.project_path.name
         return (
-            f"Acabas de abrir el proyecto «{name}» desde ThemeForge. "
+            f"Acabas de abrir el proyecto «{name}» desde Pcreative Studio. "
             f"Lee COMPLETAMENTE {ctx_file} y todo lo que haya en context/ para "
             f"entender el estado actual del proyecto (qué es, stack, qué se ha "
             f"hecho ya).{skills_line}{ui_line}\n\n"
@@ -1021,7 +1021,7 @@ class ProjectWindow(QWidget):
             if not focus_new_project():
                 QMessageBox.information(
                     self, "Nuevo proyecto",
-                    "Abre la ventana principal de ThemeForge y usa la pestaña "
+                    "Abre la ventana principal de Pcreative Studio y usa la pestaña "
                     "'New project'. Este proyecto seguirá abierto.")
         except Exception as e:
             QMessageBox.warning(self, "Nuevo proyecto", f"Error: {e}")
@@ -1611,7 +1611,7 @@ class ProjectWindow(QWidget):
             if not has_git:
                 # Primer add/commit (ahora ya con .gitignore bueno).
                 subprocess.run(["git", "add", "-A"], cwd=cwd, check=True)
-                subprocess.run(["git", "commit", "-m", "init: scaffold por ThemeForge", "-q"],
+                subprocess.run(["git", "commit", "-m", "init: scaffold por Pcreative Studio", "-q"],
                                cwd=cwd, check=False)
 
             if action == "create":
@@ -1654,7 +1654,7 @@ class ProjectWindow(QWidget):
     # cachés de IDE / OS. Si alguna estaba previamente trackeada, se
     # destrackea con `git rm --cached` antes del push.
     _GITIGNORE_DEFAULTS = [
-        "# Added by ThemeForge",
+        "# Added by Pcreative Studio",
         "# Node",
         "node_modules/",
         ".next/",
@@ -1732,7 +1732,7 @@ class ProjectWindow(QWidget):
         if status.stdout.strip():
             subprocess.run(["git", "add", ".gitignore"], cwd=cwd, capture_output=True)
             r = subprocess.run(
-                ["git", "commit", "-am", "chore: ThemeForge .gitignore defaults", "-q"],
+                ["git", "commit", "-am", "chore: Pcreative Studio .gitignore defaults", "-q"],
                 cwd=cwd, capture_output=True, text=True,
             )
             if r.returncode == 0:
@@ -2017,7 +2017,7 @@ class ProjectWindow(QWidget):
         self.preview_proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         # Envolvemos en `bash -lc` para garantizar PATH y entorno completos
         # (npm, npx, expo, php, etc. pueden vivir en ~/.local/bin o
-        # /usr/local/bin que QProcess no hereda si ThemeForge se abre
+        # /usr/local/bin que QProcess no hereda si Pcreative Studio se abre
         # desde un launcher gráfico).
         if env_extra:
             env = QProcessEnvironment.systemEnvironment()

@@ -1,6 +1,6 @@
 name: Build Windows installer
 
-# Builds a Windows .exe installer of ThemeForge using PyInstaller +
+# Builds a Windows .exe installer of Pcreative Studio using PyInstaller +
 # Inno Setup on a GitHub-hosted windows-latest runner. The installer
 # is uploaded as a workflow artifact; when triggered by a `v*` tag,
 # it is also attached to a GitHub Release.
@@ -64,7 +64,7 @@ jobs:
           Move-Item "vendor\node-$node-win-x64" "vendor\node"
 
           # PortableGit (NO MinGit): incluye bash + entorno unix (ls, cat,
-          # grep…). ThemeForge genera scripts bash y Claude Code usa git-bash
+          # grep…). Pcreative Studio genera scripts bash y Claude Code usa git-bash
           # internamente en Windows, así que bash es obligatorio.
           $git = "2.47.1"
           Invoke-WebRequest "https://github.com/git-for-windows/git/releases/download/v$git.windows.1/PortableGit-$git-64-bit.7z.exe" -OutFile portablegit.exe -UseBasicParsing
@@ -100,7 +100,7 @@ jobs:
         run: |
           # --noconsole: hide the cmd window on launch (GUI app)
           # --add-data uses `;` separator on Windows (vs `:` on Unix)
-          # --onedir (default): produces dist/ThemeForge/ with .exe + DLLs.
+          # --onedir (default): produces dist/Pcreative Studio/ with .exe + DLLs.
           #   --onefile would bundle everything into one .exe but triggers
           #   more antivirus false positives and runs slower on first launch.
           # --collect-submodules PyQt6: pull all Qt plugins (WebEngine etc.)
@@ -115,7 +115,7 @@ jobs:
           pyinstaller --noconfirm --clean `
             --noconsole `
             --python-option "X utf8" `
-            --name ThemeForge `
+            --name Pcreative Studio `
             --icon assets/themeforge.ico `
             --add-data "assets;assets" `
             --add-data "context;context" `
@@ -154,7 +154,7 @@ jobs:
       - name: Upload installer as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ThemeForge-Windows-Installer
+          name: Pcreative Studio-Windows-Installer
           path: dist/installer/*.exe
           retention-days: 30
 

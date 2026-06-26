@@ -9,14 +9,14 @@
  *
  * Bootstrap (functions.php), después de class-license.php:
  *
- *   $license = new \ThemeForge\Licensing\License('__SLUG__');
+ *   $license = new \Pcreative Studio\Licensing\License('__SLUG__');
  *   $theme   = wp_get_theme(get_template());
- *   (new \ThemeForge\Licensing\Updater('__SLUG__', $theme->get('Version'), $license))->register();
+ *   (new \Pcreative Studio\Licensing\Updater('__SLUG__', $theme->get('Version'), $license))->register();
  *
  * Genérico: el host del API se inyecta de licensing.json. Cada usuario, su backend.
  */
 
-namespace ThemeForge\Licensing;
+namespace Pcreative Studio\Licensing;
 
 defined('ABSPATH') || exit;
 

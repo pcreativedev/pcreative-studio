@@ -1,9 +1,9 @@
-# Contributing to ThemeForge
+# Contributing to Pcreative Studio
 
 Thanks for considering a contribution. This guide describes how to
 report issues, propose changes, and submit pull requests.
 
-ThemeForge is a Python/PyQt6 desktop GUI plus a small embedded
+Pcreative Studio is a Python/PyQt6 desktop GUI plus a small embedded
 Node terminal server. The codebase is intentionally small and
 unopinionated about frameworks — each stack scaffold and skill list
 lives in `stacks.py`.
@@ -24,11 +24,11 @@ intent, focus on the technical problem.
    - Node version (`node -v`)
    - The mode (scratch / recreate / adopt / existing) and the stack.
    - Steps to reproduce, expected, actual.
-   - Relevant log output. ThemeForge prints to stderr; run it from
+   - Relevant log output. Pcreative Studio prints to stderr; run it from
      a terminal: `python3 themeforge.py` so you capture tracebacks.
 
 Sensitive data — API keys, license tokens — should NEVER be pasted
-into an issue. ThemeForge's stderr redactor strips known key patterns
+into an issue. Pcreative Studio's stderr redactor strips known key patterns
 from the embedded log panel, but if you copy from a terminal session
 double-check before sharing.
 
@@ -143,13 +143,13 @@ not *what*.
 - Renaming or deprecating supported stacks.
 - Adding stack-specific business logic that doesn't belong in a
   scaffolder. Stack-specific behaviour goes in templates the agent
-  reads, not in ThemeForge core.
+  reads, not in Pcreative Studio core.
 - Direct integration with cloud licensing providers (Lemon Squeezy,
   Polar, Paddle…). The licensing scaffold ships a schema, not adapters.
 
 ### Tests
 
-ThemeForge has minimal automated tests right now (smoke tests on
+Pcreative Studio has minimal automated tests right now (smoke tests on
 setup-script generation only). For each PR, please:
 
 1. Run `python3 -m py_compile *.py` to catch syntax errors.

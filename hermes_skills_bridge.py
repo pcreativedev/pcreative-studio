@@ -5,7 +5,7 @@ y symlinks en `<root>/.claude/skills/`; `uipro-cli` instala la skill *UI/UX Pro
 Max*. **Claude Code** las descubre solo (escanea `.claude/skills/`). **Hermes**,
 en cambio, NO escanea `.claude/skills/`: auto-carga `AGENTS.md` / `.hermes.md` /
 `CLAUDE.md` del workdir y las skills globales de `~/.hermes/skills/`. Resultado:
-Hermes no estaba usando las skills que ThemeForge instala con autoskills/uipro.
+Hermes no estaba usando las skills que Pcreative Studio instala con autoskills/uipro.
 
 Este módulo cierra el hueco SIN duplicar las skills: escribe un **bloque
 gestionado** en `AGENTS.md` (que Hermes sí auto-carga) que lista cada skill
@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-START = "<!-- TF-HERMES-SKILLS:START (gestionado por ThemeForge — no editar) -->"
+START = "<!-- TF-HERMES-SKILLS:START (gestionado por Pcreative Studio — no editar) -->"
 END = "<!-- TF-HERMES-SKILLS:END -->"
 
 # Dónde buscan las skills instaladas (relativo a cada root/sub-app).
@@ -91,10 +91,10 @@ def _block(skills: list[dict]) -> str:
         START,
         "## 🧩 Skills instaladas (autoskills + UI/UX Pro Max)",
         "",
-        "ThemeForge ha instalado estas skills (formato agentskills.io) para este "
+        "Pcreative Studio ha instalado estas skills (formato agentskills.io) para este "
         "proyecto. **Antes de construir, LEE cada `SKILL.md` con `read_file` y "
         "SIGUE sus convenciones** (stack, accesibilidad, SEO, diseño UI/UX). No "
-        "son opcionales: son la capa de calidad de ThemeForge.",
+        "son opcionales: son la capa de calidad de Pcreative Studio.",
         "",
     ]
     if skills:

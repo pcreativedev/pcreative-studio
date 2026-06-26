@@ -1,7 +1,7 @@
 {
   "name": "themeforge-terminal",
   "version": "0.1.0",
-  "description": "Servidor local xterm.js + node-pty para ThemeForge",
+  "description": "Servidor local xterm.js + node-pty para Pcreative Studio",
   "main": "server.js",
   "dependencies": {
     "ws": "^8.18.0",
