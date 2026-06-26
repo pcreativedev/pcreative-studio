@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/pcreative-studio-banner-1600.png" alt="Pcreative Studio" width="800">
+    <img src="assets/pcreative-studio.png" alt="Pcreative Studio" width="420">
 </p>
 
 <p align="center">

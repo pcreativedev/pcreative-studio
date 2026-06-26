@@ -148,7 +148,7 @@ jobs:
           # Extract the version from the git tag (v1.3.0 → 1.3.0), or use 0.0.0 for manual runs
           $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { '0.0.0' }
           Write-Host "Building installer for version $version"
-          & $iscc /Q "/DAppVersion=$version" packaging/windows/pcreative_studio.iss
+          & $iscc /Q "/DAppVersion=$version" packaging/windows/pcreative-studio.iss
           Get-ChildItem dist/installer/
 
       - name: Upload installer as workflow artifact
