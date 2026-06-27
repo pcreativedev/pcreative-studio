@@ -19,7 +19,7 @@
 #define MyAppName      "Pcreative Studio"
 #define MyAppPublisher "pcreativedev"
 #define MyAppURL       "https://github.com/pcreativedev/pcreative-studio"
-#define MyAppExeName   "Pcreative Studio.exe"
+#define MyAppExeName   "PcreativeStudio.exe"
 
 [Setup]
 ; AppId único e inmutable — identifica la app para upgrades/uninstall.
@@ -46,7 +46,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 
 ; ── Salida del instalador ────────────────────────────────────────────
 OutputDir=..\..\dist\installer
-OutputBaseFilename=Pcreative Studio-Setup-{#AppVersion}
+OutputBaseFilename=PcreativeStudio-Setup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -86,11 +86,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; Bundle del output PyInstaller --onedir (incluye Qt, vendor/node+git,
 ; terminal/, assets). Inno recurre subdirs y crea los vacíos.
-Source: "..\..\dist\Pcreative Studio\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\PcreativeStudio\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; Menú Inicio
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Comment: "Forja plantillas web con agentes de IA"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Comment: "Crea plantillas web con agentes de IA"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 ; Escritorio (opcional)
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
