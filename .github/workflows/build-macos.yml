@@ -1,6 +1,6 @@
 name: Build macOS .app
 
-# Builds a macOS .app bundle of Pcreative Studio using PyInstaller on a
+# Builds a macOS .app bundle of PcreativeStudio using PyInstaller on a
 # GitHub-hosted macos-latest runner. The .app is uploaded as a
 # workflow artifact; when triggered by a `v*` tag, it's also attached
 # to a GitHub Release.
@@ -76,7 +76,7 @@ jobs:
           # QtMultimedia backend (AVFoundation) needed for the video splash.
           pyinstaller --noconfirm --clean \
             --windowed \
-            --name Pcreative Studio \
+            --name PcreativeStudio \
             --icon assets/pcreative-studio.icns \
             --osx-bundle-identifier dev.pcreative.pcreative-studio \
             --add-data "assets:assets" \
@@ -93,20 +93,20 @@ jobs:
       - name: Zip the .app for distribution
         run: |
           cd dist
-          zip -r --symlinks Pcreative Studio-macOS.zip Pcreative Studio.app
-          ls -la Pcreative Studio-macOS.zip
+          zip -r --symlinks PcreativeStudio-macOS.zip PcreativeStudio.app
+          ls -la PcreativeStudio-macOS.zip
 
       - name: Upload .app as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Pcreative Studio-macOS
-          path: dist/Pcreative Studio-macOS.zip
+          name: PcreativeStudio-macOS
+          path: dist/PcreativeStudio-macOS.zip
           retention-days: 30
 
       - name: Attach to GitHub Release (only on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/Pcreative Studio-macOS.zip
+          files: dist/PcreativeStudio-macOS.zip
           draft: true
           generate_release_notes: true

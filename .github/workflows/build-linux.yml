@@ -1,7 +1,7 @@
 name: Build Linux
 
 # Builds Linux distribution packages from a single PyInstaller bundle:
-#   - Pcreative Studio-x86_64.AppImage  — universal, runs on most distros
+#   - PcreativeStudio-x86_64.AppImage  — universal, runs on most distros
 #   - pcreative_studio_<ver>_amd64.deb  — Debian / Ubuntu
 #   - pcreative-studio-<ver>-1.x86_64.rpm — Fedora / RHEL / openSUSE
 #
@@ -67,7 +67,7 @@ jobs:
           set -e
           pyinstaller --noconfirm --clean \
             --windowed \
-            --name Pcreative Studio \
+            --name PcreativeStudio \
             --icon assets/pcreative-studio-256.png \
             --add-data "assets:assets" \
             --add-data "context:context" \
@@ -82,12 +82,12 @@ jobs:
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
 
-          APPDIR=Pcreative Studio.AppDir
+          APPDIR=PcreativeStudio.AppDir
           rm -rf $APPDIR
           mkdir -p $APPDIR/usr/bin
 
           # Copy the PyInstaller output
-          cp -r dist/Pcreative Studio/* $APPDIR/usr/bin/
+          cp -r dist/PcreativeStudio/* $APPDIR/usr/bin/
 
           # Icon at AppDir root + standard usr/share path
           cp assets/pcreative-studio-256.png $APPDIR/pcreative-studio.png
@@ -101,13 +101,13 @@ jobs:
           Name=Pcreative Studio
           GenericName=Theme Project Builder
           Comment=PyQt6 GUI for scaffolding template projects
-          Exec=Pcreative Studio %F
+          Exec=PcreativeStudio %F
           Icon=pcreative-studio
           Terminal=false
           Categories=Development;IDE;
           Keywords=template;theme;scaffold;ai;claude;codex;
           StartupNotify=true
-          StartupWMClass=Pcreative Studio
+          StartupWMClass=PcreativeStudio
           EOF
           mkdir -p $APPDIR/usr/share/applications
           cp $APPDIR/pcreative-studio.desktop $APPDIR/usr/share/applications/
@@ -116,7 +116,7 @@ jobs:
           cat > $APPDIR/AppRun <<'EOF'
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "$0")")"
-          exec "$HERE/usr/bin/Pcreative Studio" "$@"
+          exec "$HERE/usr/bin/PcreativeStudio" "$@"
           EOF
           chmod +x $APPDIR/AppRun
 
@@ -125,7 +125,7 @@ jobs:
 
           # Build it
           ARCH=x86_64 ./appimagetool-x86_64.AppImage --no-appstream $APPDIR \
-            Pcreative Studio-${{ steps.ver.outputs.version }}-x86_64.AppImage
+            PcreativeStudio-${{ steps.ver.outputs.version }}-x86_64.AppImage
 
       # ──────────────── .deb ────────────────
       - name: Build .deb
@@ -136,11 +136,11 @@ jobs:
           mkdir -p pkgroot/opt/pcreative-studio pkgroot/usr/bin \
                    pkgroot/usr/share/applications \
                    pkgroot/usr/share/icons/hicolor/256x256/apps
-          cp -r dist/Pcreative Studio/* pkgroot/opt/pcreative-studio/
+          cp -r dist/PcreativeStudio/* pkgroot/opt/pcreative-studio/
           # Wrapper in /usr/bin
           cat > pkgroot/usr/bin/pcreative-studio <<'EOF'
           #!/bin/sh
-          exec /opt/pcreative-studio/Pcreative Studio "$@"
+          exec /opt/pcreative-studio/PcreativeStudio "$@"
           EOF
           chmod +x pkgroot/usr/bin/pcreative-studio
           # Icon + .desktop for system menu
@@ -155,7 +155,7 @@ jobs:
           Icon=pcreative-studio
           Terminal=false
           Categories=Development;IDE;
-          StartupWMClass=Pcreative Studio
+          StartupWMClass=PcreativeStudio
           EOF
 
           fpm -s dir -t deb \
@@ -197,9 +197,9 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Pcreative Studio-Linux-${{ steps.ver.outputs.version }}
+          name: PcreativeStudio-Linux-${{ steps.ver.outputs.version }}
           path: |
-            Pcreative Studio-*-x86_64.AppImage
+            PcreativeStudio-*-x86_64.AppImage
             pcreative_studio_*_amd64.deb
             pcreative-studio-*.x86_64.rpm
           retention-days: 30
@@ -209,7 +209,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            Pcreative Studio-*-x86_64.AppImage
+            PcreativeStudio-*-x86_64.AppImage
             pcreative_studio_*_amd64.deb
             pcreative-studio-*.x86_64.rpm
           draft: true

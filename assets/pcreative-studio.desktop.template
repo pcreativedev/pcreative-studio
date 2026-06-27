@@ -12,4 +12,4 @@ Terminal=false
 Categories=Development;IDE;
 Keywords=template;theme;scaffold;ai;claude;codex;
 StartupNotify=true
-StartupWMClass=Pcreative Studio
+StartupWMClass=PcreativeStudio
