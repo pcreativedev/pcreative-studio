@@ -1066,8 +1066,14 @@ def _cached_models(keywords: list[str], limit: int = 25) -> list[str]:
 HERMES_PROVIDERS = [
     {"key": "anthropic", "auth": "api", "label": "Anthropic (Claude) · API key",
      "models": ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
-     "note": "Claude para Hermes requiere API key de Anthropic (no el login de "
-             "Claude Code / Pro-Max)."},
+     "note": "Claude por API key de Anthropic (facturación por uso). Para usar tu "
+             "suscripción Claude Pro/Max sin API key, elige «Claude (Pro/Max) · login»."},
+    {"key": "claude-code", "auth": "oauth", "label": "Claude (Pro/Max) · login", "tos_warn": True,
+     "models": ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+     "note": "Login con tu cuenta de Claude (OAuth, vía Claude Code) — usa tu "
+             "suscripción Pro/Max sin API key. ⚠️ Usar una suscripción de consumo de "
+             "forma automatizada/headless puede chocar con los Términos de Anthropic; "
+             "para producción/equipos usa la API key (Anthropic · API key)."},
     {"key": "openai-codex", "auth": "oauth", "label": "ChatGPT / Codex (OpenAI) · login",
      "models": ["gpt-5.5", "gpt-5.1", "o4"], "tos_warn": True,
      "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key. "
