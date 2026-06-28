@@ -259,14 +259,26 @@ class HermesStatusStrip(QFrame):
         for w in (self.lbl_hermes, self.lbl_mcp, self.lbl_model):
             w.setTextFormat(Qt.TextFormat.RichText)
             lay.addWidget(w)
+        # Botón de auto-actualización: oculto salvo que haya versión nueva de Hermes.
+        self.btn_update = QPushButton("⚕ Actualizar Hermes")
+        self.btn_update.setVisible(False)
+        self.btn_update.setStyleSheet(
+            "QPushButton { background:#2a2410; color:#e0a000; border:1px solid "
+            "#e0a000; border-radius:6px; padding:4px 10px; }")
+        self.btn_update.setToolTip("Hay una versión nueva de Hermes — clic para "
+                                   "actualizar (hermes update).")
+        self.btn_update.clicked.connect(self._do_update)
+        lay.addWidget(self.btn_update)
         lay.addStretch()
         self.btn_refresh = QPushButton("↻")
         self.btn_refresh.setFixedWidth(30)
-        self.btn_refresh.setToolTip("Refrescar estado")
-        self.btn_refresh.clicked.connect(self.refresh)
+        self.btn_refresh.setToolTip("Refrescar estado y buscar actualizaciones")
+        self.btn_refresh.clicked.connect(self._on_refresh_clicked)
         lay.addWidget(self.btn_refresh)
+        self._upd_proc = None
         self.refresh()
         self.set_powered(False)
+        self._check_update()  # comprobación en segundo plano al abrir
 
     def set_powered(self, on: bool):
         """Refleja el estado encendido/apagado en el botón maestro."""
@@ -307,6 +319,78 @@ class HermesStatusStrip(QFrame):
                 self.lbl_model.setText(self._chip(False, label + "  (sin login/key)"))
         else:
             self.lbl_model.setText(self._chip(None, "modelo sin configurar"))
+
+    def _on_refresh_clicked(self):
+        self.refresh()
+        self._check_update()
+
+    def _check_update(self):
+        """Comprueba en segundo plano si hay versión nueva de Hermes
+        (`hermes update --check`, hace un fetch de git — async, no bloquea)."""
+        exe = find_hermes()
+        if not exe:
+            return
+        if self._upd_proc and self._upd_proc.state() != QProcess.ProcessState.NotRunning:
+            return
+        self._upd_proc = QProcess(self)
+        self._upd_proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        self._upd_proc.finished.connect(self._on_check_done)
+        self._upd_proc.errorOccurred.connect(lambda _e: None)
+        self._upd_proc.start(exe, ["update", "--check"])
+
+    def _on_check_done(self, _code, _status):
+        out = ""
+        if self._upd_proc:
+            out = bytes(self._upd_proc.readAllStandardOutput()).decode(errors="replace")
+        if "update available" in out.lower():
+            import re
+            m = re.search(r"(\d+)\s+commits?\s+behind", out, re.I)
+            extra = f" ({m.group(1)} commits)" if m else ""
+            self.btn_update.setText(f"⚕ Actualizar Hermes{extra}")
+            self.btn_update.setVisible(True)
+        else:
+            self.btn_update.setVisible(False)
+
+    def _do_update(self):
+        """Lanza `hermes update --yes` mostrando el progreso en un diálogo."""
+        exe = find_hermes()
+        if not exe:
+            return
+        from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QPlainTextEdit,
+                                     QDialogButtonBox)
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Actualizando Hermes…")
+        dlg.resize(700, 440)
+        v = QVBoxLayout(dlg)
+        log = QPlainTextEdit(); log.setReadOnly(True)
+        log.setStyleSheet("background:#0c0c0d; color:#ddd; "
+                          "font-family:'JetBrains Mono',monospace; font-size:12px;")
+        v.addWidget(log)
+        bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        close_btn = bb.button(QDialogButtonBox.StandardButton.Close)
+        close_btn.setEnabled(False)
+        bb.rejected.connect(dlg.reject)
+        v.addWidget(bb)
+        proc = QProcess(dlg)
+        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.readyReadStandardOutput.connect(
+            lambda: log.appendPlainText(
+                bytes(proc.readAllStandardOutput()).decode(errors="replace").rstrip()))
+
+        def _done(code, _s):
+            log.appendPlainText(f"\n■ Terminado (exit {code}).")
+            close_btn.setEnabled(True)
+            self.btn_update.setVisible(False)
+            self.refresh()
+            self._check_update()
+        proc.finished.connect(_done)
+        log.appendPlainText("$ hermes update --yes\n")
+        self.btn_update.setEnabled(False)
+        proc.start(exe, ["update", "--yes"])
+        dlg.exec()
+        if proc.state() != QProcess.ProcessState.NotRunning:
+            proc.kill()
+        self.btn_update.setEnabled(True)
 
 
 # ───────────────────────── 🚀 Misión ────────────────────────────────────

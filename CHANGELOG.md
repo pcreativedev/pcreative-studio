@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.1] - 2026-06-29
 
+### Added
+
+- **Claude por suscripción (OAuth) como modelo «cerebro» de Hermes.** Nuevo
+  proveedor «Claude (Pro/Max) · login»: usa tu cuenta de Claude vía OAuth, sin
+  API key (antes Claude solo estaba disponible por API key).
+- **Auto-actualización de Hermes.** Al abrir el panel se comprueba si hay una
+  versión nueva del binario; si la hay, aparece «⚕ Actualizar Hermes» y se
+  instala con un clic (mostrando el progreso de `hermes update`).
+
 ### Security
 
 - **Terminal embebido endurecido.** El WebSocket que sirve los terminales/chat
