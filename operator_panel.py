@@ -24,7 +24,8 @@ from PyQt6.QtWidgets import (
 
 OPERATOR_SKILL = "pcreative-studio-operator"
 PROJECTS_DIR = Path.home() / "Proyectos" / "themes"
-TERMINAL_DIR = Path(os.environ.get("PCREATIVE STUDIO_TERMINAL_DIR")
+TERMINAL_DIR = Path(os.environ.get("PCREATIVE_STUDIO_TERMINAL_DIR")
+                    or os.environ.get("THEMEFORGE_TERMINAL_DIR")
                     or (Path(__file__).resolve().parent / "terminal"))
 
 
@@ -39,6 +40,24 @@ def find_hermes() -> str | None:
 def operator_available() -> bool:
     """True si Hermes está instalado → el Operator (opcional) puede usarse."""
     return find_hermes() is not None
+
+
+# ── Lock GLOBAL de misiones ──────────────────────────────────────────────
+# El guard "misión en curso" de cada widget era local; dos pestañas/diálogos
+# podían lanzar misiones autónomas a la vez (cada una corre un agente que toca
+# el FS). Este contador compartido lo impide en toda la app.
+_active_missions = 0
+
+def mission_active() -> bool:
+    return _active_missions > 0
+
+def mission_begin() -> None:
+    global _active_missions
+    _active_missions += 1
+
+def mission_end() -> None:
+    global _active_missions
+    _active_missions = max(0, _active_missions - 1)
 
 
 def _mission_env() -> QProcessEnvironment:
@@ -172,6 +191,7 @@ class HermesTerminal(QWidget):
         super().__init__(parent)
         self._server: QProcess | None = None
         self._port: int | None = None
+        self._token: str = ""
         self._hermes = find_hermes()
         self._cwd = str(PROJECTS_DIR if PROJECTS_DIR.is_dir() else Path.home())
 
@@ -240,19 +260,23 @@ class HermesTerminal(QWidget):
             if line.startswith("PORT="):
                 try:
                     self._port = int(line.split("=", 1)[1])
-                    self._load()
                 except ValueError:
                     pass
+            elif line.startswith("TOKEN="):
+                self._token = line.split("=", 1)[1].strip()
+            if self._port and self._token:
+                self._load()
 
     def _load(self):
         from PyQt6.QtCore import QUrl, QUrlQuery
-        if not (self._web and self._port and self._hermes):
+        if not (self._web and self._port and self._token and self._hermes):
             return
         url = QUrl(f"http://127.0.0.1:{self._port}/")
         q = QUrlQuery()
         q.addQueryItem("cwd", self._cwd)
         q.addQueryItem("cmd", self._hermes)
         q.addQueryItem("args", "\x1f".join(["-s", OPERATOR_SKILL]))
+        q.addQueryItem("token", self._token)
         url.setQuery(q)
         self._web.setUrl(url)
         self.lbl.setText(f"💬 Chat con Hermes · {Path(self._cwd).name}")
@@ -265,6 +289,7 @@ class HermesTerminal(QWidget):
             self._server.kill()
         self._server = None
         self._port = None
+        self._token = ""
         if self._web:
             self._web.setHtml("<body style='background:#0c0c0d;color:#888;"
                               "font:13px monospace;padding:1em'>chat detenido — "
@@ -354,7 +379,7 @@ class OperatorPanel(QWidget):
         ctl.addWidget(self.variants)
         ctl.addWidget(QLabel("Agente:"))
         self.provider = QComboBox()
-        self.provider.addItems(["codex", "opencode", "claude-api", "gemini"])
+        self.provider.addItems(["claude", "codex", "opencode", "gemini", "openrouter", "claude-api"])
         ctl.addWidget(self.provider)
         ctl.addStretch()
         self.btn_launch = QPushButton("🚀 Lanzar misión")
@@ -416,6 +441,10 @@ class OperatorPanel(QWidget):
         if self._proc and self._proc.state() != QProcess.ProcessState.NotRunning:
             QMessageBox.information(self, "Operator", "Ya hay una misión en curso.")
             return
+        if mission_active():
+            QMessageBox.information(self, "Operator",
+                                    "Ya hay una misión en curso en otra pestaña/ventana.")
+            return
 
         self.log.clear()
         self._append(
@@ -435,12 +464,23 @@ class OperatorPanel(QWidget):
         self._proc.setProcessEnvironment(env)
         self._proc.readyReadStandardOutput.connect(self._on_output)
         self._proc.finished.connect(self._on_finished)
-        self._proc.errorOccurred.connect(
-            lambda _e: self._append("✗ no se pudo ejecutar hermes.")
-        )
+        self._proc.errorOccurred.connect(self._on_proc_error)
         # `hermes chat -q` = one-shot no-interactivo con progreso visible.
+        self._counted = True
+        mission_begin()
         self._proc.start(self._hermes, ["chat", "-q", self._build_prompt(),
                                         "-s", self.SKILL])
+
+    def _release_mission(self):
+        if getattr(self, "_counted", False):
+            self._counted = False
+            mission_end()
+
+    def _on_proc_error(self, _e):
+        self._append("✗ no se pudo ejecutar hermes.")
+        self._release_mission()
+        self.btn_launch.setEnabled(True)
+        self.btn_stop.setEnabled(False)
 
     def _on_output(self):
         if not self._proc:
@@ -451,6 +491,7 @@ class OperatorPanel(QWidget):
                 self._append(line)
 
     def _on_finished(self, code: int, _status):
+        self._release_mission()
         self._append(f"\n■ Misión terminada (exit {code}).")
         self.status.setText(f"Terminada (exit {code}).")
         self.btn_launch.setEnabled(True)
@@ -513,7 +554,7 @@ class OperatorMissionDialog(QDialog):
         ctl = QHBoxLayout()
         ctl.addWidget(QLabel("Agente:"))
         self.provider = QComboBox()
-        self.provider.addItems(["codex", "opencode", "claude-api", "gemini"])
+        self.provider.addItems(["claude", "codex", "opencode", "gemini", "openrouter", "claude-api"])
         ctl.addWidget(self.provider)
         ctl.addStretch()
         self.btn_launch = QPushButton("🚀 Lanzar")
@@ -566,6 +607,10 @@ class OperatorMissionDialog(QDialog):
         if self._proc and self._proc.state() != QProcess.ProcessState.NotRunning:
             QMessageBox.information(self, "Operator", "Ya hay una misión en curso.")
             return
+        if mission_active():
+            QMessageBox.information(self, "Operator",
+                                    "Ya hay una misión en curso en otra pestaña/ventana.")
+            return
         self.log.clear()
         self._append(f"▶ Automatizando '{self._name}' con el Operator "
                      f"(agente {self.provider.currentText()})…\n")
@@ -576,10 +621,22 @@ class OperatorMissionDialog(QDialog):
         self._proc.setProcessEnvironment(_mission_env())
         self._proc.readyReadStandardOutput.connect(self._on_output)
         self._proc.finished.connect(self._on_finished)
-        self._proc.errorOccurred.connect(
-            lambda _e: self._append("✗ no se pudo ejecutar hermes."))
+        self._proc.errorOccurred.connect(self._on_proc_error)
+        self._counted = True
+        mission_begin()
         self._proc.start(self._hermes, ["chat", "-q", self._brief(),
                                         "-s", OPERATOR_SKILL])
+
+    def _release_mission(self):
+        if getattr(self, "_counted", False):
+            self._counted = False
+            mission_end()
+
+    def _on_proc_error(self, _e):
+        self._append("✗ no se pudo ejecutar hermes.")
+        self._release_mission()
+        self.btn_launch.setEnabled(True)
+        self.btn_stop.setEnabled(False)
 
     def _on_output(self):
         if not self._proc:
@@ -590,6 +647,7 @@ class OperatorMissionDialog(QDialog):
                 self._append(line)
 
     def _on_finished(self, code: int, _status):
+        self._release_mission()
         self._append(f"\n■ Misión terminada (exit {code}).")
         self.btn_launch.setEnabled(True)
         self.btn_stop.setEnabled(False)

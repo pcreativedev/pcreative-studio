@@ -5,6 +5,49 @@ All notable changes to Pcreative Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-06-29
+
+### Security
+
+- **Terminal embebido endurecido.** El WebSocket que sirve los terminales/chat
+  ya no acepta conexiones sin autenticar: token compartido por petición +
+  verificación de `Origin` + allowlist del comando inicial. Cierra una vía de
+  ejecución de comandos local desde el navegador.
+- **Las API keys ya no viajan por la línea de comandos.** `hermes auth add`
+  recibe la clave por *stdin*, así no queda visible en `ps`/`/proc`.
+- **Aviso de ToS en proveedores OAuth.** Usar una suscripción de consumo
+  (p. ej. ChatGPT/Codex por login) de forma automatizada puede chocar con sus
+  Términos; ahora se avisa claramente en el selector de proveedor.
+- **Sandbox de un clic en las misiones.** Nuevo checkbox «📦 Sandbox (Docker)»
+  que aísla la misión autónoma en un contenedor, con aviso de la postura de
+  seguridad actual (backend/aprobaciones).
+
+### Fixed
+
+- **El servidor MCP del Operator se auto-registra correctamente.** Antes podía
+  quedar con el nombre antiguo (`themeforge`) o una ruta mal formada y las
+  misiones se quedaban sin herramientas; ahora se registra/migra solo a
+  `pcreative-studio` apuntando al `mcp_server.py` correcto.
+- Variable de entorno del terminal con un espacio en el nombre (resto del
+  rebrand) que nunca resolvía.
+- Lectura del backend/aprobaciones de Hermes (se leía la clave equivocada del
+  YAML y mostraba valores erróneos).
+- Límites de recursos en el terminal embebido (máximo de sesiones + corte por
+  inactividad) y bloqueo global para no lanzar dos misiones a la vez.
+
+### Changed
+
+- Más agentes de «mano» para las misiones: **Claude Code (CLI)**, **OpenRouter**
+  y **OpenCode (CLI)**, además de Codex/Gemini.
+
+## [2.0.0] - 2026-06-27
+
+### Changed
+
+- **Rebrand completo a «Pcreative Studio»** (antes ThemeForge): nuevo nombre,
+  logo, dominio `pcreativestudio.dev` y repositorio. Sin cambios de
+  funcionalidad respecto a la 1.8.1.
+
 ## [1.8.1] - 2026-06-19
 
 ### Fixed

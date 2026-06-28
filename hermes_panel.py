@@ -2,15 +2,14 @@
 user builds marketplace-ready websites/apps with specialized AI agents, creates
 new agents, schedules missions, and lets Hermes learn across projects.
 
-This is the Fase-A shell (see docs/HERMES-PANEL-DESIGN.md):
+Layout (todas las pestañas están implementadas y funcionales):
 
-    [ status strip: Hermes vX · MCP pcreative-studio · provider/model ]
-    🚀 Misión │ 🤖 Agentes │ ➕ Crear │ 🧠 Memoria │ 📊 Kanban │ ⏰ Cron │ ⚙️ Admin │ 💬 Chat
+    [ status strip: Hermes vX · MCP pcreative-studio · provider/model · power ]
+    🚀 Misión │ 🔌 Proveedor │ 🎨 Imágenes │ 🤖 Agentes │ ➕ Crear │ 🧠 Memoria │
+    📊 Kanban │ ⏰ Cron │ 📲 Remoto │ 🛡️ Avanzado │ ⚙️ Admin │ 💬 Chat
 
 Most heavy widgets (live preview, embedded Hermes chat, the per-project mission
-dialog) are reused from `operator_panel.py`. Tabs not yet implemented show a
-"próximamente" placeholder; the shell and the wiring around them are real, so
-later phases drop functionality in without restructuring.
+dialog) are reused from `operator_panel.py`.
 
 Hermes is **fully optional** — if it isn't installed the tab degrades to an
 "install Hermes" hint and the rest of Pcreative Studio works exactly the same.
@@ -38,6 +37,7 @@ from operator_panel import (
     find_hermes, operator_available, _mission_env,
     ProjectPreviewWidget, HermesTerminal, OperatorMissionDialog,
     OPERATOR_SKILL, PROJECTS_DIR,
+    mission_active, mission_begin, mission_end,
 )
 
 HERMES_HOME = Path.home() / ".hermes"
@@ -58,18 +58,21 @@ def _hermes_env() -> dict:
     return env
 
 
-def run_hermes(args: list[str], timeout: int = 25) -> tuple[int, str]:
+def run_hermes(args: list[str], timeout: int = 25, stdin_text: str | None = None) -> tuple[int, str]:
     """Ejecuta `hermes <args>` y devuelve (returncode, salida combinada).
 
     Pensado para comandos rápidos (list/status/...). Para operaciones largas
     (dispatch, instalar, redactar con IA) usar QProcess async en su widget.
+
+    `stdin_text`: si se pasa, se envía por stdin (p.ej. la API key, para NO
+    exponerla en argv donde `ps`/`/proc` la verían).
     """
     exe = find_hermes()
     if not exe:
         return 127, "Hermes no está instalado."
     try:
         r = subprocess.run([exe, *args], capture_output=True, text=True,
-                           timeout=timeout, env=_hermes_env())
+                           timeout=timeout, env=_hermes_env(), input=stdin_text)
         return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()
     except subprocess.TimeoutExpired:
         return 124, f"`hermes {' '.join(args)}` excedió {timeout}s."
@@ -185,6 +188,38 @@ def _mcp_pcreative_studio_registered() -> bool:
         return "pcreative-studio" in cfg.read_text(encoding="utf-8")
     except Exception:
         return False
+
+
+def ensure_mcp_registered() -> bool:
+    """Registra el server MCP `pcreative-studio` en Hermes si falta o está mal
+    (apunta al mcp_server.py de ESTE repo). Migra el antiguo nombre `themeforge`.
+    Sin esto, las misiones fallan porque el agente no encuentra las tools.
+    Idempotente; se llama al abrir el panel."""
+    if not find_hermes():
+        return False
+    server = Path(__file__).resolve().parent / "mcp_server.py"
+    if not server.is_file():
+        return False
+    server_str = str(server)
+    cfg = HERMES_HOME / "config.yaml"
+    try:
+        txt = cfg.read_text(encoding="utf-8") if cfg.is_file() else ""
+    except Exception:
+        txt = ""
+    # Ya bien registrado (nombre correcto + ruta correcta de este repo) → listo.
+    if "pcreative-studio" in txt and server_str in txt:
+        return True
+    # Limpia el nombre antiguo (themeforge) y cualquier pcreative-studio con
+    # ruta incorrecta, luego registra de cero.
+    for stale in ("themeforge", "pcreative-studio"):
+        if stale in txt:
+            run_hermes(["mcp", "remove", stale], timeout=15)
+    # `hermes mcp add` es interactivo (pregunta "Enable all tools?"): le pasamos
+    # "Y" por stdin para aceptar todas las tools de forma no interactiva.
+    code, out = run_hermes(["mcp", "add", "pcreative-studio",
+                            "--command", "python3", "--args", server_str],
+                           timeout=30, stdin_text="Y\n")
+    return code == 0 and "Saved" in out
 
 
 def _free_port() -> int:
@@ -518,6 +553,13 @@ class MissionTab(QWidget):
         self.cb_audit.setToolTip("Auditoría de seguridad/compliance OBLIGATORIA "
                                  "antes de empaquetar (gate no negociable).")
         row_stack.addWidget(self.cb_audit)
+        self.cb_sandbox = QCheckBox("📦 Sandbox (Docker)")
+        self.cb_sandbox.setToolTip(
+            "Aísla la misión en un contenedor Docker (terminal.backend=docker) "
+            "para que el agente NO toque tu sistema directamente. Requiere Docker "
+            "instalado. Sin esto, la misión corre con acceso a tu filesystem real.")
+        self.cb_sandbox.toggled.connect(self._toggle_sandbox)
+        row_stack.addWidget(self.cb_sandbox)
         root.addLayout(row_stack)
 
         # Aviso al terminar (manda resumen al canal de mensajería elegido).
@@ -533,6 +575,15 @@ class MissionTab(QWidget):
         row_notify.addStretch()
         root.addLayout(row_notify)
 
+        # Aviso de postura de seguridad: una misión autónoma ejecuta lo que decida
+        # el agente sobre tu sistema. Si el backend no es Docker o las aprobaciones
+        # están en "off", lo avisamos en grande y enlazamos a la pestaña Avanzado.
+        self.lbl_security = QLabel()
+        self.lbl_security.setWordWrap(True)
+        self.lbl_security.setTextFormat(Qt.TextFormat.RichText)
+        root.addWidget(self.lbl_security)
+        self._refresh_security_posture()
+
         ctl = QHBoxLayout()
         ctl.addWidget(QLabel("Variantes:"))
         self.variants = QSpinBox()
@@ -541,9 +592,11 @@ class MissionTab(QWidget):
         ctl.addWidget(self.variants)
         ctl.addWidget(QLabel("Agente build:"))
         self.provider = QComboBox()
-        self.provider.addItems(["codex", "opencode", "claude-api", "gemini"])
+        self.provider.addItems(["claude", "codex", "opencode", "gemini", "openrouter", "claude-api"])
         self.provider.setToolTip("Agente que ESCRIBE el código (aparte del "
-                                 "modelo cerebro de Hermes → pestaña 🔌 Proveedor).")
+                                 "modelo cerebro de Hermes → pestaña 🔌 Proveedor).\n"
+                                 "claude = Claude Code CLI · opencode = OpenCode CLI · "
+                                 "openrouter = vía API · codex = riesgo ToS si usas login de suscripción.")
         ctl.addWidget(self.provider)
         ctl.addStretch()
         self.btn_launch = QPushButton("🚀 Lanzar misión")
@@ -605,6 +658,54 @@ class MissionTab(QWidget):
             self._stack_label = dlg.selected_label
             self.btn_stack.setText("🧱  " + self._stack_label)
 
+    def _refresh_security_posture(self):
+        """Lee el backend/aprobaciones de Hermes y avisa si la misión correría
+        sin aislamiento (acceso total al FS real)."""
+        backend, approvals = "local", "manual"
+        cfg = HERMES_HOME / "config.yaml"
+        try:
+            if cfg.is_file():
+                import yaml
+                data = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+                backend = ((data.get("terminal") or {}).get("backend") or "").strip() or backend
+                approvals = ((data.get("approvals") or {}).get("mode") or "").strip() or approvals
+        except Exception:
+            pass
+        if backend == "docker" and approvals != "off":
+            self.lbl_security.setText(
+                f"🔒 <b>Misión aislada</b> · backend <code>{backend}</code> · "
+                f"aprobaciones <code>{approvals}</code>.")
+            self.lbl_security.setStyleSheet(
+                "color:#7bd88f; background:#10241a; border:1px solid #1f7a4d; "
+                "border-radius:6px; padding:6px 9px;")
+        else:
+            self.lbl_security.setText(
+                f"⚠️ <b>Misión autónoma con acceso a tu sistema</b> (backend "
+                f"<code>{backend}</code> · aprobaciones <code>{approvals}</code>). "
+                f"El agente ejecuta lo que decida sobre el filesystem real. Para "
+                f"aislarla, pon <b>backend Docker</b> y aprobaciones "
+                f"<code>manual</code>/<code>smart</code> en la pestaña 🛡️ Avanzado.")
+            self.lbl_security.setStyleSheet(
+                "color:#f0c050; background:#241f10; border:1px solid #e0a000; "
+                "border-radius:6px; padding:6px 9px;")
+        # Sincroniza el checkbox de sandbox con el backend real (sin disparar el toggle).
+        if hasattr(self, "cb_sandbox"):
+            self.cb_sandbox.blockSignals(True)
+            self.cb_sandbox.setChecked(backend == "docker")
+            self.cb_sandbox.blockSignals(False)
+
+    def _toggle_sandbox(self, on: bool):
+        """Activa/desactiva el aislamiento Docker de las misiones de un clic
+        (terminal.backend = docker | local) sin ir a la pestaña Avanzado."""
+        if not self._hermes:
+            return
+        be = "docker" if on else "local"
+        code, out = run_hermes(["config", "set", "terminal.backend", be], timeout=15)
+        self.log.appendPlainText(f"$ hermes config set terminal.backend {be}\n{out}")
+        if code != 0:
+            self.log.appendPlainText("✗ no se pudo cambiar el backend (¿Docker instalado?).")
+        self._refresh_security_posture()
+
     def _build_prompt(self) -> str:
         brief = self.brief.toPlainText().strip()
         n = self.variants.value()
@@ -654,6 +755,11 @@ class MissionTab(QWidget):
         if self._proc and self._proc.state() != QProcess.ProcessState.NotRunning:
             QMessageBox.information(self, "Hermes", "Ya hay una misión en curso.")
             return
+        if mission_active():
+            QMessageBox.information(self, "Hermes",
+                                    "Ya hay una misión en curso en otra pestaña/ventana. "
+                                    "Espera a que termine.")
+            return
         self.log.clear()
         self._phase = 0
         self._render_phase()
@@ -669,8 +775,7 @@ class MissionTab(QWidget):
         self._proc.setProcessEnvironment(_mission_env())
         self._proc.readyReadStandardOutput.connect(self._on_output)
         self._proc.finished.connect(self._on_finished)
-        self._proc.errorOccurred.connect(
-            lambda _e: self._append("✗ no se pudo ejecutar hermes."))
+        self._proc.errorOccurred.connect(self._on_proc_error)
         args = ["chat", "-q", self._build_prompt(), "-s", self.SKILL]
         # Toolsets extra según los toggles (web/browser research, imágenes, visión).
         # Imágenes van por la tool MCP de Pcreative Studio (Runware), no por el toolset
@@ -681,7 +786,21 @@ class MissionTab(QWidget):
         if self.cb_visualqa.isChecked():
             tsets.append("vision")
         args += ["-t", ",".join(dict.fromkeys(tsets))]
+        self._counted = True
+        mission_begin()
         self._proc.start(self._hermes, args)
+
+    def _release_mission(self):
+        """Suelta el lock global UNA sola vez por misión (idempotente)."""
+        if getattr(self, "_counted", False):
+            self._counted = False
+            mission_end()
+
+    def _on_proc_error(self, _e):
+        self._append("✗ no se pudo ejecutar hermes.")
+        self._release_mission()
+        self.btn_launch.setEnabled(True)
+        self.btn_stop.setEnabled(False)
 
     def _on_output(self):
         if not self._proc:
@@ -693,6 +812,7 @@ class MissionTab(QWidget):
                 self._bump_phase(line)
 
     def _on_finished(self, code: int, _status):
+        self._release_mission()
         self._phase = len(_PHASES)
         self._render_phase()
         self._append(f"\n■ Misión terminada (exit {code}).")
@@ -949,8 +1069,11 @@ HERMES_PROVIDERS = [
      "note": "Claude para Hermes requiere API key de Anthropic (no el login de "
              "Claude Code / Pro-Max)."},
     {"key": "openai-codex", "auth": "oauth", "label": "ChatGPT / Codex (OpenAI) · login",
-     "models": ["gpt-5.5", "gpt-5.1", "o4"],
-     "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key."},
+     "models": ["gpt-5.5", "gpt-5.1", "o4"], "tos_warn": True,
+     "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key. "
+             "⚠️ Usar una suscripción de consumo (ChatGPT Plus/Pro) de forma "
+             "automatizada/headless puede violar los Términos de OpenAI. Bajo tu "
+             "responsabilidad; para producción usa API key (OpenAI · API key)."},
     {"key": "google-gemini-cli", "auth": "oauth", "label": "Gemini (Google) · login",
      "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
      "note": "Login con tu cuenta de Google (OAuth, vía Gemini CLI)."},
@@ -1086,11 +1209,23 @@ class ProviderTab(QWidget):
         kws = self._MODEL_KW.get(sp["key"])
         live = _cached_models(kws) if kws else []
         self.cb_model.addItems(live or sp["models"])
-        self.note.setText("ℹ️ " + sp["note"] if sp.get("note") else "")
+        is_oauth = sp.get("auth") == "oauth"
+        # Aviso: los proveedores OAuth usan el login de tu CUENTA. Si es una
+        # suscripción de consumo usada de forma automatizada, puede chocar con
+        # los Términos del proveedor. `tos_warn` marca los casos fuertes (Codex).
+        if sp.get("tos_warn"):
+            self.note.setText("⚠️ " + sp.get("note", ""))
+            self.note.setStyleSheet("color:#e0a000; font-weight:bold;")
+        elif is_oauth:
+            self.note.setText("⚠️ Login con tu cuenta (OAuth). Revisa los Términos del "
+                              "proveedor para uso automatizado.  " + sp.get("note", ""))
+            self.note.setStyleSheet("color:#e0a000;")
+        else:
+            self.note.setText("ℹ️ " + sp["note"] if sp.get("note") else "")
+            self.note.setStyleSheet("color:#7aa2f7;")
         # Muestra login OAuth o campo de API key según el provider.
         # La configuración de proveedor/auth está SIEMPRE disponible (no depende
         # del interruptor maestro: configuras antes de encender).
-        is_oauth = sp.get("auth") == "oauth"
         has = bool(self._hermes)
         self.btn_login.setVisible(is_oauth)
         self.btn_login.setEnabled(has and is_oauth)
@@ -1124,9 +1259,12 @@ class ProviderTab(QWidget):
             QMessageBox.information(self, "Proveedor", "Pega una API key.")
             return
         prov = self._spec()["key"]
-        code, out = run_hermes(["auth", "add", prov, "--api-key", key], timeout=20)
+        # La clave va por STDIN (hermes la pide con getpass si falta --api-key),
+        # así NO aparece en argv / ps / /proc.
+        code, out = run_hermes(["auth", "add", prov, "--type", "api-key"],
+                               timeout=20, stdin_text=key + "\n")
         self.in_key.clear()
-        self.log.appendPlainText(f"$ hermes auth add {prov} --api-key ****\n{out}")
+        self.log.appendPlainText(f"$ hermes auth add {prov} --type api-key  (key por stdin)\n{out}")
         self.log.appendPlainText("✓ key guardada" if code == 0 else f"✗ exit {code}")
         self.refresh()
 
@@ -2577,18 +2715,16 @@ class AdvancedTab(QWidget):
 
     def refresh(self):
         prov, model = _hermes_model_info()  # noqa: F841 (toca config; barato)
-        # Lee backend/approvals actuales del config.
+        # Lee backend/approvals actuales del config (YAML real, claves anidadas
+        # terminal.backend y approvals.mode — no el primer "backend:" que aparezca).
         be = ap = None
         cfg = HERMES_HOME / "config.yaml"
         if cfg.is_file():
             try:
-                txt = cfg.read_text(encoding="utf-8")
-                for ln in txt.splitlines():
-                    s = ln.strip()
-                    if s.startswith("backend:") and be is None:
-                        be = s.split(":", 1)[1].strip()
-                    if s.startswith("mode:") and ap is None:
-                        ap = s.split(":", 1)[1].strip()
+                import yaml
+                data = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+                be = (data.get("terminal") or {}).get("backend")
+                ap = (data.get("approvals") or {}).get("mode")
             except Exception:
                 pass
         if be in self.BACKENDS:
@@ -2662,33 +2798,6 @@ class AdvancedTab(QWidget):
             self.refresh()
 
 
-# ───────────────────────── stubs (fases siguientes) ─────────────────────
-class _StubTab(QWidget):
-    """Placeholder honesto para tabs aún no implementados. Explica qué hará."""
-
-    def __init__(self, title: str, what: str, phase: str, parent=None):
-        super().__init__(parent)
-        root = QVBoxLayout(self)
-        root.addStretch()
-        t = QLabel(title)
-        f = QFont(); f.setPointSize(15); f.setBold(True)
-        t.setFont(f)
-        t.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        root.addWidget(t)
-        body = QLabel(what)
-        body.setWordWrap(True)
-        body.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        body.setStyleSheet("color:#9aa;")
-        body.setMaximumWidth(560)
-        wrap = QHBoxLayout(); wrap.addStretch(); wrap.addWidget(body); wrap.addStretch()
-        root.addLayout(wrap)
-        tag = QLabel(f"⏳ {phase}")
-        tag.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        tag.setStyleSheet("color:#7aa2f7; padding-top:8px;")
-        root.addWidget(tag)
-        root.addStretch()
-
-
 # ───────────────────────── el panel completo ────────────────────────────
 class HermesPanel(QWidget):
     """Pestaña Hermes — centro de control de agentes de diseño web."""
@@ -2700,6 +2809,12 @@ class HermesPanel(QWidget):
         try:
             from hermes_operator_skill import ensure_operator_skill_installed
             ensure_operator_skill_installed()
+        except Exception:
+            pass
+        # Registra el server MCP pcreative-studio en Hermes (auto, sin esto las
+        # misiones no tienen las tools list_stacks/create_project/build_zip/…).
+        try:
+            ensure_mcp_registered()
         except Exception:
             pass
         outer = QVBoxLayout(self)

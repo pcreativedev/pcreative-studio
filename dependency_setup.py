@@ -169,7 +169,9 @@ TOOLS: list[Tool] = [
     # quiere el modo Operator. Instalador oficial Unix (curl|bash). En Windows
     # requiere WSL (el wizard avisará).
     Tool("hermes", "Hermes Agent (Operator)", "hermes",
-         "OPCIONAL — orquestación autónoma de misiones (Operator). No requerido.",
+         "OPCIONAL — orquestación autónoma de misiones (Operator). No requerido. "
+         "Solo Linux/macOS: en Windows el binario va por WSL y la app no lo "
+         "detectaría, así que el Operator no está disponible en Windows nativo.",
          required=False, category="operator",
          unix_install="curl -fsSL https://raw.githubusercontent.com/NousResearch/"
                       "hermes-agent/main/scripts/install.sh | bash"),

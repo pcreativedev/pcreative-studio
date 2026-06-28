@@ -650,17 +650,23 @@ class PcreativeStudioBridge(QObject):
             proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
 
             def _mk(pk, c, a, pr):
+                st = {"port": None, "token": None}
                 def _on_out():
                     data = bytes(pr.readAllStandardOutput()).decode(errors="replace")
                     for line in data.splitlines():
                         if line.startswith("PORT="):
-                            port = line.split("=", 1)[1].strip()
+                            st["port"] = line.split("=", 1)[1].strip()
+                        elif line.startswith("TOKEN="):
+                            st["token"] = line.split("=", 1)[1].strip()
+                        if st["port"] and st["token"]:
                             q = (f"cwd={urllib.parse.quote(cwd)}"
-                                 f"&cmd={urllib.parse.quote(c)}")
+                                 f"&cmd={urllib.parse.quote(c)}"
+                                 f"&token={urllib.parse.quote(st['token'])}")
                             if a:
                                 q += "&args=" + urllib.parse.quote("\x1f".join(a))
                             self.compare_ready.emit(json.dumps(
-                                {"provider": pk, "url": f"http://127.0.0.1:{port}/?{q}"}))
+                                {"provider": pk, "url": f"http://127.0.0.1:{st['port']}/?{q}"}))
+                            st["port"] = None  # evita re-emitir
                 return _on_out
 
             proc.readyReadStandardOutput.connect(_mk(pkey, cmd, args, proc))
@@ -872,18 +878,24 @@ class PcreativeStudioBridge(QObject):
         proc.setWorkingDirectory(str(TERMINAL_DIR))
         proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
 
+        st = {"port": None, "token": None}
         def _on_out():
             import urllib.parse
             data = bytes(proc.readAllStandardOutput()).decode(errors="replace")
             for line in data.splitlines():
                 if line.startswith("PORT="):
-                    port = line.split("=", 1)[1].strip()
+                    st["port"] = line.split("=", 1)[1].strip()
+                elif line.startswith("TOKEN="):
+                    st["token"] = line.split("=", 1)[1].strip()
+                if st["port"] and st["token"]:
                     q = (f"cwd={urllib.parse.quote(path)}"
-                         f"&cmd={urllib.parse.quote(cmd)}")
+                         f"&cmd={urllib.parse.quote(cmd)}"
+                         f"&token={urllib.parse.quote(st['token'])}")
                     if args:
                         q += "&args=" + urllib.parse.quote("\x1f".join(args))
-                    url = f"http://127.0.0.1:{port}/?{q}"
+                    url = f"http://127.0.0.1:{st['port']}/?{q}"
                     self.terminal_ready.emit(json.dumps({"path": path, "kind": kind, "url": url}))
+                    st["port"] = None  # evita re-emitir
 
         proc.readyReadStandardOutput.connect(_on_out)
         proc.start(node, [str(TERMINAL_DIR / "server.js"), "0"])
@@ -2166,10 +2178,10 @@ class PcreativeStudioBridge(QObject):
         p = Path.home() / ".local" / "bin" / "hermes"
         return str(p) if p.is_file() else None
 
-    def _h_run(self, args, timeout=25):
+    def _h_run(self, args, timeout=25, stdin_text=None):
         try:
             from hermes_panel import run_hermes
-            return run_hermes(list(args), timeout=timeout)
+            return run_hermes(list(args), timeout=timeout, stdin_text=stdin_text)
         except Exception as e:  # noqa: BLE001
             return 1, str(e)
 
@@ -2242,7 +2254,9 @@ class PcreativeStudioBridge(QObject):
     def hermes_save_key(self, provider: str, key: str) -> str:
         if not provider or not key:
             return json.dumps({"ok": False, "error": "provider/key vacío"})
-        rc, out = self._h_run(["auth", "add", provider, "--api-key", key], timeout=25)
+        # Clave por stdin (no en argv) — ver run_hermes/_save_key.
+        rc, out = self._h_run(["auth", "add", provider, "--type", "api-key"],
+                              timeout=25, stdin_text=key + "\n")
         return json.dumps({"ok": rc == 0, "out": out})
 
     @pyqtSlot(str, result=str)

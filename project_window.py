@@ -186,6 +186,7 @@ class ProjectWindow(QWidget):
         self.secondary_procs: list[tuple[str, QProcess]] = []
         self.term_server: QProcess | None = None
         self.term_port: int | None = None
+        self.term_token: str = ""
         # Lista de tabs (view, cmd, args) pendientes de cargar URL
         # hasta que el server esté listo
         self._pending_term_tabs: list[tuple[QWebEngineView, str, list[str]]] = []
@@ -819,10 +820,13 @@ class ProjectWindow(QWidget):
             if line.startswith("PORT="):
                 try:
                     self.term_port = int(line.split("=", 1)[1])
-                    self._terminal_ready = True
-                    self._load_pending_terminals()
                 except ValueError:
                     self._terminal_error(f"PORT inválido: {line!r}")
+            elif line.startswith("TOKEN="):
+                self.term_token = line.split("=", 1)[1].strip()
+            if self.term_port and self.term_token:
+                self._terminal_ready = True
+                self._load_pending_terminals()
 
     def _read_term_server_err(self):
         if not self.term_server: return
@@ -839,7 +843,7 @@ class ProjectWindow(QWidget):
         self._pending_term_tabs.clear()
 
     def _load_pending_terminals(self):
-        if self.term_port is None: return
+        if self.term_port is None or not self.term_token: return
         cwd = str(self.project_path)
         for view, cmd, args in self._pending_term_tabs:
             # Puente de portapapeles (QWebChannel) ANTES de cargar la página,
@@ -859,6 +863,7 @@ class ProjectWindow(QWidget):
             if args:
                 # El server.js parsea args separados por \x1f
                 qry.addQueryItem("args", "\x1f".join(args))
+            qry.addQueryItem("token", self.term_token)
             url.setQuery(qry)
             view.setUrl(url)
         self._pending_term_tabs.clear()

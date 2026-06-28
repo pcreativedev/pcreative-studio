@@ -20,13 +20,17 @@ DEST_DIR = Path.home() / ".hermes" / "skills" / "pcreative-studio" / "pcreative-
 def _version(skill_md: Path) -> tuple[int, ...]:
     """Lee `version:` del frontmatter como tupla comparable (0,0,0 si falta)."""
     try:
+        seen_fence = False
         for raw in skill_md.read_text(encoding="utf-8").splitlines():
             s = raw.strip()
+            if s == "---":
+                if seen_fence:
+                    break  # cierre del frontmatter → no seguimos leyendo
+                seen_fence = True
+                continue
             if s.startswith("version:"):
                 v = s.split(":", 1)[1].strip().strip("\"'")
                 return tuple(int(x) for x in v.split(".") if x.isdigit()) or (0,)
-            if s == "---" and raw == "---":  # fin frontmatter
-                continue
     except Exception:
         pass
     return (0,)

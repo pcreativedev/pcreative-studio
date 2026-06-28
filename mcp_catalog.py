@@ -430,7 +430,7 @@ CATALOG: list[MCPEntry] = [
         relevance=["any"],
         install={
             "command": "python3",
-            "args": ["__PCREATIVE STUDIO_HOME__/mcp_server.py"],
+            "args": ["__PCREATIVE_STUDIO_HOME__/mcp_server.py"],
         },
     ),
 
@@ -533,7 +533,7 @@ def generate_mcp_json(
     """Builds the `.mcp.json` file content for a scaffolded project.
 
     The `__PROJECT_PATH__` placeholder in any entry's install args is
-    replaced with the absolute project path. `__PCREATIVE STUDIO_HOME__` is
+    replaced with the absolute project path. `__PCREATIVE_STUDIO_HOME__` is
     replaced with the location of THIS repo (so the Pcreative Studio MCP
     server entry points at the right `mcp_server.py`).
     """
@@ -543,7 +543,7 @@ def generate_mcp_json(
     def _substitute(value):
         if isinstance(value, str):
             return value.replace("__PROJECT_PATH__", project_str).replace(
-                "__PCREATIVE STUDIO_HOME__", tf_home_str
+                "__PCREATIVE_STUDIO_HOME__", tf_home_str
             )
         if isinstance(value, list):
             return [_substitute(v) for v in value]
