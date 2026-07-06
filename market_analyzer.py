@@ -29,6 +29,11 @@ ANALYSES_DIR = CONFIG_DIR / "market_analyses"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# Años dinámicos: los prompts se escribieron con "2026"/"2027" fijos; en build_request
+# se sustituyen por el año actual y el siguiente para que nunca se queden viejos.
+YEAR = datetime.now().year
+NEXT_YEAR = YEAR + 1
+
 # Por defecto un modelo con BÚSQUEDA WEB integrada → análisis con datos reales.
 DEFAULT_MODEL = "perplexity/sonar-reasoning-pro"
 
@@ -453,6 +458,11 @@ def build_request(kind: str, model: str, params: dict | None = None, web: bool =
         p = prompt_opportunities(params)
     else:
         raise ValueError(f"kind desconocido: {kind}")
+    # Años dinámicos: los prompts llevan 2025/2026/2027 fijos → año anterior, actual
+    # y siguiente. Orden descendente para no re-sustituir en cascada.
+    p = (p.replace("2027", str(NEXT_YEAR))
+          .replace("2026", str(YEAR))
+          .replace("2025", str(YEAR - 1)))
     return AnalysisRequest(kind=kind, params=params, model=model, user_prompt=p, web=web)
 
 

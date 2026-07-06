@@ -45,6 +45,8 @@ from market_analyzer import (
     MARKETPLACES,
     MODELS,
     MODEL_LABELS,
+    NEXT_YEAR,
+    YEAR,
     AnalysisRequest,
     build_request,
     call_openrouter,
@@ -296,12 +298,12 @@ class MarketTab(QWidget):
         btns_box = QGridLayout()
         btns_box.setHorizontalSpacing(8)
         btns_box.setVerticalSpacing(8)
-        self.btn_general = self._mk_btn("🌍 Mercado 2026 (general)", self._on_general)
+        self.btn_general = self._mk_btn(f"🌍 Mercado {YEAR} (general)", self._on_general)
         self.btn_stacks = self._mk_btn("📊 Análisis de stacks", self._on_stacks)
         self.btn_niche = self._mk_btn("🎯 Por nicho concreto", self._on_niche)
         self.btn_compare = self._mk_btn("⚖️ Comparar 2 nichos", self._on_compare)
         self.btn_marketplace = self._mk_btn("🏪 Por marketplace", self._on_marketplace)
-        self.btn_predict = self._mk_btn("🔮 Predicción 2027", self._on_predict)
+        self.btn_predict = self._mk_btn(f"🔮 Predicción {NEXT_YEAR}", self._on_predict)
         self.btn_opportunities = self._mk_btn(
             "💎 Oportunidades — scoring + stack recomendado", self._on_opportunities
         )
