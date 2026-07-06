@@ -29,19 +29,39 @@ ANALYSES_DIR = CONFIG_DIR / "market_analyses"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-DEFAULT_MODEL = "google/gemini-2.5-pro"
+# Por defecto un modelo con BÚSQUEDA WEB integrada → análisis con datos reales.
+DEFAULT_MODEL = "perplexity/sonar-reasoning-pro"
 
-# Modelos preseleccionados en el picker (todos vía OpenRouter).
+# Modelos preseleccionados en el picker (todos vía OpenRouter, IDs verificados 2026-07).
+# Los `perplexity/sonar*` traen web integrada; a los demás se les añade `:online`
+# cuando el toggle "datos reales" está activo (ver call_openrouter).
 MODELS = [
-    "google/gemini-2.5-pro",
-    "google/gemini-2.5-flash",
-    "anthropic/claude-opus-4.7",
+    "perplexity/sonar-reasoning-pro",   # web + razonamiento — RECOMENDADO para mercado
+    "perplexity/sonar-deep-research",    # investigación profunda multi-fuente (más lento)
+    "perplexity/sonar-pro",              # web rápido
+    "anthropic/claude-opus-4.8",         # mejor razonamiento (usa :online con el toggle)
     "anthropic/claude-sonnet-4.6",
+    "openai/gpt-5.1",
     "openai/gpt-5",
-    "openai/gpt-5-thinking",
-    "x-ai/grok-4",
-    "deepseek/deepseek-v3.1",
+    "google/gemini-2.5-pro",
+    "deepseek/deepseek-v3.2",
 ]
+
+# Etiquetas legibles para el picker (id → texto).
+MODEL_LABELS = {
+    "perplexity/sonar-reasoning-pro": "Perplexity Sonar Reasoning Pro · web + razonamiento ⭐",
+    "perplexity/sonar-deep-research": "Perplexity Deep Research · multi-fuente (lento)",
+    "perplexity/sonar-pro": "Perplexity Sonar Pro · web rápido",
+    "anthropic/claude-opus-4.8": "Claude Opus 4.8 · máximo razonamiento",
+    "anthropic/claude-sonnet-4.6": "Claude Sonnet 4.6 · equilibrado",
+    "openai/gpt-5.1": "GPT-5.1",
+    "openai/gpt-5": "GPT-5",
+    "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+    "deepseek/deepseek-v3.2": "DeepSeek v3.2 · barato",
+}
+
+# Modelos que YA traen búsqueda web integrada (no necesitan `:online`).
+_WEB_NATIVE_PREFIXES = ("perplexity/",)
 
 # Marketplaces para el botón «Por marketplace».
 MARKETPLACES = [
@@ -69,6 +89,15 @@ _SYSTEM = (
     "estimadas, rangos de precio, % de cuota, tendencias). NO te quedas en "
     "generalidades. Output en MARKDOWN bien estructurado, con tablas donde "
     "tenga sentido. Idioma: español neutro."
+)
+
+# Se añade al system prompt cuando el grounding web está activo.
+_WEB_SUFFIX = (
+    "\n\nTIENES BÚSQUEDA WEB ACTIVA: basa el análisis en DATOS REALES y ACTUALES "
+    "que encuentres ahora mismo (bestsellers reales, nº de ventas, precios, reseñas, "
+    "posts recientes, releases). Prioriza cifras verificadas sobre estimaciones; cuando "
+    "estimes, márcalo como «estimado». Añade al final una sección «## Fuentes» con los "
+    "enlaces reales consultados. No inventes cifras ni URLs."
 )
 
 
@@ -308,6 +337,92 @@ Si tuviera que dedicar mis próximos 6 meses a crear productos digitales que se 
 Markdown bien estructurado, sé concreto."""
 
 
+# ─── Modo Oportunidades (scoring estructurado + stack recomendado) ───────
+
+
+def _stacks_catalog() -> str:
+    """Lista compacta de stacks reales (id · nombre · categoría) para el prompt."""
+    try:
+        import stacks
+        rows = []
+        for sid, s in stacks.STACKS.items():
+            if sid == "none":
+                continue
+            rows.append(f"- {sid} · {s.get('name','')} ({s.get('category','')})")
+        return "\n".join(rows)
+    except Exception:
+        return "- nextjs-tailwind · Next.js + Tailwind\n- astro-tailwind · Astro + Tailwind"
+
+
+def prompt_opportunities(params: dict | None = None) -> str:
+    params = params or {}
+    n = int(params.get("n", 8))
+    focus = params.get("focus", "").strip()
+    catalog = _stacks_catalog()
+    focus_line = f"\nEnfócate en: **{focus}**.\n" if focus else ""
+    return f"""Eres un cazador de oportunidades de productos digitales. Detecta las **{n} mejores oportunidades para crear y vender ESTA SEMANA**, basándote en los DATOS REALES de Envato de arriba y en la búsqueda web.{focus_line}
+
+Para cada oportunidad puntúa de 0 a 100:
+- **demanda**: cuánta gente lo busca/compra (mayor = mejor).
+- **competencia**: nivel de saturación (0 = hueco vacío, 100 = saturadísimo).
+- **dificultad**: lo difícil que es construirlo bien (0 = fácil, 100 = muy difícil).
+- **ingresos**: potencial de ingresos (mayor = mejor).
+- **oportunidad**: score GLOBAL (mayor = mejor). Combina lo anterior: premia demanda+ingresos, penaliza competencia+dificultad.
+
+Recomienda para cada una un **stack** usando el ID EXACTO de este catálogo (no inventes ids):
+{catalog}
+
+Responde **SOLO con JSON válido** (sin markdown, sin texto antes/después), con esta forma EXACTA:
+{{
+  "titulo": "Top {n} oportunidades — <mes año>",
+  "oportunidades": [
+    {{
+      "nombre": "nombre corto del producto/nicho",
+      "pitch": "una frase de por qué es oportunidad ahora",
+      "marketplace": "ThemeForest | CodeCanyon | Gumroad | ...",
+      "precio": "rango de precio sugerido, ej. $29–59",
+      "scores": {{"demanda": 0, "competencia": 0, "dificultad": 0, "ingresos": 0, "oportunidad": 0}},
+      "evidencia": "dato REAL que lo respalda (ventas/precio de Envato o web)",
+      "stack": "id-exacto-del-catalogo",
+      "como_proceder": ["paso 1 concreto", "paso 2", "paso 3", "paso 4"]
+    }}
+  ]
+}}
+
+Ordena las oportunidades de mayor a menor "oportunidad". Usa cifras reales. No inventes datos ni ids de stack."""
+
+
+def parse_opportunities(content: str) -> dict | None:
+    """Extrae el JSON de oportunidades de la respuesta (tolera fences y prosa)."""
+    if not content:
+        return None
+    txt = content.strip()
+    # quitar fences ```json ... ```
+    if "```" in txt:
+        import re as _re
+        m = _re.search(r"```(?:json)?\s*(\{.*?\})\s*```", txt, _re.DOTALL)
+        if m:
+            txt = m.group(1)
+    # quitar citas tipo [1] de perplexity y recortar al primer/último llave
+    start, end = txt.find("{"), txt.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    blob = txt[start:end + 1]
+    try:
+        data = json.loads(blob)
+    except Exception:
+        # segundo intento: quitar marcadores de cita [n]
+        import re as _re
+        blob2 = _re.sub(r"\[\d+\]", "", blob)
+        try:
+            data = json.loads(blob2)
+        except Exception:
+            return None
+    if isinstance(data, dict) and isinstance(data.get("oportunidades"), list):
+        return data
+    return None
+
+
 # ─── Engine ─────────────────────────────────────────────────────────────
 
 
@@ -317,9 +432,10 @@ class AnalysisRequest:
     params: dict        # {niche: ...} | {a:..., b:...} | {marketplace:...}
     model: str          # ID OpenRouter
     user_prompt: str    # ya renderizado
+    web: bool = True    # grounding con búsqueda web (datos reales)
 
 
-def build_request(kind: str, model: str, params: dict | None = None) -> AnalysisRequest:
+def build_request(kind: str, model: str, params: dict | None = None, web: bool = True) -> AnalysisRequest:
     params = params or {}
     if kind == "general":
         p = prompt_general()
@@ -333,9 +449,45 @@ def build_request(kind: str, model: str, params: dict | None = None) -> Analysis
         p = prompt_marketplace(params.get("marketplace", ""))
     elif kind == "prediction":
         p = prompt_prediction()
+    elif kind == "opportunities":
+        p = prompt_opportunities(params)
     else:
         raise ValueError(f"kind desconocido: {kind}")
-    return AnalysisRequest(kind=kind, params=params, model=model, user_prompt=p)
+    return AnalysisRequest(kind=kind, params=params, model=model, user_prompt=p, web=web)
+
+
+def _envato_preamble(kind: str, params: dict) -> str:
+    """Bloque de DATOS REALES de Envato para anteponer al prompt (si hay token).
+    Se ejecuta en el worker thread (hace HTTP). Tolerante a fallos → "" si no puede."""
+    try:
+        import envato_api as ev
+    except Exception:
+        return ""
+    if not ev.has_token():
+        return ""
+    params = params or {}
+    blocks: list[str] = []
+    try:
+        if kind == "niche":
+            blocks.append(ev.market_snapshot("themeforest", term=params.get("niche", "")))
+        elif kind == "compare":
+            blocks.append(ev.market_snapshot("themeforest", term=params.get("a", "")))
+            blocks.append(ev.market_snapshot("themeforest", term=params.get("b", "")))
+        elif kind == "marketplace":
+            mp = (params.get("marketplace", "") or "").lower()
+            if "codecanyon" in mp:
+                blocks.append(ev.market_snapshot("codecanyon"))
+            elif "themeforest" in mp:
+                blocks.append(ev.market_snapshot("themeforest"))
+        else:  # general | stacks | prediction
+            blocks.append(ev.market_snapshot("themeforest"))
+            blocks.append(ev.market_snapshot("codecanyon"))
+    except Exception:
+        return ""
+    blocks = [b for b in blocks if b]
+    if not blocks:
+        return ""
+    return "\n\n".join(blocks) + "\n\n---\n\n"
 
 
 def call_openrouter(req: AnalysisRequest, api_key: str, timeout: int = 240) -> str:
@@ -344,11 +496,26 @@ def call_openrouter(req: AnalysisRequest, api_key: str, timeout: int = 240) -> s
     if not api_key:
         raise RuntimeError("Falta OPENROUTER_API_KEY (configura la credencial de OpenRouter en Settings).")
 
+    # Grounding web: perplexity/sonar* ya buscan; a los demás les añadimos ":online"
+    # (OpenRouter ejecuta búsqueda web con Exa y devuelve citas).
+    model = req.model
+    web = getattr(req, "web", False)
+    if web and not model.startswith(_WEB_NATIVE_PREFIXES) and not model.endswith(":online"):
+        model = model + ":online"
+    system = _SYSTEM + (_WEB_SUFFIX if web else "")
+
+    # Grounding con datos REALES de Envato (bestsellers/ventas/precios) si hay token.
+    user_content = req.user_prompt
+    if web:
+        pre = _envato_preamble(req.kind, req.params)
+        if pre:
+            user_content = pre + user_content
+
     body = {
-        "model": req.model,
+        "model": model,
         "messages": [
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": req.user_prompt},
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_content},
         ],
         "temperature": 0.4,
     }

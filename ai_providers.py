@@ -203,6 +203,7 @@ def _env_for_key_id(key_id: str) -> str:
         "figma": "FIGMA_API_KEY",  # PAT de Figma para el MCP figma-context
         "twentyfirst": "TWENTYFIRST_API_KEY",  # 21st.dev Magic MCP (componentes UI)
         "firecrawl": "FIRECRAWL_API_KEY",  # Firecrawl (búsqueda+scrape de locales)
+        "envato": "ENVATO_API_TOKEN",  # API de Envato (datos reales de mercado en el analizador)
     }.get(key_id, "")
 
 

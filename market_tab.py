@@ -17,6 +17,7 @@ from pathlib import Path
 from PyQt6.QtCore import QObject, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -43,15 +44,143 @@ from market_analyzer import (
     DEFAULT_MODEL,
     MARKETPLACES,
     MODELS,
+    MODEL_LABELS,
     AnalysisRequest,
     build_request,
     call_openrouter,
     get_openrouter_key,
     list_analyses,
     load_analysis,
+    parse_opportunities,
     save_analysis,
 )
 from stacks import TEMPLATE_NICHES
+
+# ─── Tema visual del análisis (Qt rich-text CSS: subconjunto de CSS2.1) ──────
+# Se aplica al HTML que Qt genera desde el markdown → tablas, cabeceras y cajas
+# con estilo, en vez del render plano de setMarkdown.
+_MD_CSS = """
+body { color:#dbe1ea; font-size:10.5pt; line-height:150%; }
+h1 { color:#c7d2fe; font-size:19pt; font-weight:800; margin:14px 0 8px 0; }
+h2 { color:#a5b4fc; font-size:14.5pt; font-weight:700;
+     border-bottom:2px solid #3730a3; padding-bottom:3px; margin:22px 0 8px 0; }
+h3 { color:#93c5fd; font-size:12pt; font-weight:700; margin:16px 0 6px 0; }
+h4 { color:#a7f3d0; font-size:11pt; font-weight:700; margin:12px 0 4px 0; }
+p  { margin:6px 0; }
+a  { color:#60a5fa; text-decoration:none; }
+strong { color:#f1f5f9; }
+em { color:#cbd5e1; }
+ul, ol { margin:6px 0 6px 4px; }
+li { margin:3px 0; }
+hr { border:0; border-top:1px solid #334155; }
+code { background:#1e293b; color:#fbbf24; padding:1px 5px; border-radius:4px;
+       font-family:monospace; font-size:9.5pt; }
+pre  { background:#0b1220; color:#e2e8f0; padding:10px; border-radius:8px;
+       border:1px solid #1e293b; }
+blockquote { background:#111a2e; color:#c7d2fe; border-left:4px solid #6366f1;
+             margin:10px 0; padding:8px 14px; }
+table { border:1px solid #334155; margin:10px 0; }
+th { background:#1e293b; color:#c7d2fe; font-weight:700; text-align:left;
+     padding:7px 10px; border:1px solid #334155; }
+td { padding:6px 10px; border:1px solid #263143; color:#dbe1ea; }
+"""
+
+
+def _score_color(goodness: int) -> str:
+    """Verde/ámbar/rojo según lo BUENO que sea (0-100, mayor = mejor)."""
+    if goodness >= 70:
+        return "#22c55e"
+    if goodness >= 45:
+        return "#f59e0b"
+    return "#ef4444"
+
+
+def _bar(value: int, invert: bool = False) -> str:
+    """Barra horizontal (tabla Qt) de 0-100. invert=True → alto es malo (competencia/dificultad)."""
+    v = max(0, min(100, int(value or 0)))
+    color = _score_color(100 - v if invert else v)
+    rest = max(0, 100 - v)
+    return (
+        f'<table width="130" cellspacing="0" cellpadding="0" style="margin:0"><tr>'
+        f'<td bgcolor="{color}" width="{v}%" style="font-size:3pt">&nbsp;</td>'
+        f'<td bgcolor="#1e293b" width="{rest}%" style="font-size:3pt">&nbsp;</td>'
+        f'</tr></table>'
+    )
+
+
+def _score_rows(scores: dict) -> str:
+    """Filas label · barra · valor para los 5 scores."""
+    defs = [
+        ("Demanda", "demanda", False),
+        ("Ingresos", "ingresos", False),
+        ("Competencia", "competencia", True),
+        ("Dificultad", "dificultad", True),
+    ]
+    rows = []
+    for label, key, inv in defs:
+        v = int(scores.get(key, 0) or 0)
+        good = (100 - v) if inv else v
+        rows.append(
+            f'<tr><td width="90" style="color:#94a3b8;font-size:9pt;padding:2px 8px 2px 0">{label}</td>'
+            f'<td width="130">{_bar(v, inv)}</td>'
+            f'<td width="34" style="color:{_score_color(good)};font-weight:700;padding-left:8px">{v}</td></tr>'
+        )
+    return '<table cellspacing="0" cellpadding="0" style="margin:6px 0">' + "".join(rows) + "</table>"
+
+
+def _stack_name(sid: str) -> str:
+    try:
+        import stacks
+        s = stacks.STACKS.get(sid)
+        return s.get("name", sid) if s else sid
+    except Exception:
+        return sid
+
+
+def _render_opportunities_html(data: dict) -> str:
+    """Convierte el JSON de oportunidades en tarjetas HTML visuales para el QTextBrowser."""
+    ops = data.get("oportunidades") or []
+    parts = [f'<h1>🎯 {data.get("titulo", "Oportunidades")}</h1>']
+    for i, o in enumerate(ops, 1):
+        sc = o.get("scores", {}) or {}
+        opp = int(sc.get("oportunidad", 0) or 0)
+        oc = _score_color(opp)
+        nombre = str(o.get("nombre", "")).strip()
+        pitch = str(o.get("pitch", "")).strip()
+        mkt = str(o.get("marketplace", "")).strip()
+        precio = str(o.get("precio", "")).strip()
+        sid = str(o.get("stack", "")).strip()
+        evidencia = str(o.get("evidencia", "")).strip()
+        pasos = o.get("como_proceder") or []
+
+        chips = []
+        if mkt:
+            chips.append(f'<span style="background:#1e293b;color:#c7d2fe;padding:2px 8px;border-radius:6px">🛒 {mkt}</span>')
+        if precio:
+            chips.append(f'<span style="background:#1e293b;color:#a7f3d0;padding:2px 8px;border-radius:6px">💶 {precio}</span>')
+        if sid:
+            chips.append(f'<span style="background:#312e81;color:#c7d2fe;padding:2px 8px;border-radius:6px">🧱 {_stack_name(sid)}</span>')
+        chips_html = " &nbsp; ".join(chips)
+
+        pasos_html = "".join(f"<li>{str(p)}</li>" for p in pasos)
+
+        parts.append(
+            f'<table width="100%" cellspacing="0" cellpadding="12" style="margin:12px 0">'
+            f'<tr><td bgcolor="#111a2e" style="border-left:5px solid {oc}">'
+            # cabecera: nombre + score grande
+            f'<table width="100%" cellspacing="0" cellpadding="0"><tr>'
+            f'<td><span style="font-size:14pt;font-weight:800;color:#f1f5f9">#{i} &nbsp;{nombre}</span></td>'
+            f'<td align="right"><span style="font-size:22pt;font-weight:800;color:{oc}">{opp}</span>'
+            f'<span style="color:#64748b;font-size:9pt">/100 oportunidad</span></td>'
+            f'</tr></table>'
+            f'<p style="color:#cbd5e1;margin:4px 0 8px 0">{pitch}</p>'
+            f'<p style="margin:0 0 6px 0">{chips_html}</p>'
+            f'{_score_rows(sc)}'
+            + (f'<p style="color:#93c5fd;font-size:9.5pt;margin:8px 0 4px 0">📊 <em>{evidencia}</em></p>' if evidencia else "")
+            + (f'<p style="color:#a5b4fc;font-weight:700;margin:8px 0 2px 0">Cómo proceder</p><ol style="margin:0 0 2px 0">{pasos_html}</ol>' if pasos_html else "")
+            + '</td></tr></table>'
+        )
+    return "".join(parts)
 
 
 # ─── Worker en QThread (HTTP fuera del GUI thread) ──────────────────────
@@ -133,17 +262,25 @@ class MarketTab(QWidget):
         self._build_no_key_banner()
         root.addWidget(self._no_key_banner)
 
-        # ─ Header: modelo + status ─
+        # ─ Header: modelo + datos reales + status ─
         header = QHBoxLayout()
         header.addWidget(QLabel("Modelo:"))
         self.model_combo = QComboBox()
         for m in MODELS:
-            self.model_combo.addItem(m)
-        idx = self.model_combo.findText(DEFAULT_MODEL)
+            self.model_combo.addItem(MODEL_LABELS.get(m, m), userData=m)
+        idx = self.model_combo.findData(DEFAULT_MODEL)
         if idx >= 0:
             self.model_combo.setCurrentIndex(idx)
-        self.model_combo.setMinimumWidth(280)
+        self.model_combo.setMinimumWidth(320)
         header.addWidget(self.model_combo)
+        # Toggle: grounding con búsqueda web (datos reales)
+        self.web_toggle = QCheckBox("🌐 Datos reales (web)")
+        self.web_toggle.setChecked(True)
+        self.web_toggle.setToolTip(
+            "Usa búsqueda web en tiempo real (bestsellers, ventas, precios reales).\n"
+            "Los modelos Perplexity Sonar ya la traen; a los demás se les añade :online."
+        )
+        header.addWidget(self.web_toggle)
         header.addSpacing(20)
         self.status_lbl = QLabel("Listo")
         self.status_lbl.setStyleSheet("color:#9ca3af; font-style:italic;")
@@ -165,12 +302,22 @@ class MarketTab(QWidget):
         self.btn_compare = self._mk_btn("⚖️ Comparar 2 nichos", self._on_compare)
         self.btn_marketplace = self._mk_btn("🏪 Por marketplace", self._on_marketplace)
         self.btn_predict = self._mk_btn("🔮 Predicción 2027", self._on_predict)
+        self.btn_opportunities = self._mk_btn(
+            "💎 Oportunidades — scoring + stack recomendado", self._on_opportunities
+        )
+        self.btn_opportunities.setStyleSheet(
+            "QPushButton { background:#6d28d9; color:white; font-weight:bold; "
+            "border:none; border-radius:8px; padding:9px 14px; } "
+            "QPushButton:hover { background:#7c3aed; } "
+            "QPushButton:disabled { background:#475569; color:#94a3b8; }"
+        )
         btns_box.addWidget(self.btn_general,     0, 0)
         btns_box.addWidget(self.btn_stacks,      0, 1)
         btns_box.addWidget(self.btn_niche,       0, 2)
         btns_box.addWidget(self.btn_compare,     1, 0)
         btns_box.addWidget(self.btn_marketplace, 1, 1)
         btns_box.addWidget(self.btn_predict,     1, 2)
+        btns_box.addWidget(self.btn_opportunities, 2, 0, 1, 3)
         root.addLayout(btns_box)
 
         # ─ Split: histórico | output ─
@@ -187,8 +334,9 @@ class MarketTab(QWidget):
         out_lay.setContentsMargins(0, 0, 0, 0)
         self.output = QTextBrowser()
         self.output.setOpenExternalLinks(True)
+        self.output.document().setDefaultStyleSheet(_MD_CSS)
         self.output.setPlaceholderText(
-            "Aquí saldrá el análisis (markdown).\n\n"
+            "Aquí saldrá el análisis.\n\n"
             "Pulsa uno de los botones de arriba para empezar."
         )
         out_lay.addWidget(self.output, 1)
@@ -283,7 +431,8 @@ class MarketTab(QWidget):
 
     def _set_busy(self, busy: bool, msg: str = ""):
         for b in (self.btn_general, self.btn_stacks, self.btn_niche,
-                  self.btn_compare, self.btn_marketplace, self.btn_predict):
+                  self.btn_compare, self.btn_marketplace, self.btn_predict,
+                  self.btn_opportunities):
             b.setEnabled(not busy)
         self.progress.setVisible(busy)
         if busy:
@@ -318,7 +467,15 @@ class MarketTab(QWidget):
     def _on_result(self, content: str):
         self._set_busy(False)
         self._current_md = content
-        self.output.setMarkdown(content)
+        # Modo Oportunidades → tarjetas visuales (JSON). El resto → markdown.
+        rendered = False
+        if self._current_req is not None and self._current_req.kind == "opportunities":
+            data = parse_opportunities(content)
+            if data:
+                self.output.setHtml(_render_opportunities_html(data))
+                rendered = True
+        if not rendered:
+            self.output.setMarkdown(content)
         for b in (self.btn_create, self.btn_export, self.btn_copy, self.btn_clear):
             b.setEnabled(True)
         # Guardar al histórico
@@ -339,10 +496,10 @@ class MarketTab(QWidget):
     # ─ Botones de análisis ─
 
     def _on_general(self):
-        self._kick_off(build_request("general", self.model_combo.currentText()))
+        self._kick_off(build_request("general", self._model(), web=self._web()))
 
     def _on_stacks(self):
-        self._kick_off(build_request("stacks", self.model_combo.currentText()))
+        self._kick_off(build_request("stacks", self._model(), web=self._web()))
 
     def _on_niche(self):
         niches = [n for n in TEMPLATE_NICHES if not n.startswith("(")]
@@ -350,7 +507,7 @@ class MarketTab(QWidget):
             self, "Por nicho", "Elige nicho:", niches, 0, False
         )
         if ok and niche:
-            self._kick_off(build_request("niche", self.model_combo.currentText(), {"niche": niche}))
+            self._kick_off(build_request("niche", self._model(), {"niche": niche}, web=self._web()))
 
     def _on_compare(self):
         dlg = _CompareDialog(self)
@@ -358,7 +515,7 @@ class MarketTab(QWidget):
             a, b = dlg.picked()
             if a and b and a != b:
                 self._kick_off(build_request(
-                    "compare", self.model_combo.currentText(), {"a": a, "b": b}
+                    "compare", self._model(), {"a": a, "b": b}, web=self._web()
                 ))
             elif a == b:
                 QMessageBox.information(self, "Comparar", "Elige dos nichos distintos.")
@@ -369,11 +526,31 @@ class MarketTab(QWidget):
         )
         if ok and mp:
             self._kick_off(build_request(
-                "marketplace", self.model_combo.currentText(), {"marketplace": mp}
+                "marketplace", self._model(), {"marketplace": mp}, web=self._web()
             ))
 
     def _on_predict(self):
-        self._kick_off(build_request("prediction", self.model_combo.currentText()))
+        self._kick_off(build_request("prediction", self._model(), web=self._web()))
+
+    def _on_opportunities(self):
+        # Enfoque opcional (nicho/marketplace/tecnología); vacío = todo el mercado.
+        focus, ok = QInputDialog.getText(
+            self, "Oportunidades",
+            "Enfoque (opcional): nicho, marketplace o tecnología.\nDéjalo vacío para escanear todo el mercado:",
+        )
+        if not ok:
+            return
+        self._kick_off(build_request(
+            "opportunities", self._model(), {"n": 8, "focus": focus.strip()}, web=self._web()
+        ))
+
+    # ─ Helpers de selección ─
+    def _model(self) -> str:
+        """ID del modelo seleccionado (el userData del combo, no la etiqueta)."""
+        return self.model_combo.currentData() or DEFAULT_MODEL
+
+    def _web(self) -> bool:
+        return self.web_toggle.isChecked()
 
     def _on_create_project(self):
         """Empuja el análisis al main window para crear un proyecto scratch
