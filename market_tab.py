@@ -14,8 +14,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import QObject, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QGuiApplication
+from PyQt6.QtCore import QObject, Qt, QThread, QUrl, pyqtSignal
+from PyQt6.QtGui import QDesktopServices, QGuiApplication
+from PyQt6.QtWebEngineCore import QWebEnginePage
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -55,8 +57,20 @@ from market_analyzer import (
     load_analysis,
     parse_opportunities,
     save_analysis,
+    split_hybrid,
 )
 from stacks import TEMPLATE_NICHES
+import market_dashboard as md_dash
+
+
+class _DashPage(QWebEnginePage):
+    """Página del panel: los enlaces externos se abren en el navegador del sistema."""
+
+    def acceptNavigationRequest(self, url: QUrl, nav_type, is_main_frame) -> bool:  # type: ignore[override]
+        if nav_type == QWebEnginePage.NavigationType.NavigationTypeLinkClicked:
+            QDesktopServices.openUrl(url)
+            return False
+        return True
 
 # ─── Tema visual del análisis (Qt rich-text CSS: subconjunto de CSS2.1) ──────
 # Se aplica al HTML que Qt genera desde el markdown → tablas, cabeceras y cajas
@@ -183,6 +197,76 @@ def _render_opportunities_html(data: dict) -> str:
             + '</td></tr></table>'
         )
     return "".join(parts)
+
+
+def _md_to_html(md: str) -> str:
+    """Markdown → HTML (para combinar con las tarjetas visuales en un solo panel)."""
+    try:
+        import markdown as _md
+        return _md.markdown(md or "", extensions=["tables", "sane_lists", "fenced_code"])
+    except Exception:
+        return "<pre>" + (md or "").replace("<", "&lt;") + "</pre>"
+
+
+def _render_scored_summary(items: list) -> str:
+    """Panel resumen puntuado (ranking con barras) para general/niche."""
+    if not items:
+        return ""
+    rows = []
+    ordered = sorted(items, key=lambda x: -int(x.get("oportunidad", 0) or 0))
+    for i, it in enumerate(ordered, 1):
+        opp = int(it.get("oportunidad", 0) or 0)
+        dem = int(it.get("demanda", 0) or 0)
+        comp = int(it.get("competencia", 0) or 0)
+        oc = _score_color(opp)
+        rows.append(
+            f'<tr>'
+            f'<td width="22" style="color:#64748b;padding:5px 6px">{i}</td>'
+            f'<td style="color:#f1f5f9;font-weight:600;padding:5px 6px">{str(it.get("nombre",""))}</td>'
+            f'<td width="140" style="padding:5px 6px">{_bar(opp)}</td>'
+            f'<td width="38" style="color:{oc};font-weight:800;font-size:12pt;padding:5px 6px">{opp}</td>'
+            f'<td width="150" style="color:#94a3b8;font-size:8.5pt;padding:5px 6px">demanda {dem} · comp. {comp}</td>'
+            f'</tr>'
+        )
+    return ('<h2>🏆 Oportunidades del análisis (resumen puntuado)</h2>'
+            '<table width="100%" cellspacing="0" cellpadding="0" bgcolor="#111a2e" '
+            'style="margin:6px 0">' + "".join(rows) + '</table>')
+
+
+def _render_versus(data: dict) -> str:
+    """Comparativa head-to-head con barras enfrentadas para el modo compare."""
+    a = data.get("a", {}) or {}
+    b = data.get("b", {}) or {}
+    sa = a.get("scores", {}) or {}
+    sb = b.get("scores", {}) or {}
+    na = str(a.get("nombre", "A"))
+    nb = str(b.get("nombre", "B"))
+    defs = [("Demanda", "demanda", False), ("Ingresos", "ingresos", False),
+            ("Competencia", "competencia", True), ("Dificultad", "dificultad", True),
+            ("Oportunidad", "oportunidad", False)]
+    rows = [
+        f'<tr><td></td>'
+        f'<td align="center" colspan="2" style="color:#c7d2fe;font-weight:800;font-size:11pt;padding-bottom:4px">{na}</td>'
+        f'<td align="center" colspan="2" style="color:#a7f3d0;font-weight:800;font-size:11pt;padding-bottom:4px">{nb}</td></tr>'
+    ]
+    for label, key, inv in defs:
+        va = int(sa.get(key, 0) or 0)
+        vb = int(sb.get(key, 0) or 0)
+        ca = _score_color((100 - va) if inv else va)
+        cb = _score_color((100 - vb) if inv else vb)
+        big = ' style="font-weight:800;font-size:11pt"' if key == "oportunidad" else ' style="font-size:9pt"'
+        rows.append(
+            f'<tr>'
+            f'<td width="90"{big} valign="middle"><span style="color:#94a3b8">{label}</span></td>'
+            f'<td width="120" valign="middle" style="padding:3px 4px">{_bar(va, inv)}</td>'
+            f'<td width="34" valign="middle" style="color:{ca};font-weight:700;text-align:right;padding-right:12px">{va}</td>'
+            f'<td width="120" valign="middle" style="padding:3px 4px">{_bar(vb, inv)}</td>'
+            f'<td width="34" valign="middle" style="color:{cb};font-weight:700;text-align:right">{vb}</td>'
+            f'</tr>'
+        )
+    return ('<h2>⚔️ Comparativa puntuada</h2>'
+            '<table width="100%" cellspacing="0" cellpadding="4" bgcolor="#111a2e" '
+            'style="margin:6px 0">' + "".join(rows) + '</table>')
 
 
 # ─── Worker en QThread (HTTP fuera del GUI thread) ──────────────────────
@@ -334,13 +418,13 @@ class MarketTab(QWidget):
         out_panel = QWidget()
         out_lay = QVBoxLayout(out_panel)
         out_lay.setContentsMargins(0, 0, 0, 0)
-        self.output = QTextBrowser()
-        self.output.setOpenExternalLinks(True)
-        self.output.document().setDefaultStyleSheet(_MD_CSS)
-        self.output.setPlaceholderText(
-            "Aquí saldrá el análisis.\n\n"
-            "Pulsa uno de los botones de arriba para empezar."
-        )
+        # Panel de salida = QWebEngineView (dashboard con Chart.js). Enlaces externos → navegador.
+        self.output = QWebEngineView()
+        self.output.setPage(_DashPage(self.output))
+        self.output.setHtml(md_dash.page(
+            "<div style='color:#64748b;padding:30px;font-size:15px'>"
+            "Aquí saldrá el análisis.<br><br>Pulsa uno de los botones de arriba para empezar."
+            "</div>"))
         out_lay.addWidget(self.output, 1)
         footer = QHBoxLayout()
         self.btn_create = QPushButton("🚀 Crear proyecto desde este análisis")
@@ -466,18 +550,30 @@ class MarketTab(QWidget):
         self._thread.finished.connect(self._thread.deleteLater)
         self._thread.start()
 
-    def _on_result(self, content: str):
-        self._set_busy(False)
-        self._current_md = content
-        # Modo Oportunidades → tarjetas visuales (JSON). El resto → markdown.
-        rendered = False
-        if self._current_req is not None and self._current_req.kind == "opportunities":
+    def _display(self, content: str, kind: str) -> str:
+        """Pinta el contenido en el dashboard (Chart.js) según el modo.
+        Devuelve el texto 'limpio' (narrativa) para exportar/guardar."""
+        # Oportunidades → dashboard con radar por oportunidad + ranking.
+        if kind == "opportunities":
             data = parse_opportunities(content)
             if data:
-                self.output.setHtml(_render_opportunities_html(data))
-                rendered = True
-        if not rendered:
-            self.output.setMarkdown(content)
+                self.output.setHtml(md_dash.dashboard_opportunities(data))
+                return content
+        # General / nicho / comparar → ranking o versus (Chart.js) + análisis.
+        if kind in ("general", "niche", "compare"):
+            summary, narrative = split_hybrid(content)
+            self.output.setHtml(
+                md_dash.dashboard_hybrid(summary, _md_to_html(narrative), versus=(kind == "compare"))
+            )
+            return narrative
+        # Resto → análisis en markdown → HTML con la misma estética.
+        self.output.setHtml(md_dash.page(_md_to_html(content)))
+        return content
+
+    def _on_result(self, content: str):
+        self._set_busy(False)
+        kind = self._current_req.kind if self._current_req is not None else ""
+        self._current_md = self._display(content, kind)
         for b in (self.btn_create, self.btn_export, self.btn_copy, self.btn_clear):
             b.setEnabled(True)
         # Guardar al histórico
@@ -582,7 +678,7 @@ class MarketTab(QWidget):
             self.status_lbl.setStyleSheet("color:#34d399; font-style:italic;")
 
     def _on_clear(self):
-        self.output.clear()
+        self.output.setHtml(md_dash.page(""))
         self._current_md = ""
         self._current_req = None
         self.meta_lbl.setText("")
@@ -619,8 +715,7 @@ class MarketTab(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Histórico", f"No se pudo abrir: {e}")
             return
-        self.output.setMarkdown(body)
-        self._current_md = body
+        self._current_md = self._display(body, meta.get("kind", ""))
         self._current_req = None  # un histórico no es una req nueva
         for b in (self.btn_create, self.btn_export, self.btn_copy, self.btn_clear):
             b.setEnabled(True)

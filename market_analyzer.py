@@ -367,12 +367,12 @@ def prompt_opportunities(params: dict | None = None) -> str:
     focus_line = f"\nEnfócate en: **{focus}**.\n" if focus else ""
     return f"""Eres un cazador de oportunidades de productos digitales. Detecta las **{n} mejores oportunidades para crear y vender ESTA SEMANA**, basándote en los DATOS REALES de Envato de arriba y en la búsqueda web.{focus_line}
 
-Para cada oportunidad puntúa de 0 a 100:
-- **demanda**: cuánta gente lo busca/compra (mayor = mejor).
-- **competencia**: nivel de saturación (0 = hueco vacío, 100 = saturadísimo).
-- **dificultad**: lo difícil que es construirlo bien (0 = fácil, 100 = muy difícil).
-- **ingresos**: potencial de ingresos (mayor = mejor).
-- **oportunidad**: score GLOBAL (mayor = mejor). Combina lo anterior: premia demanda+ingresos, penaliza competencia+dificultad.
+Aplica el marco de **Opportunity Score compuesto** (el que usan los pros). Puntúa 0-100 y APOYA cada score en la evidencia real de arriba (Envato ventas/precios + Google Trends + web); no inventes cifras:
+- **demanda**: señal real = volumen/tendencia de búsqueda (Google Trends) + nº de ventas de productos similares (Envato). Mayor = mejor.
+- **competencia**: saturación real del hueco (0 = vacío o competidores flojos; 100 = saturado por productos muy fuertes/bien valorados).
+- **dificultad**: esfuerzo de construir algo competitivo de verdad (0 = fácil; 100 = muy difícil).
+- **ingresos**: potencial de monetización = precio medio × volumen esperable (usa precios reales de Envato). Mayor = mejor.
+- **oportunidad**: score GLOBAL 0-100. Combina demanda + ingresos + tamaño del hueco, penalizando competencia y dificultad. Regla del sector: **≥70 = merece construirlo, ≥80 = corre antes de que lo pillen otros**.
 
 Recomienda para cada una un **stack** usando el ID EXACTO de este catálogo (no inventes ids):
 {catalog}
@@ -395,6 +395,52 @@ Responde **SOLO con JSON válido** (sin markdown, sin texto antes/después), con
 }}
 
 Ordena las oportunidades de mayor a menor "oportunidad". Usa cifras reales. No inventes datos ni ids de stack."""
+
+
+# Directivas para pedir un RESUMEN puntuado (JSON) + el análisis narrativo, de
+# modo que la UI pinte un panel visual arriba y el detalle debajo.
+_SUMMARY_HINT = """
+
+---
+FORMATO DE SALIDA EN DOS BLOQUES (obligatorio):
+Primero un resumen puntuado en JSON válido (sin markdown), y después el análisis detallado.
+
+===RESUMEN===
+{"items": [{"nombre": "nicho/oportunidad", "oportunidad": 0-100, "demanda": 0-100, "competencia": 0-100}]}
+===ANALISIS===
+(aquí TODO el análisis detallado en markdown, tal como se pidió arriba)
+
+En "items" incluye los 6-8 nichos/oportunidades más destacados de tu análisis, ordenados por "oportunidad" descendente, con cifras coherentes con el texto."""
+
+_VERSUS_HINT = """
+
+---
+FORMATO DE SALIDA EN DOS BLOQUES (obligatorio):
+===VERSUS===
+{"a": {"nombre": "<nicho A>", "scores": {"demanda": 0-100, "competencia": 0-100, "dificultad": 0-100, "ingresos": 0-100, "oportunidad": 0-100}},
+ "b": {"nombre": "<nicho B>", "scores": {"demanda": 0-100, "competencia": 0-100, "dificultad": 0-100, "ingresos": 0-100, "oportunidad": 0-100}}}
+===ANALISIS===
+(aquí la comparativa detallada en markdown)"""
+
+
+def split_hybrid(content: str) -> tuple[dict | None, str]:
+    """Separa la respuesta híbrida en (resumen_json | None, narrativa_markdown).
+    Robusto: si no hay bloques, devuelve (None, content)."""
+    if not content or "===ANALISIS===" not in content:
+        return None, content or ""
+    head, _, narrative = content.partition("===ANALISIS===")
+    narrative = narrative.strip()
+    import re as _re
+    m = _re.search(r"===(?:RESUMEN|VERSUS)===(.*)", head, _re.DOTALL)
+    blob = m.group(1) if m else head
+    s, e = blob.find("{"), blob.rfind("}")
+    data = None
+    if 0 <= s < e:
+        try:
+            data = json.loads(_re.sub(r"\[\d+\]", "", blob[s:e + 1]))
+        except Exception:
+            data = None
+    return data, (narrative or content)
 
 
 def parse_opportunities(content: str) -> dict | None:
@@ -463,37 +509,52 @@ def build_request(kind: str, model: str, params: dict | None = None, web: bool =
     p = (p.replace("2027", str(NEXT_YEAR))
           .replace("2026", str(YEAR))
           .replace("2025", str(YEAR - 1)))
+    # Resumen puntuado visual (híbrido): general/niche llevan panel de scores arriba;
+    # compare lleva comparativa head-to-head.
+    if kind in ("general", "niche"):
+        p += _SUMMARY_HINT
+    elif kind == "compare":
+        p += _VERSUS_HINT
     return AnalysisRequest(kind=kind, params=params, model=model, user_prompt=p, web=web)
 
 
-def _envato_preamble(kind: str, params: dict) -> str:
-    """Bloque de DATOS REALES de Envato para anteponer al prompt (si hay token).
-    Se ejecuta en el worker thread (hace HTTP). Tolerante a fallos → "" si no puede."""
-    try:
-        import envato_api as ev
-    except Exception:
-        return ""
-    if not ev.has_token():
-        return ""
+def _realdata_preamble(kind: str, params: dict) -> str:
+    """Bloque de DATOS REALES (Envato + Google Trends) para anteponer al prompt.
+    Se ejecuta en el worker thread (hace HTTP). Cada fuente es tolerante a fallos."""
     params = params or {}
     blocks: list[str] = []
+    # ─ Envato: bestsellers/ventas/precios reales (si hay token) ─
     try:
-        if kind == "niche":
-            blocks.append(ev.market_snapshot("themeforest", term=params.get("niche", "")))
-        elif kind == "compare":
-            blocks.append(ev.market_snapshot("themeforest", term=params.get("a", "")))
-            blocks.append(ev.market_snapshot("themeforest", term=params.get("b", "")))
-        elif kind == "marketplace":
-            mp = (params.get("marketplace", "") or "").lower()
-            if "codecanyon" in mp:
-                blocks.append(ev.market_snapshot("codecanyon"))
-            elif "themeforest" in mp:
+        import envato_api as ev
+        if ev.has_token():
+            if kind == "niche":
+                blocks.append(ev.market_snapshot("themeforest", term=params.get("niche", "")))
+            elif kind == "compare":
+                blocks.append(ev.market_snapshot("themeforest", term=params.get("a", "")))
+                blocks.append(ev.market_snapshot("themeforest", term=params.get("b", "")))
+            elif kind == "marketplace":
+                mp = (params.get("marketplace", "") or "").lower()
+                if "codecanyon" in mp:
+                    blocks.append(ev.market_snapshot("codecanyon"))
+                elif "themeforest" in mp:
+                    blocks.append(ev.market_snapshot("themeforest"))
+            else:  # general | stacks | prediction | opportunities
                 blocks.append(ev.market_snapshot("themeforest"))
-        else:  # general | stacks | prediction
-            blocks.append(ev.market_snapshot("themeforest"))
-            blocks.append(ev.market_snapshot("codecanyon"))
+                blocks.append(ev.market_snapshot("codecanyon"))
     except Exception:
-        return ""
+        pass
+    # ─ Google Trends: señal de demanda real (solo términos concretos) ─
+    try:
+        import trends as tr
+        if kind == "niche":
+            blocks.append(tr.trend_block(params.get("niche", "")))
+        elif kind == "compare":
+            blocks.append(tr.trend_block(params.get("a", "")))
+            blocks.append(tr.trend_block(params.get("b", "")))
+        elif kind == "opportunities" and params.get("focus"):
+            blocks.append(tr.trend_block(params.get("focus", "")))
+    except Exception:
+        pass
     blocks = [b for b in blocks if b]
     if not blocks:
         return ""
@@ -517,7 +578,7 @@ def call_openrouter(req: AnalysisRequest, api_key: str, timeout: int = 240) -> s
     # Grounding con datos REALES de Envato (bestsellers/ventas/precios) si hay token.
     user_content = req.user_prompt
     if web:
-        pre = _envato_preamble(req.kind, req.params)
+        pre = _realdata_preamble(req.kind, req.params)
         if pre:
             user_content = pre + user_content
 
