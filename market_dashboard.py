@@ -66,8 +66,14 @@ def _color(good: int) -> str:
     return "#22c55e" if good >= 70 else "#f59e0b" if good >= 45 else "#ef4444"
 
 
+_CHARTJS_CDN = "https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
+
+
 def page(body: str, with_charts: bool = False, scripts: str = "") -> str:
-    cjs = f"<script>{_chartjs()}</script>" if with_charts else ""
+    cjs = ""
+    if with_charts:
+        local = _chartjs()
+        cjs = f"<script>{local}</script>" if local else f"<script src='{_CHARTJS_CDN}'></script>"
     tail = f"<script>{scripts}</script>" if scripts else ""
     return (
         "<!doctype html><html lang='es'><head><meta charset='utf-8'>"
