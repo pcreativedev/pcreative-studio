@@ -5,6 +5,29 @@ All notable changes to Pcreative Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-08-07
+
+### Added
+
+- **Análisis de mercado con datos reales.** El módulo Market deja de razonar a
+  ciegas: consulta la API de Envato y busca en la web antes de puntuar, y trae
+  Google Trends para ver si un nicho sube o baja. Nuevo modo «Oportunidades».
+- **Panel visual del análisis** (QWebEngine + Chart.js), con la metodología de
+  puntuación a la vista en vez de un número sin explicar.
+
+### Fixed
+
+- **Un scaffolder de terceros ya no puede tumbar el resto del setup.** Los
+  comandos del scaffold iban bajo `set -e`: cuando shadcn retiró
+  `--base-color` y `--css-variables` de su CLI, `astro-shadcn` moría en el
+  tercer comando y se llevaba por delante el CLAUDE.md del proyecto, las
+  skills, autoskills, UI/UX Pro, Taste-Skill y el `.mcp.json`. Ahora cada paso
+  se anota y continúa, el resumen sale al final y los fallos se le cuentan al
+  agente en CLAUDE.md para que los repare.
+- **Flags de shadcn al día.** `-t astro -b base -p nova -y`, y el alias `@/*`
+  que la plantilla mínima de Astro no trae y sin el cual su init aborta.
+- **Los años dejan de estar escritos a mano** en prompts y botones del Market.
+
 ## [2.0.1] - 2026-06-29
 
 ### Added
