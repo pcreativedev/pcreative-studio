@@ -102,8 +102,9 @@ def _list_stacks(p):
             "niches": list(TEMPLATE_NICHES), "providers": list(AGENTS.keys())}
 
 
-def _suggest(description: str, provider: str) -> dict:
-    """Vibe: descripción natural → stack + dev_prompt (reusa vibe_scaffolder)."""
+def _suggest(description: str, provider: str, web_research: bool = True) -> dict:
+    """Vibe: descripción natural → stack + dev_prompt (reusa vibe_scaffolder).
+    `web_research`: investiga el nicho en la web (OpenRouter) antes de proponer."""
     import os
     import shlex
     import subprocess
@@ -111,10 +112,11 @@ def _suggest(description: str, provider: str) -> dict:
     import platform_compat as _pc
     from stacks import STACKS, TEMPLATE_TYPES
     import themes as _t
-    from vibe_scaffolder import build_vibe_prompt, parse_vibe_response
+    from vibe_scaffolder import build_vibe_prompt, parse_vibe_response, vibe_web_research
 
     builtin = [t.name for t in _t.list_themes() if not t.is_user]
-    prompt = build_vibe_prompt(description, STACKS, TEMPLATE_TYPES, builtin)
+    research = vibe_web_research(description) if web_research else ""
+    prompt = build_vibe_prompt(description, STACKS, TEMPLATE_TYPES, builtin, research=research)
     state, info = aip.detect_status(provider)
     if state != "ok":
         return {"error": f"agente '{provider}' no listo: {info}", "stack_key": None}
@@ -220,7 +222,7 @@ def _stream_create_build(p, emit):
             reference_kind=(ref_kind if mode_eff == "recreate" else None),
             reference_value=(ref if mode_eff == "recreate" else None),
             existing_repo=None, create_github_repo=False, github_user=None,
-            embedded=True, run_uipro=True, niche=(niche or None),
+            embedded=True, run_uipro=True, run_taste=True, niche=(niche or None),
             launch_agent=False, ai_analysis=ai_analysis, ai_analysis_kind=ai_kind)
     except Exception as e:
         return {"ok": False, "error": f"write_setup_script: {e}"}

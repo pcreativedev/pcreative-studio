@@ -29,7 +29,7 @@ import re
 import time
 from dataclasses import dataclass, field
 
-from PyQt6.QtCore import Qt, QProcess
+from PyQt6.QtCore import Qt, QProcess, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication, QDialog, QDialogButtonBox, QHBoxLayout, QLabel,
@@ -56,14 +56,75 @@ class VibeProposal:
 
 
 # ─────────────────── Prompt construction ────────────────────────────
+def vibe_web_research(user_desc: str, api_key: str | None = None,
+                      model: str = "google/gemini-2.5-flash:online",
+                      timeout: int = 60) -> str:
+    """Investigación web del nicho vía OpenRouter (`:online` = búsqueda web).
+    Devuelve un resumen markdown breve, o "" si falla o no hay key (NO fatal:
+    el Vibe sigue funcionando sin red)."""
+    import json as _json
+    import urllib.request as _ur
+    if api_key is None:
+        try:
+            from market_analyzer import get_openrouter_key
+            api_key = get_openrouter_key()
+        except Exception:
+            api_key = ""
+    if not api_key:
+        return ""
+    prompt = (
+        "Investiga en la web el nicho de este proyecto y resume SOLO lo útil "
+        "para DISEÑARLO y VENDERLO en marketplaces (ThemeForest/CodeCanyon/"
+        "Creative Market/Gumroad). Descripción del autor:\n"
+        f'"""\n{user_desc.strip()[:700]}\n"""\n\n'
+        "Devuelve markdown MUY conciso (máx 180 palabras), sin preámbulo, con:\n"
+        "- Competencia/referencias reales (1-3, con nombre).\n"
+        "- Secciones/páginas que esperan los compradores del nicho.\n"
+        "- Convenciones de estética/diseño típicas del nicho.\n"
+        "- Stack o features técnicas habituales si es relevante."
+    )
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 600,
+        "temperature": 0.4,
+    }
+    req = _ur.Request(
+        "https://openrouter.ai/api/v1/chat/completions",
+        data=_json.dumps(body).encode(),
+        headers={
+            "Authorization": "Bearer " + api_key,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://pcreativestudio.dev",
+            "X-Title": "Pcreative Studio Vibe",
+        },
+    )
+    try:
+        r = _json.load(_ur.urlopen(req, timeout=timeout))
+        return (r["choices"][0]["message"]["content"] or "").strip()
+    except Exception:
+        return ""
+
+
 def build_vibe_prompt(user_desc: str,
                       stacks: dict,
                       template_types: list[str],
-                      builtin_themes: list[str]) -> str:
+                      builtin_themes: list[str],
+                      research: str = "") -> str:
     """Builds the structured-output prompt sent to the agent.
 
     `stacks` is the dict mirror of `stacks.STACKS` (key → metadata).
+    `research` (opcional): resumen de investigación web del nicho para fundamentar
+    la elección de stack/tema y enriquecer el dev_prompt con datos reales.
     """
+    research_block = ""
+    if research and research.strip():
+        research_block = (
+            "\nMARKET RESEARCH (real, de la web — ÚSALO para fundamentar la "
+            "elección de stack/tema y para enriquecer el dev_prompt con secciones, "
+            "estética y referencias concretas del nicho):\n"
+            '"""\n' + research.strip() + '\n"""\n'
+        )
     # Compact stack catalog
     stack_lines = []
     for key, s in stacks.items():
@@ -91,7 +152,7 @@ USER DESCRIPTION (in their own words):
 \"\"\"
 {user_desc}
 \"\"\"
-
+{research_block}
 AVAILABLE STACKS (must pick exactly one of these keys):
 {stack_list}
 
@@ -215,10 +276,13 @@ class VibeDialog(QDialog):
     Result: `self.proposal` is set to the VibeProposal on Accepted.
     """
 
+    _research_ready = pyqtSignal(str)
+
     def __init__(self, parent, user_desc: str, agent_key: str,
                  stacks: dict, template_types: list[str],
-                 builtin_themes: list[str]):
+                 builtin_themes: list[str], web_research: bool = True):
         super().__init__(parent)
+        self._vibe_inputs = (user_desc, stacks, template_types, builtin_themes)
         self.setWindowTitle("✨ Vibe scaffolder — generando propuesta")
         self.resize(820, 640)
 
@@ -292,8 +356,35 @@ class VibeDialog(QDialog):
         root.addWidget(self.preview_lbl)
         root.addWidget(self.bb)
 
-        # ── Run agent ───────────────────────────────────────────────
-        prompt = build_vibe_prompt(user_desc, stacks, template_types, builtin_themes)
+        # ── Investigación web opcional → luego lanza el agente ──────
+        self._research_ready.connect(self._after_research)
+        if web_research:
+            self.status_lbl.setText("🌐 Investigando el nicho en la web…")
+            self.out.appendPlainText(
+                "🌐 Buscando referencias, competencia y secciones típicas del "
+                "nicho (búsqueda web)…\n")
+            import threading
+            threading.Thread(target=self._do_research, daemon=True).start()
+        else:
+            self._after_research("")
+
+    def _do_research(self):
+        ud = self._vibe_inputs[0]
+        try:
+            r = vibe_web_research(ud)
+        except Exception:
+            r = ""
+        self._research_ready.emit(r)
+
+    def _after_research(self, research: str):
+        ud, stacks, ttypes, themes = self._vibe_inputs
+        if research:
+            self.out.appendPlainText(
+                "✓ Investigación lista — fundamentando la propuesta con datos "
+                "reales del nicho.\n")
+        else:
+            self.out.appendPlainText("· (sin investigación web — sigo igual)\n")
+        prompt = build_vibe_prompt(ud, stacks, ttypes, themes, research=research)
         self._launch(prompt)
 
     # ── Process management ──────────────────────────────────────────

@@ -200,7 +200,8 @@ def estimate_cost(
 
 
 @mcp.tool()
-def suggest_stack(description: str, provider_for_inference: str = "claude") -> dict:
+def suggest_stack(description: str, provider_for_inference: str = "claude",
+                  web_research: bool = True) -> dict:
     """Recommend a stack + theme + dev prompt from a natural-language
     description. Calls the active AI provider with a structured prompt
     (same engine the GUI's ✨ Vibe scaffolder uses).
@@ -220,11 +221,12 @@ def suggest_stack(description: str, provider_for_inference: str = "claude") -> d
     import shlex
     from stacks import STACKS, TEMPLATE_TYPES
     import themes as _t
-    from vibe_scaffolder import build_vibe_prompt, parse_vibe_response
+    from vibe_scaffolder import build_vibe_prompt, parse_vibe_response, vibe_web_research
 
     builtin_theme_names = [t.name for t in _t.list_themes() if not t.is_user]
+    research = vibe_web_research(description) if web_research else ""
     prompt = build_vibe_prompt(
-        description, STACKS, TEMPLATE_TYPES, builtin_theme_names,
+        description, STACKS, TEMPLATE_TYPES, builtin_theme_names, research=research,
     )
 
     state, info = aip.detect_status(provider_for_inference)
@@ -355,6 +357,7 @@ def create_project(
     provider: str = "codex",
     run_autoskills: bool = True,
     run_uipro: bool = True,
+    run_taste: bool = True,
     run_setup: bool = True,
     timeout: int = 420,
 ) -> dict:
@@ -404,7 +407,8 @@ def create_project(
             project_name=name, agent_key=provider, run_autoskills=run_autoskills,
             mode="scratch", reference_kind=None, reference_value=None,
             existing_repo=None, create_github_repo=False, github_user=None,
-            embedded=True, run_uipro=run_uipro, niche=(niche or None),
+            embedded=True, run_uipro=run_uipro, run_taste=run_taste,
+            niche=(niche or None),
             launch_agent=False,
         )
     except Exception as e:
@@ -413,7 +417,7 @@ def create_project(
     out = {
         "project_path": str(project_dir), "slug": slug, "stack": stack,
         "provider": provider, "setup_script": str(script),
-        "run_autoskills": run_autoskills, "run_uipro": run_uipro,
+        "run_autoskills": run_autoskills, "run_uipro": run_uipro, "run_taste": run_taste,
         "ran_setup": run_setup,
     }
     if run_setup:

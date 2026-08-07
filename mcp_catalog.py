@@ -121,7 +121,9 @@ CATALOG: list[MCPEntry] = [
         relevance=["web-frontend", "wordpress", "shopify"],
         install={
             "command": "npx",
-            "args": ["-y", "@playwright/mcp@latest"],
+            # --prefer-offline: usa la caché de npm; no re-resuelve @latest contra el
+            # registro en cada arranque (evita timeouts que desactivan el MCP).
+            "args": ["-y", "--prefer-offline", "@playwright/mcp@latest"],
         },
     ),
     MCPEntry(
@@ -225,7 +227,7 @@ CATALOG: list[MCPEntry] = [
             "para el registro público."
         ),
         relevance=["web-frontend", "design"],
-        install={"command": "npx", "args": ["shadcn@latest", "mcp"]},
+        install={"command": "npx", "args": ["-y", "--prefer-offline", "shadcn@latest", "mcp"]},
     ),
     MCPEntry(
         key="reactbits",
@@ -239,7 +241,30 @@ CATALOG: list[MCPEntry] = [
             "(npx shadcn add https://reactbits.dev/r/<Componente>-TS-TW). SIN API key."
         ),
         relevance=["web-frontend", "design"],
-        install={"command": "npx", "args": ["-y", "reactbits-dev-mcp-server"]},
+        install={"command": "npx", "args": ["-y", "--prefer-offline", "reactbits-dev-mcp-server"]},
+    ),
+    MCPEntry(
+        key="aseprite",
+        name="Aseprite — pixel art (sprites/animación/spritesheets)",
+        license="MIT",
+        repo="https://github.com/diivi/aseprite-mcp",
+        description=(
+            "Crea y edita PIXEL ART por lenguaje natural con Aseprite: sprites, "
+            "paletas retro, dithering, shading, animación y export a spritesheet. "
+            "Ideal para avatares/furni/tiles de un juego isométrico estilo Habbo. "
+            "REQUIERE Aseprite instalado (app de pago ~20$ o compilada). NO se "
+            "auto-cablea: actívalo a mano si lo tienes (ver GAME-CONTEXT.md)."
+        ),
+        relevance=["game"],
+        # El paquete NO expone executable: se arranca como módulo (`python -m
+        # aseprite_mcp`) dentro del entorno efímero de uvx. ASEPRITE_PATH apunta al
+        # binario (auto si está en PATH). Verificado: arranca como stdio MCP server.
+        install={
+            "command": "uvx",
+            "args": ["--from", "git+https://github.com/diivi/aseprite-mcp",
+                     "python", "-m", "aseprite_mcp"],
+            "env": {"ASEPRITE_PATH": "aseprite"},
+        },
     ),
     MCPEntry(
         key="chakra-ui",

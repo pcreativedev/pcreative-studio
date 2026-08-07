@@ -210,7 +210,10 @@ _MAIN_APP = None  # ref a la PcreativeStudioApp principal (para enfocarla desde 
 # Skills que Pcreative Studio instala (autoskills → `.agents/skills/` + symlinks en
 # `.claude/skills/`; uipro-cli → carpeta `ui-ux-pro-max`). Una skill genérica de
 # un fork (Medusa: reviewing-prs, writing-docs…) NO cuenta.
-_UIPRO_HINTS = ("ui-ux-pro", "uiux-pro", "uipro")
+#   Taste-Skill se COPIA (no crea symlink), así que hay que reconocerla por su
+#   nombre o el bootstrap se relanzaría en cada apertura.
+_UIPRO_HINTS = ("ui-ux-pro", "uiux-pro", "uipro", "design-taste", "gpt-taste",
+                "high-end-visual", "stitch-design")
 # Señales de que hay un stack escaffoldeado (mismo set que el script de setup).
 _STACK_MARKERS = (
     "package.json", "composer.json", "pubspec.yaml", "Cargo.toml", "go.mod",
@@ -268,11 +271,25 @@ def _maybe_bootstrap_skills(root: Path) -> bool:
                 continue
         if not has_stack or not shutil.which("npx"):
             return False
+        # Taste-Skill solo si el proyecto tiene cara visible. Aquí no hay tipo de
+        # plantilla que consultar —el proyecto ya existe— así que se mira su forma.
+        import taste_skills
+        taste_ok, taste_motivo = taste_skills.detectar_en_disco(root)
+
         marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text("autoskills+uipro lanzados al abrir desde galería\n")
+        marker.write_text("autoskills+uipro+taste lanzados al abrir desde galería\n")
         log = root / ".pcreative-studio" / "skills-install.log"
+        if taste_ok:
+            _args = " ".join(f"-s {s}" for s in taste_skills.TODAS)
+            _taste_cmd = (
+                'echo "=== taste-skill ==="; '
+                f'npx --yes skills add {taste_skills.REPO} {_args} -a claude-code -y 2>&1; '
+            )
+        else:
+            _taste_cmd = f'echo "=== taste-skill: saltado — {taste_motivo} ==="; '
         cmd = ('echo "=== autoskills ==="; npx --yes autoskills -a claude 2>&1; '
                'echo "=== uipro-cli ==="; npx --yes uipro-cli init --ai claude 2>&1; '
+               + _taste_cmd +
                'echo "=== DONE ==="')
         with open(log, "w") as fh:
             subprocess.Popen(["bash", "-lc", cmd], cwd=str(root),
@@ -314,15 +331,22 @@ def _ensure_project_wiring(project_path: Path) -> list[str]:
                                 pass
             if n:
                 done.append(f"context/ ({n} MDs)")
-        # 2. .mcp.json — MCPs (magic/21st.dev, etc.) si falta
-        if not (root / ".mcp.json").exists():
-            try:
-                import web_enhancements as we
-                we.ensure_mcps(root)
-                if (root / ".mcp.json").exists():
-                    done.append(".mcp.json")
-            except Exception:
-                pass
+        # 2. MCPs + contexto de animaciones. ensure_mcps FUSIONA (no pisa) → añade los
+        #    MCPs nuevos del catálogo (magic/magicui/shadcn/reactbits/fetch/playwright)
+        #    aunque ya exista un .mcp.json viejo o parcial. ensure_for_project (re)escribe
+        #    la guía de animaciones a la ÚLTIMA versión (UI-MOTION.md + STACK-PREMIUM.md)
+        #    y asegura el MCP magic — solo en frontends React. Idempotente.
+        try:
+            import web_enhancements as we
+            added = we.ensure_mcps(root)
+            if added:
+                done.append("MCPs (" + ", ".join(added) + ")")
+            res = we.ensure_for_project_tree(root)   # monorepo-aware: raíz + apps/*
+            n_guides = len(res.get("guides") or [])
+            if n_guides:
+                done.append(f"UI-MOTION.md + STACK-PREMIUM.md (×{n_guides})")
+        except Exception:
+            pass
         # 3. skills — descubribles en .claude/skills si falta
         if not (root / ".claude" / "skills").exists():
             try:
@@ -3767,6 +3791,7 @@ def write_setup_script(
     niche: str | None = None,
     launch_agent: bool = True,
     ai_analysis_kind: str = "reference",
+    run_taste: bool = False,
 ) -> Path:
     """Si embedded=True, el script se ejecuta dentro de la terminal
     embebida del ProjectWindow (no necesita `read` final ni dejar la
@@ -3785,6 +3810,23 @@ def write_setup_script(
     # agente DEBE saber que existen y usarlas. Sin esto arranca sin ellas en
     # contexto: las skills quedan instaladas en `.claude/skills/` pero el
     # agente no las invoca al empezar.
+    # Taste-Skill (criterio de diseño). No va en todos los proyectos: la propia
+    # skill dice que es para páginas que tienen que entrar por los ojos, no para
+    # paneles. `aplica()` decide, y el motivo se enseña en el script para que un
+    # «no se ha instalado» nunca parezca una avería.
+    _taste_ok, _taste_motivo = (False, "")
+    if run_taste:
+        import taste_skills
+        _taste_ok, _taste_motivo = taste_skills.aplica(
+            template_type=template_type,
+            stack_category=stack.get("category"),
+            project_name=project_name,
+        )
+        if _taste_ok:
+            _bloque = taste_skills.bloque_contexto()
+            if _bloque:
+                ctx_md += "\n\n" + _bloque + "\n"
+
     if run_autoskills or run_uipro:
         _sk = []
         if run_autoskills:
@@ -3810,6 +3852,28 @@ def write_setup_script(
     parts = []
     parts.append("#!/usr/bin/env bash")
     parts.append("set -e")
+    # ── Pasos que pueden fallar sin matar el setup ──────────────────────────
+    #
+    # `set -e` está bien para los pasos propios, pero NO para los scaffolders
+    # de terceros: `shadcn init`, `astro add` y compañía fallan por su cuenta
+    # (una versión nueva, un prompt que no acepta `--yes`, la red) y cuando eso
+    # pasa el proyecto sigue siendo perfectamente utilizable. Lo que no puede
+    # pasar es que el agente arranque sin sus skills por eso.
+    #
+    # Los fallos se acumulan, se enseñan al final y se le cuentan al agente en
+    # CLAUDE.md, que es quien mejor puede arreglarlos.
+    parts.append("__TF_FALLOS=()")
+    parts.append(
+        "__tf_paso() {\n"
+        "  if eval \"$1\"; then return 0; fi\n"
+        "  __TF_FALLOS+=(\"$1\")\n"
+        "  echo \"\"\n"
+        "  echo \"  ⚠  Falló y el setup CONTINÚA: $1\"\n"
+        "  echo \"     (se anota en CLAUDE.md para que el agente lo repare)\"\n"
+        "  echo \"\"\n"
+        "  return 0\n"
+        "}"
+    )
     # Windows (git-bash): el binario de Python se llama `python`, no `python3`.
     # Sin esto, los bloques `python3 - <<EOF` y `python3 -m …` del setup
     # fallan y, con `set -e`, abortan el script ANTES de lanzar el agente
@@ -3878,7 +3942,13 @@ def write_setup_script(
                        .replace("__ORG_ID__", org_id)
                        .replace("__TFDIR__", tfdir)
                 )
-                parts.append(substituted)
+                # Cada comando del scaffold pasa por `__tf_paso`, que apunta el
+                # fallo y SIGUE. Antes iban sueltos bajo `set -e`: uno que
+                # petara —`shadcn init` en Astro es el caso típico— se llevaba
+                # por delante todo lo que viene después, que es justo lo que
+                # aporta este programa: skills, MCP y el contexto del agente.
+                # El usuario acababa con un scaffold pelado y sin saber por qué.
+                parts.append(f"__tf_paso {shell_quote(substituted)}")
             # Restaura los ficheros apartados (sin sobrescribir los del scaffold).
             parts.append(
                 'for __f in .mcp.json README-MCP.md; do '
@@ -4005,9 +4075,19 @@ def write_setup_script(
     if stack["skills"] and skills_flag:
         parts.append('echo ""')
         parts.append('echo "→ Instalando skills predeclaradas del stack…"')
+        # `repo:skill`, no `owner/repo/skill`. El CLI `skills` quiere el repo y
+        # la skill por separado (`add <owner>/<repo> -s <skill>`); con la ruta de
+        # tres tramos clona el repo, no encuentra nada y sale con error. Las
+        # cuatro skills predeclaradas llevaban ese formato —y tres de ellas
+        # apuntaban además a repos que no existen— así que en 33 stacks no se
+        # instaló nunca ninguna: solo salía «no se pudo añadir, continuamos».
+        import taste_skills as _ts
+        _agente_cli = _ts.AGENTES.get(agent_key, skills_flag)
         for skill in stack["skills"]:
+            repo, _, nombre = skill.partition(":")
+            _sel = f" -s {shell_quote(nombre)}" if nombre else ""
             parts.append(
-                f"npx --yes skills add {shell_quote(skill)} -a {skills_flag} "
+                f"npx --yes skills add {shell_quote(repo)}{_sel} -a {_agente_cli} -y "
                 f'|| echo "(skill {skill} no se pudo añadir, continuamos)"'
             )
     elif stack["skills"]:
@@ -4084,6 +4164,19 @@ def write_setup_script(
         else:
             parts.append(
                 f'echo "→ Saltando uipro: provider \'{agent_key}\' no soportado por uipro-cli."'
+            )
+
+    # ── Taste-Skill (criterio de diseño) ───────────────────────────────
+    if run_taste:
+        import taste_skills
+        if _taste_ok:
+            parts.extend(taste_skills.bloque_shell(agent_key))
+        else:
+            parts.append("")
+            parts.append(
+                f'echo "→ Saltando Taste-Skill: {_taste_motivo}. '
+                f'Si te has quedado corto, instálalo a mano: '
+                f'npx --yes skills add {taste_skills.REPO} --all"'
             )
 
     # ── Skills cross-cutting → raíz (solo necesario en mono-repos) ──
@@ -4203,6 +4296,34 @@ def write_setup_script(
     # de la ProjectWindow para evitar publicar accidentalmente código
     # sensible durante el scaffold automático.
 
+    # ── Lo que se rompió por el camino ─────────────────────────────────────
+    #
+    # Se cuenta DOS veces y a propósito. En pantalla, para que quien mira sepa
+    # que su proyecto salió incompleto — antes esto se perdía entre cien líneas
+    # de npm. Y en CLAUDE.md, porque el agente que arranca justo después es
+    # quien puede arreglarlo, y sin decírselo no se entera.
+    parts.append('if [ ${#__TF_FALLOS[@]} -gt 0 ]; then')
+    parts.append('  echo ""')
+    parts.append('  echo "──── ⚠  ${#__TF_FALLOS[@]} paso(s) del scaffold fallaron ────"')
+    parts.append('  for __f in "${__TF_FALLOS[@]}"; do echo "  · $__f"; done')
+    parts.append('  echo ""')
+    parts.append('  echo "  El proyecto se ha creado igual y las skills están puestas."')
+    parts.append('  echo "  Se lo decimos al agente para que lo repare."')
+    parts.append('  {')
+    parts.append('    echo ""')
+    parts.append('    echo "## Pasos del scaffold que fallaron"')
+    parts.append('    echo ""')
+    parts.append('    echo "Estos comandos del scaffold no terminaron bien. El proyecto"')
+    parts.append('    echo "funciona, pero les falta lo que iban a instalar."')
+    parts.append('    echo ""')
+    parts.append(r'''    for __f in "${__TF_FALLOS[@]}"; do echo "- \`$__f\`"; done''')
+    parts.append('    echo ""')
+    parts.append('    echo "**Antes de escribir código**: revisa qué falta, decide si hace"')
+    parts.append('    echo "falta para lo que se te ha pedido y, si lo hace, arréglalo o"')
+    parts.append('    echo "monta el equivalente a mano. No repitas el comando a ciegas: si"')
+    parts.append('    echo "falló una vez, es probable que vuelva a fallar."')
+    parts.append('  } >> CLAUDE.md 2>/dev/null || true')
+    parts.append('fi')
     parts.append('echo ""')
     parts.append(f'echo "════ Listo. Lanzando {agent["name"]}… ════"')
     parts.append('echo ""')
@@ -4882,6 +5003,23 @@ class PcreativeStudio(QWidget):
         # Auto-check para stacks UI; OFF para backend puro.
         self.uipro_check.setChecked(self._is_ui_stack(self._stack_key))
 
+        self.taste_check = QCheckBox(
+            "🎯 Taste-Skill (criterio de diseño · 13 skills · anti-slop)"
+        )
+        self.taste_check.setChecked(self._is_ui_stack(self._stack_key))
+        self.taste_check.setToolTip(
+            "Instala el pack de github.com/Leonxlnx/taste-skill (MIT) en "
+            "`.claude/skills/`: criterio de diseño para que lo que salga no "
+            "parezca generado.\n\n"
+            "Bloquea los defectos típicos de la IA: degradado morado, héroe "
+            "centrado sobre malla oscura, tres tarjetas iguales, Inter + "
+            "slate-900.\n\n"
+            "NO se instala en paneles ni dashboards aunque lo marques: la propia "
+            "skill dice que es para páginas que tienen que entrar por los ojos, "
+            "no para pantallas donde alguien pasa ocho horas trabajando. Si se "
+            "salta, te dice por qué en el registro del setup."
+        )
+
         self.mcp_check = QCheckBox(
             "📡 Pre-configure MCP servers (.mcp.json for Claude Code / Cursor / Windsurf)"
         )
@@ -4919,6 +5057,13 @@ class PcreativeStudio(QWidget):
             "the agent."
         )
         self.btn_vibe.clicked.connect(self._on_vibe)
+        # Investigación web del nicho antes de proponer (OpenRouter :online).
+        self.cb_vibe_web = QCheckBox("🌐 Investigación web")
+        self.cb_vibe_web.setChecked(True)
+        self.cb_vibe_web.setToolTip(
+            "Antes de proponer, busca en la web competencia, secciones típicas y "
+            "estética del nicho (vía OpenRouter) para fundamentar el stack/tema y "
+            "el dev prompt. Necesita la credencial de OpenRouter; si no, se omite.")
         # Persisted dev_prompt from vibe (used as ai_analysis in scratch mode)
         self._vibe_dev_prompt: str = ""
 
@@ -5159,6 +5304,7 @@ class PcreativeStudio(QWidget):
         vibe_lay.addWidget(vibe_intro)
         vibe_lay.addWidget(self.vibe_input, 1)
         vibe_btn_row = QHBoxLayout()
+        vibe_btn_row.addWidget(self.cb_vibe_web)
         vibe_btn_row.addStretch()
         vibe_btn_row.addWidget(self.btn_vibe)
         vibe_lay.addLayout(vibe_btn_row)
@@ -5175,6 +5321,7 @@ class PcreativeStudio(QWidget):
         setup_form.addRow("Provider:", self.provider_picker)
         setup_form.addRow("", self.autoskills_check)
         setup_form.addRow("", self.uipro_check)
+        setup_form.addRow("", self.taste_check)
         setup_form.addRow("", self.mcp_check)
         self.new_project_subtabs.addTab(setup_tab, "🏗️ Setup")  # same in English
 
@@ -5266,6 +5413,8 @@ class PcreativeStudio(QWidget):
             # Re-evaluate uipro auto-check based on new stack category
             if hasattr(self, "uipro_check"):
                 self.uipro_check.setChecked(self._is_ui_stack(self._stack_key))
+            if hasattr(self, "taste_check"):
+                self.taste_check.setChecked(self._is_ui_stack(self._stack_key))
             self._update_preview()
 
     def _on_vibe(self):
@@ -5302,7 +5451,9 @@ class PcreativeStudio(QWidget):
         except Exception:
             theme_names = ["pcreative-studio-dark"]
 
-        dlg = VibeDialog(self, text, agent_key, STACKS, TEMPLATE_TYPES, theme_names)
+        web_research = self.cb_vibe_web.isChecked() if hasattr(self, "cb_vibe_web") else False
+        dlg = VibeDialog(self, text, agent_key, STACKS, TEMPLATE_TYPES, theme_names,
+                         web_research=web_research)
         if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.proposal:
             return
         proposal = dlg.proposal
@@ -5439,6 +5590,8 @@ class PcreativeStudio(QWidget):
         self._refresh_stack_button()
         if hasattr(self, "uipro_check"):
             self.uipro_check.setChecked(self._is_ui_stack(self._stack_key))
+        if hasattr(self, "taste_check"):
+            self.taste_check.setChecked(self._is_ui_stack(self._stack_key))
         self._update_preview()
         self.analysis_status_lbl.setStyleSheet(
             "color:#93c5fd; font-size:10pt; font-weight:bold; "
@@ -5573,6 +5726,8 @@ class PcreativeStudio(QWidget):
                 self._refresh_stack_button()
                 if hasattr(self, "uipro_check"):
                     self.uipro_check.setChecked(self._is_ui_stack(self._stack_key))
+                if hasattr(self, "taste_check"):
+                    self.taste_check.setChecked(self._is_ui_stack(self._stack_key))
                 self._update_preview()
             self.analysis_status_lbl.setText(
                 f"🔌 Referencia WordPress detectada → stack fijado a «{STACKS[_new_stack]['name']}». "
@@ -5781,6 +5936,7 @@ class PcreativeStudio(QWidget):
         agent_key = self.provider_picker.current_key()
         run_autoskills = self.autoskills_check.isChecked()
         run_uipro = self.uipro_check.isChecked()
+        run_taste = self.taste_check.isChecked()
         ref_kind = self.ref_kind_combo.currentData() if mode == "recreate" else None
         ref_val = self.ref_path_edit.text().strip() if mode == "recreate" else None
         existing_repo = self._current_repo_id() if mode == "existing" else None
@@ -5906,6 +6062,7 @@ class PcreativeStudio(QWidget):
                 licensing_create_gh_repo=licensing_gh,
                 licensing_force_all_modes=licensing_force_all,
                 run_uipro=run_uipro,
+                run_taste=run_taste,
                 niche=tniche,
             )
         except Exception as e:

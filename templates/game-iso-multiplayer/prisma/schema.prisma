@@ -1,0 +1,58 @@
+// Persistencia del juego. `npx prisma migrate dev` cuando tengas la BD lista.
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+model User {
+  id        String      @id @default(cuid())
+  username  String      @unique
+  passHash  String
+  look      String      @default("default") // apariencia del avatar
+  credits   Int         @default(1000)
+  createdAt DateTime    @default(now())
+  rooms     Room[]
+  inventory UserFurni[]
+}
+
+model Room {
+  id        String      @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User        @relation(fields: [ownerId], references: [id])
+  width     Int         @default(10)
+  height    Int         @default(10)
+  layout    Json        // rejilla lógica + modelo de suelo/paredes
+  placed    RoomFurni[]
+  createdAt DateTime    @default(now())
+}
+
+model Furni {
+  id       String      @id @default(cuid())
+  kind     String      @unique
+  name     String
+  sizeX    Int         @default(1)
+  sizeY    Int         @default(1)
+  solid    Boolean     @default(false) // bloquea el pathfinding
+  sittable Boolean     @default(false)
+  price    Int         @default(100)
+  owned    UserFurni[]
+  placed   RoomFurni[]
+}
+
+model UserFurni {
+  id      String @id @default(cuid())
+  userId  String
+  furniId String
+  user    User   @relation(fields: [userId], references: [id])
+  furni   Furni  @relation(fields: [furniId], references: [id])
+}
+
+model RoomFurni {
+  id      String @id @default(cuid())
+  roomId  String
+  furniId String
+  tx      Int
+  ty      Int
+  rot     Int    @default(0)
+  room    Room   @relation(fields: [roomId], references: [id])
+  furni   Furni  @relation(fields: [furniId], references: [id])
+}

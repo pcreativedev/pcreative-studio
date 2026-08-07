@@ -146,7 +146,16 @@ wss.on('connection', (ws, req) => {
       cwd,
       cols: 100,
       rows: 30,
-      env: { ...process.env, TERM: 'xterm-256color' },
+      env: {
+        ...process.env,
+        TERM: 'xterm-256color',
+        // El arranque de los MCP por npx/uvx puede tardar (npx resuelve @latest
+        // contra el registro y a veces descarga). Con el timeout por defecto,
+        // Claude Code marca los servers como caídos y hay que reactivarlos a mano.
+        // Subimos el timeout de arranque y de herramienta (respetando override).
+        MCP_TIMEOUT: process.env.MCP_TIMEOUT || '120000',
+        MCP_TOOL_TIMEOUT: process.env.MCP_TOOL_TIMEOUT || '120000',
+      },
     });
   } catch (e) {
     ws.send(`\r\n\x1b[31m[error spawn ${cmd}: ${e.message}]\x1b[0m\r\n`);

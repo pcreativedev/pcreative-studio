@@ -519,6 +519,89 @@ def ensure_for_project(project_path: str | Path,
     }
 
 
+# Stacks donde la guía web (framer-motion / 21st.dev) NO aplica → se excluyen.
+_NON_WEB_DEPS = ("react-native", "expo")
+# Dirs que nunca son un sub-app de producto.
+_SKIP_DIRS = {"node_modules", ".git", "dist", "build", ".next", ".medusa",
+              ".turbo", "coverage", "static", "context", ".claude", ".agents"}
+
+
+def _pkg_has_frontend_deps(pkg_json: Path) -> bool:
+    """¿El package.json declara deps de frontend WEB (React/Next/Vite/…)?
+    Excluye React Native / Expo: la guía de animaciones web no aplica ahí."""
+    try:
+        data = json.loads(Path(pkg_json).read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
+    low = " ".join(deps.keys()).lower()
+    if any(rn in low for rn in _NON_WEB_DEPS):
+        return False
+    return any(d in low for d in _FRONTEND_DEPS)
+
+
+def frontend_dirs(project_path: str | Path) -> list[Path]:
+    """Todos los dirs frontend WEB React de un repo: la raíz, los sub-apps de un
+    monorepo (`apps/*`, `packages/*`) y CUALQUIER subdir directo con frontend
+    (cubre `web/`, `client/`, `storefront/`, `backend-storefront/`…). Resuelve lo
+    que `is_node_frontend` no cubría (`apps/web`) y excluye React Native."""
+    root = Path(project_path)
+    out: list[Path] = []
+
+    def add(d: Path):
+        if d not in out and (d / "package.json").is_file() and _pkg_has_frontend_deps(d / "package.json"):
+            out.append(d)
+
+    add(root)
+    # Sub-apps de monorepo
+    for parent in ("apps", "packages"):
+        base = root / parent
+        if base.is_dir():
+            for d in sorted(base.iterdir()):
+                if d.is_dir() and d.name not in _SKIP_DIRS:
+                    add(d)
+    # Cualquier subdir directo (storefront/, client/, backend-storefront/, …)
+    if root.is_dir():
+        for d in sorted(root.iterdir()):
+            if d.is_dir() and d.name not in _SKIP_DIRS and not d.name.startswith("."):
+                add(d)
+    return out
+
+
+def ensure_for_project_tree(project_path: str | Path,
+                            install_motion: bool = False) -> dict:
+    """Como `ensure_for_project` pero soporta MONOREPOS: escribe la guía de
+    animaciones (UI-MOTION.md + STACK-PREMIUM.md) en la RAÍZ del repo (donde el
+    agente lee el CLAUDE.md) y en CADA frontend React detectado (apps/*, packages/*,
+    web/, client/…). Asegura el MCP magic en la raíz. Devuelve
+    {guides:[...], guide, magic, needs_motion, install_cmd}."""
+    root = Path(project_path)
+    fronts = frontend_dirs(root)
+    guides: list[str] = []
+    magic = False
+    if fronts:
+        targets: list[Path] = []
+        for d in [root, *fronts]:
+            if d not in targets:
+                targets.append(d)
+        for d in targets:
+            try:
+                guides.append(str(write_guide(d)))
+            except Exception:
+                pass
+        magic = ensure_magic_mcp(root)
+    # Auto-install de framer-motion solo en el caso simple (la raíz es el frontend);
+    # en monorepos lo gestiona el agente siguiendo la guía (cada app instala lo suyo).
+    needs_motion = bool(install_motion and root in fronts and not has_framer_motion(root))
+    return {
+        "guides": guides,
+        "guide": bool(guides),
+        "magic": magic,
+        "needs_motion": needs_motion,
+        "install_cmd": motion_install_cmd() if needs_motion else "",
+    }
+
+
 if __name__ == "__main__":
     # Uso desde el setup script: `python3 web_enhancements.py <project_dir>`
     # Escribe la guía + asegura el MCP magic. Imprime el comando de instalación

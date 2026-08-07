@@ -89,7 +89,7 @@ def _collect(root: Path) -> list[dict]:
 def _block(skills: list[dict]) -> str:
     lines = [
         START,
-        "## 🧩 Skills instaladas (autoskills + UI/UX Pro Max)",
+        "## 🧩 Skills instaladas (autoskills + UI/UX Pro Max + Taste-Skill)",
         "",
         "Pcreative Studio ha instalado estas skills (formato agentskills.io) para este "
         "proyecto. **Antes de construir, LEE cada `SKILL.md` con `read_file` y "

@@ -1283,6 +1283,7 @@ class PcreativeStudioBridge(QObject):
         # Toggles del Setup (como en el normal): autoskills + UI/UX Pro + MCP.
         run_autoskills = bool(opts.get("autoskills", True))
         run_uipro = bool(opts.get("uipro", True))
+        run_taste = bool(opts.get("taste", True))
         want_mcp = bool(opts.get("mcp", True))
         force_pg = bool(opts.get("postgres", False))
         adopt_src = ref_value if mode == "adopt" else None
@@ -1296,7 +1297,7 @@ class PcreativeStudioBridge(QObject):
                 reference_value=(ref_value if mode == "recreate" else None),
                 existing_repo=(existing_repo if mode == "existing" else None),
                 create_github_repo=False, github_user=None,
-                embedded=True, run_uipro=run_uipro,
+                embedded=True, run_uipro=run_uipro, run_taste=run_taste,
                 force_postgres=force_pg, adopt_src=adopt_src,
                 is_licensed_product=bool(opts.get("licensing", False)),
                 licensing_create_gh_repo=bool(opts.get("licensing_gh", False)),

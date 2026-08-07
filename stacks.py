@@ -34,7 +34,7 @@ STACKS = {
             '--ts --tailwind --eslint --app --src-dir --import-alias "@/*" --no-turbopack --use-npm',
         ],
         "min_version": "next@^15",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "notes": "Next.js App Router con TS, Tailwind, ESLint, src/ y alias @/*. Ideal para landings, SaaS y dashboards.",
     },
     "astro-tailwind": {
@@ -46,7 +46,7 @@ STACKS = {
             'npx astro add tailwind --yes',
         ],
         "min_version": "astro@>=5.17.2 (CVE-2026-25545 fix)",
-        "skills": ["anthropics/skills/frontend-design"],
+        "skills": ["anthropics/skills:frontend-design"],
         "notes": "Astro >= 5.17.2 (parches SSRF). Ideal para blogs, marketing, sitios estáticos rápidos. Soporta islands con React/Vue si las añades luego.",
     },
     "wordpress-block": {
@@ -91,7 +91,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0",
-        "skills": ["wordpress/skills/block-theme-development"],
+        "skills": ["WordPress/agent-skills:wp-block-themes"],
         "ux_pack": "fse",
         "notes": "Block theme moderno (theme.json v3 + FSE). Pack UX «FSE Pro»: Pcreative Studio auto-instala GenerateBlocks, Spectra, ACF, Pods y Royal MCP (todos gratis). Premium opcionales (GenerateBlocks Pro, ACF Pro, Motion.page) si los declaras en ~/.config/pcreative-studio/wp_packs.json (gitignored). El agente opera WP con wp-cli vía ./wp.",
     },
@@ -155,7 +155,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Bricks Builder (licencia aparte)",
-        "skills": ["wordpress/skills/block-theme-development"],
+        "skills": ["WordPress/agent-skills:wp-block-themes"],
         "ux_pack": "bricks",
         "notes": "Child theme de Bricks Builder. Pack UX «Bricks»: Pcreative Studio auto-instala los gratis (GreenShift, ACF, Pods, Royal MCP). Premium (Bricks parent theme, Bricksforge, JetEngine, Novamira Pro, Motion.page) requieren licencia y se autoinstalan si los declaras en ~/.config/pcreative-studio/wp_packs.json (gitignored, NUNCA al repo). Sin la licencia de Bricks, sube bricks.zip a mano y activa el child theme luego.",
     },
@@ -206,7 +206,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Elementor",
-        "skills": ["wordpress/skills/block-theme-development"],
+        "skills": ["WordPress/agent-skills:wp-block-themes"],
         "ux_pack": "elementor",
         "notes": "Child theme de Hello Elementor + Elementor. Pack UX «Elementor»: free auto-install (Hello Elementor + Elementor free + Essential Addons Lite + ACF + Pods + Royal MCP). Premium (Elementor Pro, JetEngine, Motion.page, Novamira Pro) via wp_packs.json.",
     },
@@ -252,7 +252,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Divi (licencia aparte)",
-        "skills": ["wordpress/skills/block-theme-development"],
+        "skills": ["WordPress/agent-skills:wp-block-themes"],
         "ux_pack": "divi",
         "notes": "Child theme de Divi. Pack UX «Divi»: free auto-install (ACF + Pods + Royal MCP). Premium (Divi parent theme, Novamira Pro) via wp_packs.json.",
     },
@@ -301,7 +301,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "WordPress 6.7+ / PHP 8.0 / Breakdance",
-        "skills": ["wordpress/skills/block-theme-development"],
+        "skills": ["WordPress/agent-skills:wp-block-themes"],
         "ux_pack": "breakdance",
         "notes": "Child theme de Kadence con Breakdance como engine de render. Pack UX «Breakdance»: free auto-install (Kadence + Breakdance + ACF + Pods + Royal MCP). Breakdance Pro y plugins paid via wp_packs.json.",
     },
@@ -658,7 +658,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Online Store 2.0 / Shopify CLI 3.x / Dawn",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-liquid",
         "notes": "Online Store 2.0 sobre Dawn (theme oficial Shopify, MIT) como base. Incluye .mcp.json con (1) Shopify Dev MCP — admin/storefront/checkout API docs + Polaris components, (2) Storefront MCP (zero-auth, sustituye YOUR-SHOP), (3) Storefront UCP MCP (catálogo + búsqueda natural). Necesitas tienda dev en Shopify Partners (gratis) para `shopify theme dev`.",
     },
@@ -956,7 +956,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Online Store 2.0 / Shopify CLI 3.x",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-liquid-blank",
         "notes": "Online Store 2.0 desde CERO, sin clonar Dawn ni Horizon. ELEGIBLE para Shopify Theme Store. Estructura técnica válida pero vacía: tu trabajo es construir identidad visual única + las 18 features mandatorias + i18n + docs. Más curva de aprendizaje pero margen mayor (Theme Store premia themes únicos). Mismos 3 MCPs Shopify + scaffold extras (prettier/theme-check/lighthouse-ci) que el stack Liquid+Dawn.",
     },
@@ -1036,7 +1036,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Hydrogen 2026.x / React 19 / Node 22+",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-hydrogen",
         "notes": "Storefront headless con Remix + React + Oxygen. Para catálogos grandes, multi-mercado y diseños premium. Mismo set de MCPs que Liquid. Requiere Node 22+. Deploy a Oxygen (edge gratuito de Shopify) o cualquier provider Node.",
     },
@@ -1104,7 +1104,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Shopify CLI 3.x / Remix v3 / Polaris 13+ / Node 22+",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-polaris-app",
         "notes": "App embebida en el Admin de Shopify con Polaris + App Bridge + Remix + Prisma. Para apps públicas en Shopify App Store, custom apps de una sola tienda, o extensiones (theme/checkout/customer-account/admin/POS/Flow/Functions). Incluye `shopify-dev` MCP con conocimiento nativo de Polaris.",
     },
@@ -1244,7 +1244,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Shopify CLI 3.x / Rust 1.75+ / cargo-wasi",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-functions",
         "notes": "Shopify Functions en Rust compilados a Wasm para lógica server-side custom: discounts (product/order/shipping), payment/delivery customization, cart validations, fulfillment constraints. Functions ejecutan dentro de la infra de Shopify (sin servidor propio). Bundle con app embebida (Polaris + App Bridge). Requiere rustup + cargo-wasi. Alternativa: JS-Wasm (más lento).",
     },
@@ -1387,7 +1387,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Storefront API 2026-01 / Modern browsers (custom elements)",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-storefront-webcomponents",
         "notes": "Storefront Web Components oficiales de Shopify (CDN) para embebido commerce en sites NO-Shopify. HTML + JS vanilla, sin frameworks. Para blogs, landing pages, WordPress, Webflow, Framer. Checkout sigue siendo hosted en Shopify. Requiere Storefront API token con scopes unauthenticated_*.",
     },
@@ -1513,7 +1513,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "Shopify CLI 3.x / Shopify Plus / React 18+",
-        "skills": ["shopify/skills/theme-development"],
+        "skills": ["shopify/shopify-ai-toolkit:shopify-liquid"],
         "ux_pack": "shopify-checkout-extension",
         "notes": "Checkout UI Extension (solo Shopify Plus) para customizar el checkout hosted con bloques React sandboxeados (@shopify/ui-extensions-react/checkout). 9 targets disponibles (block.render, delivery-address, payment-method, shipping-option, cart-line-item, header, footer, thank-you, order-status). Mercado: agencias Plus + brands premium + B2B. Ticket por trabajo: alto.",
     },
@@ -1872,7 +1872,7 @@ STACKS = {
             "cp .env.example .env.local 2>/dev/null || true",
         ],
         "min_version": "Next.js 15 / Supabase / Stripe / Node 20+",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "restaurant-saas",
         "notes": (
             "Mini-SaaS para restaurantes/bares. Boilerplate INCLUIDO (no lo rehagas, "
@@ -1903,7 +1903,7 @@ STACKS = {
             "cp .env.example .env.local 2>/dev/null || true",
         ],
         "min_version": "Next.js 15 / Supabase / Stripe / Node 20+",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "booking-saas",
         "notes": (
             "Mini-SaaS de RESERVAS para servicios con cita (peluquerías, estética, "
@@ -1940,7 +1940,7 @@ STACKS = {
             "cp .env.example .env.local 2>/dev/null || true",
         ],
         "min_version": "Next.js 15 / Supabase / Stripe / Node 20+",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "shop-lite",
         "notes": (
             "Mini-tienda para comercios de retail (boutiques, floristerías, ferreterías, "
@@ -1974,7 +1974,7 @@ STACKS = {
             "cp .env.example .env.local 2>/dev/null || true",
         ],
         "min_version": "Next.js 15 / Node 20+",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "pro-landing",
         "notes": (
             "Landing premium de CAPTACIÓN para servicios profesionales y negocios locales "
@@ -2266,7 +2266,7 @@ STACKS = {
             'PCREATIVE STUDIO_EOF',
         ],
         "min_version": "PrestaShop 9.0+ / PHP 8.1+ / Smarty 4",
-        "skills": ["anthropics/skills/frontend-design"],
+        "skills": ["anthropics/skills:frontend-design"],
         "ux_pack": "prestashop-theme",
         "notes": "Tienda PrestaShop 9 COMPLETA provisionada con Docker (docker-compose.yml: MariaDB + prestashop/prestashop:9, auto-install, locale ES, admin en /admin-dev/, admin@<slug>.local / prestashop123). El child theme `themes/<slug>/` (hereda de `classic`) va montado como volumen para editar en local. NO requiere PrestaShop preinstalado — el scaffold lo levanta. Para pagos (transferencia/contrarreembolso/Bizum) usa los módulos nativos de PrestaShop; para tarjeta de growshop NO uses Stripe (alto riesgo). Smarty para overrides de plantillas. Licencia OSL 3.0. 🤖 GESTIÓN POR IA — MCP oficial de PrestaShop (docs.mcp.prestashop.com): NO es un `npx`, es un MÓDULO que se instala en el back-office (Módulos → instalar 'PrestaShop MCP'; deps PrestaShop Account + EventBus + MCP Tools, vía MBO). Una vez instalado y con la cuenta PrestaShop conectada, da una URL de MCP REMOTO (transport Streamable HTTP + OAuth, scopes mcp.discover/mcp.read/mcp.write/email) que permite crear/editar productos, categorías, pedidos y configuración por API. Para usarlo: el usuario instala el módulo, copia la URL del MCP desde la config del módulo y la añade al cliente IA como servidor MCP remoto (type http). MIENTRAS NO esté disponible, gestiona la tienda con la consola: `docker compose exec prestashop php bin/console …` (p.ej. listar comandos, crear admin, limpiar caché) y/o el back-office.",
     },
@@ -2489,7 +2489,7 @@ STACKS = {
             "npm install -D tailwindcss@latest @tailwindcss/vite",
         ],
         "min_version": "tailwindcss@^4",
-        "skills": ["anthropics/skills/frontend-design"],
+        "skills": ["anthropics/skills:frontend-design"],
         "notes": "Vite + Vanilla TS + Tailwind v4. Para site templates HTML clásicos modernizados. Build estático listo para envato-package.",
     },
     "html-bootstrap": {
@@ -2515,7 +2515,7 @@ STACKS = {
             "npm install -D tailwindcss@latest @tailwindcss/vite",
         ],
         "min_version": "react@^19",
-        "skills": ["anthropics/skills/frontend-design"],
+        "skills": ["anthropics/skills:frontend-design"],
         "notes": "React 19 + Vite + Tailwind v4. SPA, admin panels, dashboards. Sin Next.js si no necesitas SSR.",
     },
     "vue3-vite-tailwind": {
@@ -2925,7 +2925,7 @@ STACKS = {
             'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'./storefront\')" 2>/dev/null && echo "  MCPs cableados en storefront/.mcp.json" || true',
         ],
         "min_version": "Medusa 2 / Node 20+ / Next.js 15 / Postgres 16 (pgvector) / Redis 7",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "pcreative-commerce",
         "notes": (
             "🏗️ pcreative Commerce = e-commerce PROPIO super-avanzado y super-seguro, productizado para la agencia: "
@@ -3002,7 +3002,7 @@ STACKS = {
             'echo "   🗄  Postgres+pgvector :5433 · Redis :6380 (Docker)"',
         ],
         "min_version": "Medusa 2 / Node 20+ / Next.js 15 / Postgres 16 (pgvector) / Redis 7",
-        "skills": ["anthropics/skills/frontend-design", "vercel/skills/nextjs-best-practices"],
+        "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "pcreative-commerce",
         "notes": (
             "🌱 GROWSHOP COMPLETO sobre pcreative Commerce (Medusa 2 + Next.js, self-hosted, el cliente lo posee, 0% comisión). "
@@ -3255,7 +3255,7 @@ STACKS = {
             "npx --yes shadcn@latest add button card input form dialog dropdown-menu tabs --yes",
         ],
         "min_version": "Next.js 15+ / shadcn 2.x",
-        "skills": ["anthropics/skills/frontend-design"],
+        "skills": ["anthropics/skills:frontend-design"],
         "notes": "Next.js + shadcn/ui con 7 componentes base preinstalados. La combinación más usada en CodeCanyon/ThemeForest 2026.",
     },
     "nextjs-mantine": {
@@ -3290,7 +3290,18 @@ STACKS = {
         "scaffold": [
             "npm create astro@latest . -- --template minimal --typescript strict --install --no-git --yes",
             "npx astro add tailwind react --yes",
-            "npx --yes shadcn@latest init --yes --base-color=slate --css-variables",
+            # shadcn EXIGE el alias `@/*` y la plantilla mínima de Astro no lo
+            # trae. Sin esto su init aborta con «Could not find valid path
+            # aliases», que no dice en ningún sitio que le falte un tsconfig.
+            "python3 -c \"import json,re,pathlib; p=pathlib.Path('tsconfig.json'); "
+            "d=json.loads(re.sub(r'//.*','',p.read_text())) if p.exists() else {}; "
+            "co=d.setdefault('compilerOptions',{}); co['baseUrl']='.'; "
+            "co.setdefault('paths',{})['@/*']=['./src/*']; "
+            "p.write_text(json.dumps(d,indent=2)+chr(10))\"",
+            # Flags de la CLI ACTUAL. `--base-color` y `--css-variables` ya no
+            # existen, y `-y` por su cuenta sigue preguntando por el preset: hay
+            # que darlo con `-p`. Ojo con `-d`, que fuerza --template=next.
+            "npx --yes shadcn@latest init -t astro -b base -p nova -y",
             "npx --yes shadcn@latest add button card --yes",
         ],
         "min_version": "Astro 5+ / shadcn 2.x",
@@ -3372,11 +3383,35 @@ STACKS = {
             "npm install -D tailwindcss@latest @tailwindcss/vite",
         ],
         "min_version": "three@^0.171 / @react-three/fiber@^8",
-        "skills": ["anthropics/skills/frontend-design"],
+        "skills": ["anthropics/skills:frontend-design"],
         "notes": (
             "React Three Fiber + drei sobre Vite. 3D web declarativo, perfecto "
             "para mini-juegos en landings, product showcases interactivos, "
             "scenes WebGL para web premium. Licencia MIT."
+        ),
+    },
+    "game-iso-multiplayer": {
+        "name": "Juego isométrico multijugador (PixiJS + Colyseus · estilo Habbo)",
+        "category": "Game · Web 2D",
+        "language": "TypeScript (monorepo: PixiJS client + Colyseus server + Prisma)",
+        "scaffold": [
+            "echo '-> Juego social isométrico multijugador estilo Habbo: client PixiJS + server Colyseus + Prisma...'",
+            # Lógica en templates/game-iso-multiplayer/scaffold.sh: monta el monorepo
+            # (client Vite+PixiJS con iso.ts, server Colyseus autoritativo con A*,
+            #  Prisma) + escribe GAME-CONTEXT.md (blueprint) + cablea MCPs. NO-fatal.
+            'bash "__TFDIR__/templates/game-iso-multiplayer/scaffold.sh" || echo "  scaffold del juego incompleto (revisa Node 20+/red)"',
+        ],
+        "min_version": "Node 20+ / PixiJS 8 / Colyseus 0.16 / Prisma 6 / Postgres 16",
+        "skills": ["anthropics/skills:frontend-design"],
+        "notes": (
+            "Juego social isométrico multijugador EN TIEMPO REAL estilo Habbo Hotel: "
+            "salas isométricas, avatares que caminan (A* en servidor AUTORITATIVO), "
+            "chat, furni, inventario. Monorepo client (Vite + PixiJS 8) + server "
+            "(Colyseus, una room = una sala) + Prisma/Postgres. Trae GAME-CONTEXT.md "
+            "con la arquitectura, matemática isométrica, pathfinding, modelo de red y "
+            "flujo de pixel art (MCP aseprite). `npm run dev` levanta server :2567 + "
+            "client Vite. Para un Habbo retro 1:1 usa Arcturus + Nitro; esto es para "
+            "un juego estilo Habbo PROPIO. Licencias MIT (PixiJS/Colyseus)."
         ),
     },
 }

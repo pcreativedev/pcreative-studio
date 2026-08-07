@@ -116,6 +116,7 @@ lead_gen.py
 leads_panel.py
 dossier_dialog.py
 spain_geo.py
+us_geo.py
 webui/neotokyo/app/screen-leads.jsx
 webui/kawaii/pcreative-studio-kawaii-private.jsx
 webui/matrix/pcreative-studio-matrix-private.jsx
@@ -151,3 +152,9 @@ google-services.json
 *.jks
 templates/pcreative-commerce/
 medusa_update.py
+
+# MCP dev local (codebase-memory) — machine-specific, NO al repo OSS
+.mcp.json
+
+# Copias de seguridad de trabajo
+*.bak-forge
