@@ -40,6 +40,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
@@ -333,8 +334,10 @@ class ProjectWindow(QWidget):
 
         # Toolbar superior
         self.btn_open_folder = QPushButton("📁 Folder")
+        self.btn_open_folder.setToolTip("Abrir la carpeta del proyecto en el explorador de archivos")
         self.btn_open_folder.clicked.connect(self._open_folder)
         self.btn_open_vscode = QPushButton("VSCode")
+        self.btn_open_vscode.setToolTip("Abrir el proyecto en VSCode")
         self.btn_open_vscode.clicked.connect(self._open_vscode)
         self.btn_refresh_profile = QPushButton("🔄 Re-detectar")
         self.btn_refresh_profile.setToolTip(
@@ -380,6 +383,7 @@ class ProjectWindow(QWidget):
         )
         self.btn_github.clicked.connect(self._github_create_or_push)
         self.btn_open_external_term = QPushButton("External terminal")
+        self.btn_open_external_term.setToolTip("Abrir una terminal del sistema en la carpeta del proyecto")
         self.btn_open_external_term.clicked.connect(self._open_external_terminal)
         # Operator (Hermes) — OPCIONAL: solo visible si Hermes está instalado.
         self.btn_operator = QPushButton("🚀 Operator")
@@ -401,19 +405,91 @@ class ProjectWindow(QWidget):
         self.btn_open_other.setToolTip("Abrir otro proyecto en una ventana nueva")
         self.btn_open_other.clicked.connect(self._open_other_project)
 
+        # ── Barra del proyecto ──────────────────────────────────────────
+        #
+        # Esto eran CUATRO filas apiladas con 18 botones, todos del mismo
+        # tamaño y el mismo peso: «Nuevo proyecto» se veía igual de importante
+        # que «DevTools». Sin jerarquía, la barra no te dice qué hacer — solo
+        # te deja buscar.
+        #
+        # Ahora arriba queda lo de todos los días, y lo ocasional pasa a dos
+        # menús. No desaparece nada: está a un clic, agrupado por para qué
+        # sirve en vez de por el orden en que se fue añadiendo.
+
+        def _menu(texto: str, tip: str, entradas) -> QToolButton:
+            b = QToolButton()
+            b.setText(texto)
+            b.setToolTip(tip)
+            b.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+            menu = QMenu(b)
+            for etiqueta, destino in entradas:
+                if etiqueta == "—":
+                    menu.addSeparator()
+                    continue
+                menu.addAction(etiqueta, destino)
+            b.setMenu(menu)
+            return b
+
+        # Dónde abrir el proyecto. Tres formas de lo mismo: no merecen tres
+        # botones permanentes.
+        self.menu_abrir_en = _menu(
+            "Abrir en  ▾", "Abrir este proyecto en otra herramienta",
+            [("📁  Carpeta", self._open_folder),
+             ("💻  VSCode", self._open_vscode),
+             ("⌨️  Terminal externa", self._open_external_terminal)],
+        )
+
+        # Lo que se le hace al proyecto de vez en cuando: revisar, empaquetar,
+        # publicar. Nada de esto se usa varias veces al día.
+        menu_acciones = QMenu()
+        self.act_preflight = menu_acciones.addAction("🔬  Pre-flight — revisar antes de entregar",
+                                                     self._run_preflight)
+        menu_acciones.addSeparator()
+        self.act_zip = menu_acciones.addAction("📦  Empaquetar en ZIP", self._build_zip)
+        self.act_demo = menu_acciones.addAction("🚀  Publicar demo", self._deploy_demo)
+        self.act_github = menu_acciones.addAction("🐙  Subir a GitHub", self._github_create_or_push)
+        menu_acciones.addSeparator()
+        self.act_21st = menu_acciones.addAction("🎨  Galería 21st.dev", self._open_21st_gallery)
+        self.act_redetect = menu_acciones.addAction("🔄  Re-detectar el stack", self._refresh_profile)
+        self.btn_acciones = QToolButton()
+        self.btn_acciones.setText("Acciones  ▾")
+        self.btn_acciones.setToolTip("Revisar, empaquetar y publicar este proyecto")
+        self.btn_acciones.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.btn_acciones.setMenu(menu_acciones)
+
+        # Qué modelo usa el agente. Estaba en Credenciales, en OTRA ventana:
+        # para cambiarlo había que salir de aquí, que es justo donde se lanza.
+        self.model_combo = QComboBox()
+        self.model_combo.setToolTip(
+            "Modelo con el que arrancan los agentes de Claude en este proyecto.\n"
+            "Se guarda para todo el programa."
+        )
+        try:
+            import ai_providers as _aip
+            import app_prefs as _ap
+            for _mid, _txt in _aip.CLAUDE_MODELS:
+                self.model_combo.addItem(_txt, userData=_mid)
+            _actual = _ap.claude_model("")
+            for _i in range(self.model_combo.count()):
+                if self.model_combo.itemData(_i) == _actual:
+                    self.model_combo.setCurrentIndex(_i)
+                    break
+            self.model_combo.currentIndexChanged.connect(
+                lambda _i: _ap.set_claude_model(self.model_combo.currentData() or "")
+            )
+        except Exception:
+            self.model_combo.setVisible(False)
+
         toolbar = QHBoxLayout()
         toolbar.addWidget(self.btn_new_project)
         toolbar.addWidget(self.btn_open_other)
-        toolbar.addWidget(self.btn_open_folder)
-        toolbar.addWidget(self.btn_open_vscode)
-        toolbar.addWidget(self.btn_refresh_profile)
-        toolbar.addWidget(self.btn_preflight)
-        toolbar.addWidget(self.btn_zip)
-        toolbar.addWidget(self.btn_deploy_demo)
-        toolbar.addWidget(self.btn_github)
-        toolbar.addWidget(self.btn_operator)
+        toolbar.addSpacing(12)
+        toolbar.addWidget(self.menu_abrir_en)
+        toolbar.addWidget(self.btn_acciones)
         toolbar.addStretch()
-        toolbar.addWidget(self.btn_open_external_term)
+        toolbar.addWidget(QLabel("🤖"))
+        toolbar.addWidget(self.model_combo)
+        toolbar.addWidget(self.btn_operator)
 
         # Fila selector de sub-proyecto (solo si es mono-repo)
         self.sub_combo: QComboBox | None = None
@@ -440,8 +516,10 @@ class ProjectWindow(QWidget):
             self.url_edit.setText(self.profile["url"].replace("{port}", str(self.preview_port)))
         self.url_edit.returnPressed.connect(self._url_bar_navigate)
         self.btn_start = QPushButton("▶ Start preview")
+        self.btn_start.setToolTip("Arrancar el servidor de desarrollo y cargar el preview")
         self.btn_start.clicked.connect(self.start_preview)
         self.btn_stop = QPushButton("■ Stop")
+        self.btn_stop.setToolTip("Parar el servidor de desarrollo")
         self.btn_stop.clicked.connect(self.stop_preview)
         self.btn_stop.setEnabled(False)
         self.btn_reload = QPushButton("↻")
@@ -469,7 +547,9 @@ class ProjectWindow(QWidget):
         prev_row.addWidget(self.btn_start)
         prev_row.addWidget(self.btn_stop)
         prev_row.addWidget(self.btn_reload)
-        prev_row.addWidget(self.btn_21st)
+        # 21st.dev NO va aquí: abre una galería de componentes, no manda sobre
+        # el preview. Vive en «Acciones ▾» con lo demás que se usa de tanto en
+        # tanto. (Estuvo un rato en los dos sitios a la vez — mío.)
         prev_row.addWidget(self.btn_open_browser)
 
         # Fila de viewports + screenshot + devtools
@@ -657,9 +737,23 @@ class ProjectWindow(QWidget):
         if self._auto_agent_tab_index is not None:
             self.term_tabs.setCurrentIndex(self._auto_agent_tab_index)
 
+        # ── El preview, con sus mandos encima ───────────────────────────
+        #
+        # La URL, ▶/■/↻ y los viewports estaban en dos filas a lo ancho de la
+        # ventana, encima de TODO — incluida la terminal, con la que no tienen
+        # nada que ver. Puestos aquí, se lee de un vistazo qué manda sobre qué:
+        # estos controles son del panel de debajo y de nada más.
+        lado_preview = QWidget()
+        col_preview = QVBoxLayout(lado_preview)
+        col_preview.setContentsMargins(0, 0, 0, 0)
+        col_preview.setSpacing(4)
+        col_preview.addLayout(prev_row)
+        col_preview.addLayout(vp_row)
+        col_preview.addWidget(self.preview_tabs, 1)
+
         # Splitter horizontal: preview | terminales
         h_split = QSplitter(Qt.Orientation.Horizontal)
-        h_split.addWidget(self.preview_tabs)
+        h_split.addWidget(lado_preview)
         h_split.addWidget(self.term_tabs)
         h_split.setStretchFactor(0, 3)
         h_split.setStretchFactor(1, 2)
@@ -687,8 +781,8 @@ class ProjectWindow(QWidget):
             sub_row.addWidget(QLabel("Sub-proyecto:"))
             sub_row.addWidget(self.sub_combo, 1)
             root.addLayout(sub_row)
-        root.addLayout(prev_row)
-        root.addLayout(vp_row)
+        # `prev_row` y `vp_row` ya NO van aquí: viven dentro de `lado_preview`,
+        # pegados al panel que controlan.
         root.addWidget(self.status_lbl)
         root.addWidget(v_split, 1)
         self.setLayout(root)
@@ -1407,6 +1501,7 @@ class ProjectWindow(QWidget):
         deploy_str = " ".join(shlex.quote(a) for a in deploy_argv)
 
         self.btn_deploy_demo.setEnabled(False)
+        self.act_demo.setEnabled(False)
         self._deploy_output_buf: list[str] = []
         self._deploy_provider_key = provider_key
         self.logs.appendPlainText(
@@ -1441,6 +1536,7 @@ class ProjectWindow(QWidget):
                 if code != 0:
                     self.logs.appendPlainText(f"[build] FAILED (exit {code}) — abort deploy")
                     self.btn_deploy_demo.setEnabled(True)
+                    self.act_demo.setEnabled(True)
                     QMessageBox.warning(
                         self, "🚀 Build failed",
                         f"El build falló con código {code}. Revisa los logs.",

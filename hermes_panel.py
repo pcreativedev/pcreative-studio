@@ -24,12 +24,13 @@ from pathlib import Path
 
 from PyQt6.QtCore import Qt, QProcess, QProcessEnvironment, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QPlainTextEdit,
     QSpinBox, QComboBox, QMessageBox, QSplitter, QTabWidget, QFrame,
     QLineEdit, QListWidget, QListWidgetItem, QTableWidget, QTableWidgetItem,
     QHeaderView, QAbstractItemView, QFormLayout, QDialog, QDialogButtonBox,
-    QCheckBox, QScrollArea, QGridLayout, QToolButton,
+    QCheckBox, QScrollArea, QGridLayout, QToolButton, QStackedWidget, QMenu,
 )
 
 # Reuse the existing, battle-tested widgets + helpers.
@@ -352,45 +353,121 @@ class HermesStatusStrip(QFrame):
             self.btn_update.setVisible(False)
 
     def _do_update(self):
-        """Lanza `hermes update --yes` mostrando el progreso en un diálogo."""
+        """Lanza `hermes update` mostrando el progreso en un diálogo.
+
+        ── POR QUÉ ESTO PARECÍA COLGARSE ───────────────────────────────────
+
+        No se colgaba: no daba señales de vida. Actualizar Hermes reinstala el
+        runtime de Python (`uv python install 3.11 --reinstall`), las
+        dependencias (`uv pip install -e .[all]`) y `npm install`. Son varios
+        minutos. Y en ese rato aquí no aparecía **ni una línea**, porque la
+        salida de Hermes va en bloques cuando no habla con un terminal:
+        comprobado, 56 segundos de proceso trabajando al 3 % de CPU con el
+        registro completamente vacío.
+
+        Resultado: un recuadro negro, sin texto, con el botón de cerrar
+        deshabilitado. Cualquiera diría que se ha quedado colgado.
+
+        Cuatro cosas cambian:
+
+        1. `PYTHONUNBUFFERED=1` — el proceso escupe cada línea al momento.
+        2. **Cerrar nunca está deshabilitado.** Aunque la actualización siga,
+           se puede cerrar el diálogo; sigue por su cuenta y se avisa. Dejar a
+           alguien encerrado en una ventana es peor que cualquier fallo.
+        3. Reloj y aviso de cuánto tarda, para que el silencio se entienda.
+        4. `errorOccurred` conectado — **este sí era un cuelgue de verdad**: si
+           el proceso no llegaba a arrancar, `finished` no se emite nunca, así
+           que el botón de cerrar se quedaba deshabilitado para siempre.
+
+        Se añade `--backup` a propósito: son cientos de commits de golpe y el
+        propio Hermes sabe volver atrás.
+        """
         exe = find_hermes()
         if not exe:
             return
         from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QPlainTextEdit,
-                                     QDialogButtonBox)
+                                     QDialogButtonBox, QLabel)
+        from PyQt6.QtCore import QTimer, QElapsedTimer, QProcessEnvironment
+
         dlg = QDialog(self)
         dlg.setWindowTitle("Actualizando Hermes…")
-        dlg.resize(700, 440)
+        dlg.resize(760, 480)
         v = QVBoxLayout(dlg)
+
+        aviso = QLabel(
+            "Reinstala Python, las dependencias y los paquetes de Node. "
+            "<b>Suele tardar varios minutos.</b><br>"
+            "Puedes cerrar esta ventana: la actualización sigue por su cuenta."
+        )
+        aviso.setWordWrap(True)
+        aviso.setStyleSheet("color:#bbb;")
+        v.addWidget(aviso)
+
         log = QPlainTextEdit(); log.setReadOnly(True)
         log.setStyleSheet("background:#0c0c0d; color:#ddd; "
                           "font-family:'JetBrains Mono',monospace; font-size:12px;")
-        v.addWidget(log)
+        v.addWidget(log, 1)
+
+        estado = QLabel("⏳ Arrancando…")
+        estado.setStyleSheet("color:#888;")
+        v.addWidget(estado)
+
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         close_btn = bb.button(QDialogButtonBox.StandardButton.Close)
-        close_btn.setEnabled(False)
         bb.rejected.connect(dlg.reject)
         v.addWidget(bb)
+
         proc = QProcess(dlg)
         proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+
+        # Sin esto, Python bufferea la salida al no ver un terminal y el
+        # registro se queda en blanco hasta que todo termina.
+        env = QProcessEnvironment.systemEnvironment()
+        env.insert("PYTHONUNBUFFERED", "1")
+        proc.setProcessEnvironment(env)
+
         proc.readyReadStandardOutput.connect(
             lambda: log.appendPlainText(
                 bytes(proc.readAllStandardOutput()).decode(errors="replace").rstrip()))
 
+        reloj = QElapsedTimer(); reloj.start()
+        tic = QTimer(dlg); tic.setInterval(1000)
+        tic.timeout.connect(lambda: estado.setText(
+            f"⏳ En marcha — {reloj.elapsed() // 1000} s. "
+            "Sin novedades en pantalla es normal mientras instala."))
+        tic.start()
+
+        def _fin(texto: str):
+            tic.stop()
+            estado.setText(texto)
+            self.btn_update.setEnabled(True)
+
         def _done(code, _s):
-            log.appendPlainText(f"\n■ Terminado (exit {code}).")
-            close_btn.setEnabled(True)
+            log.appendPlainText(f"\n■ Terminado (exit {code}) en "
+                                f"{reloj.elapsed() // 1000} s.")
+            _fin("✅ Actualizado." if code == 0 else f"⚠ Terminó con error {code}.")
             self.btn_update.setVisible(False)
             self.refresh()
             self._check_update()
+
+        def _fallo(err):
+            # Si el proceso no arranca, `finished` NO se emite. Sin esto, el
+            # diálogo se quedaba sin salida y sin poder cerrarse.
+            log.appendPlainText(f"\n■ No se pudo arrancar «{exe}» ({err}).")
+            _fin("⚠ No se pudo arrancar la actualización.")
+
         proc.finished.connect(_done)
-        log.appendPlainText("$ hermes update --yes\n")
+        proc.errorOccurred.connect(_fallo)
+
+        log.appendPlainText(f"$ {exe} update --yes --backup\n")
         self.btn_update.setEnabled(False)
-        proc.start(exe, ["update", "--yes"])
+        proc.start(exe, ["update", "--yes", "--backup"])
+
+        # Cerrar el diálogo NO mata la actualización: interrumpir un `pip
+        # install` a medias deja la instalación coja, que es bastante peor que
+        # esperar. El proceso cuelga de `self` para que siga vivo.
+        proc.setParent(self)
         dlg.exec()
-        if proc.state() != QProcess.ProcessState.NotRunning:
-            proc.kill()
-        self.btn_update.setEnabled(True)
 
 
 # ───────────────────────── 🚀 Misión ────────────────────────────────────
@@ -1147,25 +1224,38 @@ def _cached_models(keywords: list[str], limit: int = 25) -> list[str]:
 # Hermes instalado (2026-05-30): oauth-capables = anthropic, nous, openai-codex,
 # xai-oauth, qwen-oauth, google-gemini-cli, minimax-oauth.
 # model_keywords: familias para poblar el combo desde el caché de modelos en vivo.
+import models as _cat
+
+
+def _familia(f: str) -> list[str]:
+    """Modelos de una familia, sacados del catálogo único.
+
+    Estas listas son el respaldo de `_cached_models()`: se usan cuando no hay
+    catálogo en vivo. Estaban escritas a mano y se quedaron en Opus 4.8, así
+    que el respaldo ofrecía modelos viejos justo cuando más falta hacía.
+    """
+    return [m.id for m in _cat.CATALOGO if m.elegible and m.familia == f]
+
+
 HERMES_PROVIDERS = [
     {"key": "anthropic", "auth": "api", "label": "Anthropic (Claude) · API key",
-     "models": ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+     "models": _familia("claude"),
      "note": "Claude por API key de Anthropic (facturación por uso). Para usar tu "
              "suscripción Claude Pro/Max sin API key, elige «Claude (Pro/Max) · login»."},
     {"key": "claude-code", "auth": "oauth", "label": "Claude (Pro/Max) · login", "tos_warn": True,
-     "models": ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+     "models": _familia("claude"),
      "note": "Login con tu cuenta de Claude (OAuth, vía Claude Code) — usa tu "
              "suscripción Pro/Max sin API key. ⚠️ Usar una suscripción de consumo de "
              "forma automatizada/headless puede chocar con los Términos de Anthropic; "
              "para producción/equipos usa la API key (Anthropic · API key)."},
     {"key": "openai-codex", "auth": "oauth", "label": "ChatGPT / Codex (OpenAI) · login",
-     "models": ["gpt-5.5", "gpt-5.1", "o4"], "tos_warn": True,
+     "models": _familia("openai"), "tos_warn": True,
      "note": "Login con tu cuenta ChatGPT (OAuth) — no necesita API key. "
              "⚠️ Usar una suscripción de consumo (ChatGPT Plus/Pro) de forma "
              "automatizada/headless puede violar los Términos de OpenAI. Bajo tu "
              "responsabilidad; para producción usa API key (OpenAI · API key)."},
     {"key": "google-gemini-cli", "auth": "oauth", "label": "Gemini (Google) · login",
-     "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
+     "models": _familia("google"),
      "note": "Login con tu cuenta de Google (OAuth, vía Gemini CLI)."},
     {"key": "xai-oauth", "auth": "oauth", "label": "xAI / Grok · login",
      "models": ["grok-4", "grok-4-fast"],
@@ -1177,13 +1267,12 @@ HERMES_PROVIDERS = [
      "models": ["hermes-4-405b", "hermes-4-70b"],
      "note": "`hermes setup --portal` o login OAuth — 300+ modelos + tool gateway."},
     {"key": "openrouter", "auth": "api", "label": "OpenRouter (200+ modelos) · API key",
-     "models": ["anthropic/claude-opus-4.8", "openai/gpt-5.5",
-                "google/gemini-2.5-pro", "deepseek/deepseek-r1"],
+     "models": [_cat.slug_openrouter(i) for i in _familia("claude") + _familia("openai") + _familia("google")] + ["deepseek/deepseek-r1"],
      "note": "Un solo API key da acceso a cientos de modelos."},
     {"key": "openai-api", "auth": "api", "label": "OpenAI · API key",
-     "models": ["gpt-5.5", "gpt-5.1", "o4"], "note": ""},
+     "models": _familia("openai"), "note": ""},
     {"key": "gemini", "auth": "api", "label": "Gemini (Google) · API key",
-     "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
+     "models": _familia("google"),
      "note": "Alternativa por API key (Google AI Studio)."},
     {"key": "opencode-zen", "auth": "api", "label": "OpenCode Zen · API key",
      "models": ["claude-sonnet-4", "gpt-5", "qwen3-coder", "kimi-k2"],
@@ -1505,17 +1594,28 @@ class AgentsTab(QWidget):
         self.btn_search = QPushButton("🔍 Buscar")
         self.btn_search.clicked.connect(self._do_search)
         bar.addWidget(self.btn_search)
-        self.btn_seed = QPushButton("🌱 Sembrar agentes web")
-        self.btn_seed.setToolTip("(Re)instala el pack de agentes web/UX-UI de Pcreative Studio.")
-        self.btn_seed.clicked.connect(self._seed)
-        bar.addWidget(self.btn_seed)
-        self.btn_pack = QPushButton("📦 Pack web")
-        self.btn_pack.setToolTip("Instala skills del registro recomendadas para "
-                                 "nuestros stacks (Shopify/WordPress/Next/Astro/…).")
-        self.btn_pack.clicked.connect(self._install_pack)
-        bar.addWidget(self.btn_pack)
+        # «🌱 Sembrar agentes web» y «📦 Pack web» eran dos botones distintos
+        # con nombres casi idénticos y efectos que no tienen nada que ver: uno
+        # reinstala NUESTROS nueve agentes de diseño, el otro baja skills DEL
+        # REGISTRO de Hermes. Había que abrir los dos tooltips para saber cuál
+        # era cuál — y equivocarse instalaba media librería sin querer.
+        #
+        # Un solo botón, y el texto de cada opción dice qué llega y de dónde.
+        self.btn_instalar = QToolButton()
+        self.btn_instalar.setText("📥  Instalar  ▾")
+        self.btn_instalar.setToolTip("Añadir agentes a Hermes")
+        self.btn_instalar.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        _mi = QMenu(self.btn_instalar)
+        _mi.addAction("Nuestros agentes de diseño  ·  reinstala los 9 de Pcreative Studio",
+                      self._seed)
+        _mi.addAction("Skills recomendadas del registro de Hermes  ·  por stack "
+                      "(Shopify, WordPress, Next, Astro…)", self._install_pack)
+        self.btn_instalar.setMenu(_mi)
+        bar.addWidget(self.btn_instalar)
+
         self.btn_refresh = QPushButton("↻")
         self.btn_refresh.setFixedWidth(32)
+        self.btn_refresh.setToolTip("Volver a leer la lista de agentes instalados")
         self.btn_refresh.clicked.connect(self.refresh)
         bar.addWidget(self.btn_refresh)
         root.addLayout(bar)
@@ -1680,7 +1780,9 @@ class AgentsTab(QWidget):
 
     # ── registro (async) ──
     def _busy(self, on: bool, msg: str = ""):
-        for b in (self.btn_search, self.btn_install, self.btn_pack, self.btn_seed):
+        # `btn_pack` y `btn_seed` ya no existen: son dos entradas del menú
+        # «📥 Instalar». Deshabilitar el botón deshabilita las dos.
+        for b in (self.btn_search, self.btn_install, self.btn_instalar):
             b.setEnabled(not on and bool(self._hermes))
         if msg:
             self.status.setText(msg)
@@ -2561,11 +2663,15 @@ class MessagingTab(QWidget):
                                   "terminal (elige plataforma y pega el token).")
         self.btn_setup.clicked.connect(self._setup)
         grow.addWidget(self.btn_setup)
-        for label, args in (("Estado", ["gateway", "status"]),
-                            ("Instalar servicio", ["gateway", "install"]),
-                            ("▶ Arrancar", ["gateway", "start"]),
-                            ("⏹ Parar", ["gateway", "stop"])):
+        # «Estado» solo mira; se va con el resto de consultas, abajo.
+        for label, args, tip in (
+            ("Instalar servicio", ["gateway", "install"],
+             "Registra el gateway como servicio del sistema. Se hace una vez."),
+            ("▶ Arrancar", ["gateway", "start"], "Arrancar el gateway"),
+            ("⏹ Parar", ["gateway", "stop"], "Parar el gateway"),
+        ):
             b = QPushButton(label)
+            b.setToolTip(tip)
             b.clicked.connect(lambda _c=False, a=args: self._run(a))
             grow.addWidget(b)
         grow.addStretch()
@@ -2585,9 +2691,6 @@ class MessagingTab(QWidget):
             self.cb_plat.addItem(f"{name}  ·  {env}", name)
         self.cb_plat.currentIndexChanged.connect(self._plat_hint)
         prow.addWidget(self.cb_plat, 1)
-        self.btn_list = QPushButton("📋 Targets configurados")
-        self.btn_list.clicked.connect(lambda: self._run(["send", "--list"]))
-        prow.addWidget(self.btn_list)
         pl.addLayout(prow)
         self.plat_hint = QLabel(); self.plat_hint.setStyleSheet("color:#7aa2f7;")
         self.plat_hint.setWordWrap(True)
@@ -2616,9 +2719,6 @@ class MessagingTab(QWidget):
         pgl = QVBoxLayout(pgbox)
         pgl.addWidget(QLabel("<b>Pairing</b> — autoriza usuarios desconocidos por código"))
         pgrow = QHBoxLayout()
-        self.btn_pair_list = QPushButton("Ver pairing")
-        self.btn_pair_list.clicked.connect(lambda: self._run(["pairing", "list"]))
-        pgrow.addWidget(self.btn_pair_list)
         self.in_pair_plat = QLineEdit(); self.in_pair_plat.setPlaceholderText("plataforma")
         self.in_pair_plat.setFixedWidth(110)
         pgrow.addWidget(self.in_pair_plat)
@@ -2631,6 +2731,29 @@ class MessagingTab(QWidget):
         pgrow.addStretch()
         pgl.addLayout(pgrow)
         root.addWidget(pgbox)
+
+        # Mismo criterio que en «Sandbox, portal y perfiles»: lo que solo mira
+        # va junto y aparte de lo que actúa. Que el panel se lea igual en todas
+        # las pantallas vale más que cualquier ahorro de clics.
+        consultas = QHBoxLayout()
+        self.btn_consultar = QToolButton()
+        self.btn_consultar.setText("🔍  Consultar  ▾")
+        self.btn_consultar.setToolTip("Ver el estado. No cambia nada.")
+        self.btn_consultar.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        _mc = QMenu(self.btn_consultar)
+        # Los comandos son los que ya usaban los botones que estaban aquí
+        # (`send --list`, `pairing list`), NO subcomandos de `gateway`: eso me
+        # lo inventé al mover el código y `hermes gateway` no los tiene.
+        for _e, _a in (
+            ("Estado del gateway", ["gateway", "status"]),
+            ("Destinos configurados", ["send", "--list"]),
+            ("Solicitudes de emparejamiento", ["pairing", "list"]),
+        ):
+            _mc.addAction(_e, lambda _c=False, a=_a: self._run(a))
+        self.btn_consultar.setMenu(_mc)
+        consultas.addWidget(self.btn_consultar)
+        consultas.addStretch()
+        root.addLayout(consultas)
 
         self.log = QPlainTextEdit(); self.log.setReadOnly(True)
         self.log.setStyleSheet("font-family:monospace; font-size:11px; "
@@ -2741,15 +2864,9 @@ class AdvancedTab(QWidget):
         pl.addWidget(QLabel("<b>🎨 Portal de herramientas (imágenes, web, browser)</b>"))
         pl.addWidget(QLabel("El Nous Portal habilita image_generate (FLUX/Recraft/"
                             "Ideogram), web search y cloud browser con una sola cuenta."))
-        prow = QHBoxLayout()
-        self.btn_portal = QPushButton("Estado del portal")
-        self.btn_portal.clicked.connect(lambda: self._run(["portal", "status"]))
-        prow.addWidget(self.btn_portal)
-        self.btn_portal_tools = QPushButton("Herramientas del portal")
-        self.btn_portal_tools.clicked.connect(lambda: self._run(["portal", "tools"]))
-        prow.addWidget(self.btn_portal_tools)
-        prow.addStretch()
-        pl.addLayout(prow)
+        # Los dos botones del portal solo CONSULTAN. Ver §«Consultar ▾» abajo:
+        # están ahí, junto al resto de consultas, para que en la pestaña solo
+        # queden botones que cambian algo.
         root.addWidget(pbox)
 
         # ── Perfil + bundle Pcreative Studio ──
@@ -2765,9 +2882,6 @@ class AdvancedTab(QWidget):
         self.btn_bundle = QPushButton("Crear bundle /pcreative-studio")
         self.btn_bundle.clicked.connect(self._create_bundle)
         prow2.addWidget(self.btn_bundle)
-        self.btn_profiles = QPushButton("Listar perfiles")
-        self.btn_profiles.clicked.connect(lambda: self._run(["profile", "list"]))
-        prow2.addWidget(self.btn_profiles)
         prow2.addStretch()
         prl.addLayout(prow2)
         root.addWidget(prbox)
@@ -2779,12 +2893,6 @@ class AdvancedTab(QWidget):
         il.addWidget(QLabel("Analítica de tokens/coste por misión, y cadena de fallback "
                             "de proveedor si el cerebro falla."))
         irow = QHBoxLayout()
-        self.btn_insights = QPushButton("Insights (30 días)")
-        self.btn_insights.clicked.connect(lambda: self._run(["insights", "--days", "30"]))
-        irow.addWidget(self.btn_insights)
-        self.btn_fallback_list = QPushButton("Ver fallback")
-        self.btn_fallback_list.clicked.connect(lambda: self._run(["fallback", "list"]))
-        irow.addWidget(self.btn_fallback_list)
         self.btn_fallback_add = QPushButton("➕ Añadir fallback")
         self.btn_fallback_add.setToolTip("Abre `hermes fallback add` en una terminal "
                                          "(elige proveedor/modelo).")
@@ -2793,6 +2901,39 @@ class AdvancedTab(QWidget):
         irow.addStretch()
         il.addLayout(irow)
         root.addWidget(ibox)
+
+        # ── Consultas ───────────────────────────────────────────────────
+        #
+        # Cinco de los nueve botones de esta pestaña no cambiaban NADA: corrían
+        # un comando y volcaban el resultado en este mismo registro. Estaban
+        # repartidos entre las secciones, con el mismo aspecto que «Aplicar
+        # seguridad» o «Crear perfil», que sí tocan la configuración.
+        #
+        # Juntos y aparte, la pestaña dice algo claro: los botones cambian
+        # cosas, este menú solo enseña. Y equivocarse aquí no tiene coste.
+        consultas = QHBoxLayout()
+        self.btn_consultar = QToolButton()
+        self.btn_consultar.setText("🔍  Consultar  ▾")
+        self.btn_consultar.setToolTip("Ver el estado de Hermes. Nada de esto "
+                                      "modifica la configuración.")
+        self.btn_consultar.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        _menu_cons = QMenu(self.btn_consultar)
+        for _etq, _argv in (
+            ("Estado del portal", ["portal", "status"]),
+            ("Herramientas del portal", ["portal", "tools"]),
+            ("Perfiles existentes", ["profile", "list"]),
+            ("Cadena de fallback", ["fallback", "list"]),
+            ("Coste de los últimos 30 días", ["insights", "--days", "30"]),
+        ):
+            _menu_cons.addAction(_etq, lambda _c=False, a=_argv: self._run(a))
+        self.btn_consultar.setMenu(_menu_cons)
+        consultas.addWidget(self.btn_consultar)
+        consultas.addStretch()
+        self.btn_limpiar_log = QPushButton("Limpiar")
+        self.btn_limpiar_log.setToolTip("Vaciar la salida de abajo")
+        self.btn_limpiar_log.clicked.connect(lambda: self.log.clear())
+        consultas.addWidget(self.btn_limpiar_log)
+        root.addLayout(consultas)
 
         self.log = QPlainTextEdit(); self.log.setReadOnly(True)
         self.log.setStyleSheet("font-family:monospace; font-size:11px; "
@@ -2914,9 +3055,6 @@ class HermesPanel(QWidget):
         self.strip.btn_power.clicked.connect(self._toggle_power)
         outer.addWidget(self.strip)
 
-        self.tabs = QTabWidget()
-        outer.addWidget(self.tabs, 1)
-
         self.mission = MissionTab()
         self.provider = ProviderTab()
         # Al aplicar un modelo en Proveedor, refresca el chip de estado de arriba.
@@ -2932,18 +3070,84 @@ class HermesPanel(QWidget):
         self.chat = HermesTerminal()
         self.admin = AdminTab()
 
-        self.tabs.addTab(self.mission, "🚀 Misión")
-        self.tabs.addTab(self.provider, "🔌 Proveedor")
-        self.tabs.addTab(self.images, "🎨 Imágenes")
-        self.tabs.addTab(self.agents, "🤖 Agentes")
-        self.tabs.addTab(self.create, "➕ Crear")
-        self.tabs.addTab(self.memory, "🧠 Memoria")
-        self.tabs.addTab(self.kanban, "📊 Kanban")
-        self.tabs.addTab(self.cron, "⏰ Cron")
-        self.tabs.addTab(self.messaging, "📲 Remoto")
-        self.tabs.addTab(self.advanced, "🛡️ Avanzado")
-        self.tabs.addTab(self.admin, "⚙️ Admin")
-        self.tabs.addTab(self.chat, "💬 Chat")
+        # ── Navegación lateral por secciones ────────────────────────────
+        #
+        # Esto eran DOCE pestañas al mismo nivel, así que «elegir proveedor»
+        # —que se hace una vez— competía por el ancho con «lanzar una misión»,
+        # que es a lo que se viene. Encima los nombres se recortaban.
+        #
+        # Los tres grupos no son un invento: salen de cómo la propia
+        # documentación de Hermes separa su producto — trabajo del día a día
+        # (chat, sesiones, memoria, perfiles) frente a configuración de una
+        # sola vez (proveedores, gateway, sandbox, cron).
+        #
+        # En una lista lateral caben los nombres enteros, se ve dónde estás y
+        # queda sitio para crecer sin apretar más la fila.
+        SECCIONES: list[tuple[str, list[tuple[str, QWidget]]]] = [
+            ("TRABAJAR", [
+                ("🚀   Misión", self.mission),
+                ("💬   Chat", self.chat),
+                ("📊   Kanban", self.kanban),
+                ("🎨   Imágenes", self.images),
+            ]),
+            ("SABER", [
+                ("🤖   Agentes", self.agents),
+                ("🧠   Memoria", self.memory),
+                ("➕   Crear skill", self.create),
+            ]),
+            ("CONFIGURAR", [
+                ("🔌   Proveedor", self.provider),
+                # «Avanzado» no decía nada. Y «Sandbox y permisos» —que puse
+                # primero— tampoco valía: la pestaña lleva además el portal de
+                # herramientas, los perfiles y el coste. La lista lateral tiene
+                # sitio de sobra para decirlo entero, que para eso se hizo.
+                ("🛡️   Sandbox, portal y perfiles", self.advanced),
+                ("📲   Remoto", self.messaging),
+                ("⏰   Tareas programadas", self.cron),
+                ("⚙️   Admin", self.admin),
+            ]),
+        ]
+
+        self.nav = QListWidget()
+        self.nav.setFixedWidth(210)
+        self.nav.setFrameShape(QFrame.Shape.NoFrame)
+        self.nav.setStyleSheet(
+            "QListWidget { background:transparent; outline:0; }"
+            "QListWidget::item { padding:7px 10px; border-radius:6px; color:#ddd; }"
+            "QListWidget::item:selected { background:#2a2d3a; color:#fff; }"
+            "QListWidget::item:hover:!selected { background:#1e2029; }"
+        )
+        self.stack = QStackedWidget()
+
+        for titulo, entradas in SECCIONES:
+            cab = QListWidgetItem(titulo)
+            # El encabezado es un rótulo, no un destino: sin él se podría
+            # «seleccionar» una sección y quedarse mirando una página en blanco.
+            cab.setFlags(Qt.ItemFlag.NoItemFlags)
+            f = cab.font(); f.setPointSize(max(7, f.pointSize() - 2)); f.setBold(True)
+            cab.setFont(f)
+            cab.setForeground(QColor("#6b7280"))
+            self.nav.addItem(cab)
+            for etiqueta, widget in entradas:
+                it = QListWidgetItem(etiqueta)
+                it.setData(Qt.ItemDataRole.UserRole, self.stack.count())
+                self.nav.addItem(it)
+                self.stack.addWidget(widget)
+
+        def _ir(fila: int):
+            it = self.nav.item(fila)
+            idx = it.data(Qt.ItemDataRole.UserRole) if it else None
+            if idx is not None:
+                self.stack.setCurrentIndex(idx)
+
+        self.nav.currentRowChanged.connect(_ir)
+        self.nav.setCurrentRow(1)  # la fila 0 es el encabezado «TRABAJAR»
+
+        cuerpo = QHBoxLayout()
+        cuerpo.setSpacing(10)
+        cuerpo.addWidget(self.nav)
+        cuerpo.addWidget(self.stack, 1)
+        outer.addLayout(cuerpo, 1)
 
         # Arranca APAGADO: el usuario decide si usar Hermes y cuándo.
         self._apply_power(False)
