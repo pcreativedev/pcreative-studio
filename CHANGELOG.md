@@ -5,6 +5,76 @@ All notable changes to Pcreative Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-08-09
+
+### Fixed
+
+- **El panel de costes inflaba un 34 %.** Los modelos estaban escritos a mano en
+  cuatro ficheros, en tres convenciones distintas, y la búsqueda de precios era
+  por igualdad exacta. Medido sobre sesiones reales: `claude-opus-5` era el
+  segundo modelo más usado (13.424 eventos) y no figuraba en ninguna tabla;
+  `claude-haiku-4-5-20251001` no casaba con `claude-haiku-4-5` por el sufijo de
+  fecha que añade el CLI, así que se le cobraba 15/75 en vez de 1/5; y Opus 4.6
+  y 4.7 estaban a 15/75 cuando cuestan 5/25. En total, **5.390 $ de más sobre
+  16.000 $**.
+- **Actualizar Hermes parecía colgarse.** No se colgaba: no daba señales de
+  vida. La actualización reinstala el runtime de Python, las dependencias y los
+  paquetes de Node —varios minutos— y el diálogo no enseñaba ni una línea,
+  porque la salida sale a ráfagas cuando no habla con un terminal (medido: 244
+  líneas en 17 momentos, con más de un minuto de silencio inicial). Ahora la
+  salida es inmediata, hay reloj y aviso, y **cerrar está siempre disponible**.
+- **Un cuelgue real en ese mismo diálogo:** sin `errorOccurred` conectado, si el
+  proceso no llegaba a arrancar `finished` no se emite nunca y el botón de
+  cerrar quedaba deshabilitado para siempre.
+- **Las nueve skills de diseño estaban duplicadas** en disco desde el rebrand
+  (`~/.hermes/skills/themeforge/` frente a `pcreative-studio/`). Ocho comparten
+  el `name`, así que Hermes colapsaba el duplicado y cargaba una de las dos
+  copias **sin decir cuál**. Retiradas las viejas.
+
+### Added
+
+- **`models.py`, catálogo único de modelos.** Todo el programa bebe de aquí.
+  `normalizar()` resuelve cualquier forma del identificador —con fecha, con
+  `[1m]`, con prefijo `anthropic/`, con puntos o guiones—, que era la mitad del
+  error de costes. Con **Opus 5 y Sonnet 5**, que no estaban en ningún sitio.
+- **Precios que se actualizan solos.** Lee el catálogo de models.dev (181
+  proveedores); Hermes ya lo cacheaba y ahora lo usa el programa entero.
+  Verificado contra la documentación de Anthropic: 13 de 13 sin discrepancias.
+  Sin red ni caché, sigue funcionando con lo curado.
+- **Selector de modelo para los siete proveedores.** Antes solo Claude.
+- **Selector de modelo en la ventana de proyecto**, que es donde se lanza el
+  agente. Vivía en Credenciales, en otra ventana.
+
+### Changed
+
+- **Panel de Hermes: barra lateral en vez de doce pestañas.** Tres secciones
+  —trabajar, saber, configurar— siguiendo cómo la propia documentación de
+  Hermes divide su producto. Antes «elegir proveedor», que se hace una vez,
+  competía por el ancho con «lanzar una misión».
+- **Un criterio en todo el panel: los botones cambian cosas, los menús solo
+  enseñan.** Cinco de los nueve botones de «Avanzado» no cambiaban nada y tenían
+  el mismo aspecto que «Aplicar seguridad»; ahora van en «🔍 Consultar». Igual
+  en «Remoto».
+- **«Sembrar agentes web» y «Pack web» eran un solo botón mal partido en dos.**
+  Nombres casi idénticos, efectos distintos: uno reinstala nuestros nueve
+  agentes, el otro baja skills del registro de Hermes. Ahora es un menú donde
+  cada opción dice qué llega y de dónde.
+- Renombres que dicen lo que hay dentro: «Avanzado» → «Sandbox, portal y
+  perfiles», «Cron» → «Tareas programadas».
+- **Ventana de proyecto: de cuatro filas de botones a una.** 18 botones del
+  mismo peso —«Nuevo proyecto» se veía igual que «DevTools»— pasan a una barra
+  con lo de cada día y dos menús («Abrir en», «Acciones») para lo ocasional. Los
+  mandos del preview bajan a la columna del preview, que es lo que controlan.
+- Sonnet 5 lleva precio de lanzamiento hasta el 31 de agosto: se calcula por
+  fecha en vez de fijarlo, para que el 1 de septiembre no empiece a fallar por
+  un tercio sin que nadie toque nada.
+
+### Notes
+
+- Los precios de OpenAI y Google se heredan de la tabla anterior y **no se han
+  podido verificar** en su documentación; van marcados como tales en vez de
+  aparentar que sí. models.dev los corrige al primer arranque con red.
+
 ## [2.1.0] - 2026-08-07
 
 ### Added
