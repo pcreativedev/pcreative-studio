@@ -40,30 +40,31 @@ DEFAULT_MODEL = "perplexity/sonar-reasoning-pro"
 # Modelos preseleccionados en el picker (todos vía OpenRouter, IDs verificados 2026-07).
 # Los `perplexity/sonar*` traen web integrada; a los demás se les añade `:online`
 # cuando el toggle "datos reales" está activo (ver call_openrouter).
-MODELS = [
-    "perplexity/sonar-reasoning-pro",   # web + razonamiento — RECOMENDADO para mercado
-    "perplexity/sonar-deep-research",    # investigación profunda multi-fuente (más lento)
-    "perplexity/sonar-pro",              # web rápido
-    "anthropic/claude-opus-4.8",         # mejor razonamiento (usa :online con el toggle)
-    "anthropic/claude-sonnet-4.6",
-    "openai/gpt-5.1",
-    "openai/gpt-5",
-    "google/gemini-2.5-pro",
-    "deepseek/deepseek-v3.2",
+import models as _models
+
+# Los que traen búsqueda web propia o solo existen en OpenRouter se declaran
+# aquí, porque no son modelos de ningún CLI del programa.
+_SOLO_OPENROUTER: list[tuple[str, str]] = [
+    ("perplexity/sonar-reasoning-pro", "Perplexity Sonar Reasoning Pro · web + razonamiento ⭐"),
+    ("perplexity/sonar-deep-research", "Perplexity Deep Research · multi-fuente (lento)"),
+    ("perplexity/sonar-pro", "Perplexity Sonar Pro · web rápido"),
+    ("deepseek/deepseek-v3.2", "DeepSeek v3.2 · barato"),
 ]
 
+# El resto SALE DEL CATÁLOGO. Antes estaban escritos a mano aquí y se quedaron
+# en Opus 4.8 / GPT-5.1: al catálogo se le añade un modelo y este picker no se
+# enteraba, que es medio motivo de que "no salgan todos los modelos".
+_DEL_CATALOGO = [
+    (_models.slug_openrouter(m.id), f"{m.etiqueta.split(' — ')[0].split(' ($')[0]}")
+    for m in _models.CATALOGO
+    if m.elegible and m.familia in ("claude", "openai", "google")
+]
+
+MODELS = [i for i, _ in _SOLO_OPENROUTER[:3]] + [i for i, _ in _DEL_CATALOGO] + \
+         [i for i, _ in _SOLO_OPENROUTER[3:]]
+
 # Etiquetas legibles para el picker (id → texto).
-MODEL_LABELS = {
-    "perplexity/sonar-reasoning-pro": "Perplexity Sonar Reasoning Pro · web + razonamiento ⭐",
-    "perplexity/sonar-deep-research": "Perplexity Deep Research · multi-fuente (lento)",
-    "perplexity/sonar-pro": "Perplexity Sonar Pro · web rápido",
-    "anthropic/claude-opus-4.8": "Claude Opus 4.8 · máximo razonamiento",
-    "anthropic/claude-sonnet-4.6": "Claude Sonnet 4.6 · equilibrado",
-    "openai/gpt-5.1": "GPT-5.1",
-    "openai/gpt-5": "GPT-5",
-    "google/gemini-2.5-pro": "Gemini 2.5 Pro",
-    "deepseek/deepseek-v3.2": "DeepSeek v3.2 · barato",
-}
+MODEL_LABELS = {i: t for i, t in _SOLO_OPENROUTER + _DEL_CATALOGO}
 
 # Modelos que YA traen búsqueda web integrada (no necesitan `:online`).
 _WEB_NATIVE_PREFIXES = ("perplexity/",)

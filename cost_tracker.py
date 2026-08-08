@@ -45,36 +45,16 @@ from pathlib import Path
 # claude-opus-4-7[1m] = ventana de 1M tokens), usamos la tarifa del
 # tier "estándar"; el extra se documenta en el UI como aviso.
 
+import models as _models
+
+#: Se conserva por compatibilidad (algún módulo la importa), pero la fuente de
+#: verdad es `models.py`. Se construye desde el catálogo para que no puedan
+#: volver a divergir.
 PRICING: dict[str, tuple[float, float, float, float]] = {
-    # Anthropic — Claude 5 (jun 2026)
-    "claude-fable-5":    (10.00, 50.00, 12.50, 1.00),
-    "claude-mythos-5":   (10.00, 50.00, 12.50, 1.00),
-    # Anthropic — Claude 4.x
-    "claude-opus-4-8":   ( 5.00, 25.00,  6.25, 0.50),
-    "claude-opus-4-7":   (15.00, 75.00, 18.75, 1.50),
-    "claude-opus-4-6":   (15.00, 75.00, 18.75, 1.50),
-    "claude-opus-4":     (15.00, 75.00, 18.75, 1.50),
-    "claude-sonnet-4-6": ( 3.00, 15.00,  3.75, 0.30),
-    "claude-sonnet-4-5": ( 3.00, 15.00,  3.75, 0.30),
-    "claude-sonnet-4":   ( 3.00, 15.00,  3.75, 0.30),
-    "claude-haiku-4-5":  ( 1.00,  5.00,  1.25, 0.10),
-    # Anthropic — Claude 3.x (legacy)
-    "claude-3-5-sonnet": ( 3.00, 15.00,  3.75, 0.30),
-    "claude-3-opus":     (15.00, 75.00, 18.75, 1.50),
-    "claude-3-haiku":    ( 0.25,  1.25,  0.30, 0.03),
-    # OpenAI — GPT-5.x
-    "gpt-5.5":           (15.00, 60.00,  0.00, 1.50),
-    "gpt-5":             (15.00, 60.00,  0.00, 1.50),
-    "gpt-5-mini":        ( 0.25,  2.00,  0.00, 0.05),
-    "gpt-4o":            ( 2.50, 10.00,  0.00, 1.25),
-    "gpt-4o-mini":       ( 0.15,  0.60,  0.00, 0.075),
-    "o3":                (15.00, 60.00,  0.00, 0.00),
-    "o3-mini":           ( 1.10,  4.40,  0.00, 0.55),
-    # Google — Gemini
-    "gemini-2.5-pro":    ( 1.25, 10.00,  0.00, 0.31),
-    "gemini-2.0-flash":  ( 0.10,  0.40,  0.00, 0.025),
+    m.id: (m.entrada, m.salida, m.cache_escritura, m.cache_lectura)
+    for m in _models.CATALOGO
 }
-_DEFAULT_PRICING = (15.00, 75.00, 0.00, 1.50)
+_DEFAULT_PRICING = _models.RESERVA
 
 
 def cost_for(model: str, input_tokens: int, output_tokens: int,
@@ -82,19 +62,17 @@ def cost_for(model: str, input_tokens: int, output_tokens: int,
              cache_read_tokens: int = 0) -> tuple[float, bool]:
     """Devuelve (coste_usd, pricing_known).
 
-    Si el `model` no está en PRICING, usa defaults conservadores y
-    devuelve pricing_known=False (la UI puede avisar).
+    Delega en `models.coste`, que NORMALIZA el identificador antes de buscar.
+    Ese detalle es todo el asunto: aquí se comparaba por igualdad exacta, así
+    que `claude-haiku-4-5-20251001` no casaba con `claude-haiku-4-5` y se le
+    aplicaba la tarifa de reserva — 15/75 en vez de 1/5.
+
+    Medido sobre las sesiones reales antes de arreglarlo: el panel inflaba
+    **5.390 $ sobre 16.000 $, un 34 %**, casi todo por `claude-opus-5`, que
+    directamente no figuraba en ninguna tabla.
     """
-    known = model in PRICING
-    rates = PRICING.get(model, _DEFAULT_PRICING)
-    pi, po, pcw, pcr = rates
-    cost = (
-        (input_tokens          / 1_000_000) * pi +
-        (output_tokens         / 1_000_000) * po +
-        (cache_creation_tokens / 1_000_000) * pcw +
-        (cache_read_tokens     / 1_000_000) * pcr
-    )
-    return cost, known
+    return _models.coste(model, input_tokens, output_tokens,
+                         cache_creation_tokens, cache_read_tokens)
 
 
 # ── Modelo de datos ──────────────────────────────────────────────────

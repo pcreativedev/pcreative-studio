@@ -37,14 +37,24 @@ KEYS_PATH = CONFIG_DIR / "keys.json"
 # Modelos concretos como Fable 5 pueden no estar disponibles en todas las cuentas
 # (devuelven 404 model_not_found), así que no se usan como default.
 CLAUDE_MODEL_DEFAULT = ""
-CLAUDE_MODELS: list[tuple[str, str]] = [
-    ("",                 "Auto — default de tu cuenta (recomendado)"),
-    ("claude-fable-5",   "Fable 5 — el más capaz ($10/$50)"),
-    ("claude-opus-4-8",  "Opus 4.8 ($5/$25)"),
-    ("claude-opus-4-6",  "Opus 4.6"),
-    ("claude-sonnet-4-6", "Sonnet 4.6 — rápido ($3/$15)"),
-    ("claude-haiku-4-5", "Haiku 4.5 — barato ($1/$5)"),
-]
+
+# La lista sale del catálogo único (`models.py`), no de aquí. Estaba escrita a
+# mano y se quedó atrás: le faltaban Opus 5 y Sonnet 5, que son los actuales.
+# Ese es el motivo real de «no me salen todos los modelos» — y pasaba lo mismo
+# en otros tres ficheros, cada uno con su propia lista y su propia convención.
+import models as _models
+
+CLAUDE_MODELS: list[tuple[str, str]] = _models.para_proveedor("claude")
+
+
+def modelos_de(proveedor: str) -> list[tuple[str, str]]:
+    """Modelos que se le pueden ofrecer a un proveedor concreto.
+
+    Existe porque hasta ahora SOLO Claude tenía dónde elegir modelo; los otros
+    seis no. Va contra la regla de que una función de IA tiene que funcionar
+    igual en todos los proveedores, no a medias en uno.
+    """
+    return _models.para_proveedor(proveedor)
 
 
 def claude_model() -> str:
