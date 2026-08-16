@@ -3635,18 +3635,71 @@ TEMPLATE_NICHES = [
     "Cine / Producción audiovisual",
     "Tatuajes / Body art",
     "Arte / Galería",
-    # E-commerce niches
+    # ── Comercio / Retail ────────────────────────────────────────────
+    #
+    # El bloque más largo, y a propósito: en una plataforma de comercio los
+    # temas se venden POR VERTICAL, no por estilo. Aquí había once entradas
+    # heredadas de las categorías de ThemeForest —que van de servicios y
+    # corporativo— y no estaban ni el growshop ni la pastelería, que son
+    # clientes reales. Un nicho que no está en la lista se escribe a mano, sí,
+    # pero el que no se ve tampoco se piensa.
+    #
+    # `TEMPLATE_NICHES_COMERCIO` (más abajo) los recoge para poder subirlos
+    # cuando el stack es de comercio.
     "Moda / Fashion",
     "Joyería / Watches",
     "Cosmética / Skincare",
+    "Perfumería",
     "Tecnología / Gadgets",
+    "Informática / Componentes PC",
+    "Telefonía / Móviles",
+    "Electrodomésticos",
     "Hogar / Decoración",
     "Muebles",
+    "Textil hogar / Descanso",
     "Comida gourmet / Delicatessen",
     "Vinos / Bebidas",
+    "Café / Té de especialidad",
+    "Alimentación de barrio / Ultramarinos",
+    "Ecológico / A granel",
     "Mascotas / Pet shop",
-    "Bebés / Infantil",
+    "Bebés / Puericultura",
+    "Juguetería",
     "Deportes / Outdoor",
+    "Bicicletas",
+    "Caza y pesca",
+    "Náutica",
+    "Growshop / Cultivo",
+    "CBD / Cáñamo",
+    "Vapeo / Cigarrillo electrónico",
+    "Estanco / Tabaco",
+    "Herbolario / Dietética / Suplementos",
+    "Farmacia / Parafarmacia",
+    "Ortopedia / Material médico",
+    "Óptica",
+    "Jardinería / Plantas",
+    "Ferretería / Bricolaje",
+    "Materiales de construcción",
+    "Recambios de coche",
+    "Motos / Recambios",
+    "Instrumentos musicales",
+    "Vinilos / Discos",
+    "Cómic / Manga",
+    "Librería",
+    "Papelería",
+    "Coleccionismo / Cartas / TCG",
+    "Modelismo / Maquetas",
+    "Artesanía / Handmade",
+    "Regalos personalizados",
+    "Merch bajo demanda / POD",
+    "Productos digitales / Descargas",
+    "Cajas de suscripción",
+    "Segunda mano / Outlet",
+    "Sex shop",
+    "Mayorista / B2B",
+    "Suministros de hostelería",
+    "Ropa de trabajo / EPI",
+    "Marketplace multivendedor",
     # Food & Hospitality
     "Restaurante",
     "Cafetería / Coffee shop",
@@ -3711,6 +3764,42 @@ TEMPLATE_NICHES = [
     "Membership / Comunidad",
     "Crowdfunding",
 ]
+
+# Los nichos de comercio, para poder ponerlos DELANTE cuando el stack vende.
+#
+# 🔴 Se define por su POSICIÓN en la lista de arriba y no repitiendo los
+# nombres: dos listas con las mismas cadenas se desincronizan en cuanto alguien
+# corrige una tilde, y el fallo es mudo — el nicho deja de considerarse de
+# comercio y nadie se entera de por qué ya no sale arriba.
+_COMERCIO_DESDE = TEMPLATE_NICHES.index("Moda / Fashion")
+_COMERCIO_HASTA = TEMPLATE_NICHES.index("Marketplace multivendedor") + 1
+TEMPLATE_NICHES_COMERCIO = TEMPLATE_NICHES[_COMERCIO_DESDE:_COMERCIO_HASTA]
+
+# Categorías de stack donde lo que se construye es una TIENDA. Se mira la
+# categoría y no una lista de claves para que un stack nuevo de e-commerce
+# entre solo, sin que haya que acordarse de apuntarlo aquí.
+_CATEGORIAS_QUE_VENDEN = {"E-commerce", "Temas · pcreative Commerce", "CMS · Shopify"}
+
+
+def niches_for_stack(stack_key: str) -> list[str]:
+    """Los nichos, ordenados por lo que va a construir este stack.
+
+    Con ciento cuarenta entradas en una lista plana, el nicho que necesitas
+    queda enterrado: quien hace un tema de comercio se traga cuarenta nichos de
+    servicios profesionales antes de llegar a «Ferretería». Aquí no se quita
+    nada —el resto sigue debajo, y el desplegable admite escribir a mano— solo
+    se sube lo que toca.
+    """
+    stack = STACKS.get(stack_key) or {}
+    if stack.get("category") not in _CATEGORIAS_QUE_VENDEN:
+        return list(TEMPLATE_NICHES)
+
+    comercio = set(TEMPLATE_NICHES_COMERCIO)
+    # La primera entrada es «(Sin nicho…)» y se queda arriba: es el valor por
+    # defecto, y moverlo cambiaría lo que sale elegido al abrir el diálogo.
+    cabeza = [n for n in TEMPLATE_NICHES[:1]]
+    resto = TEMPLATE_NICHES[1:]
+    return cabeza + [n for n in resto if n in comercio] + [n for n in resto if n not in comercio]
 
 # AGENTS se sincroniza desde ai_providers.PROVIDERS para que la GUI y
 # write_setup_script vean los 7 providers (Claude/Codex/Gemini/OpenCode/

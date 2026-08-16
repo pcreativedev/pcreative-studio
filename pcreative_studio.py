@@ -195,7 +195,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from stacks import AGENTS, STACKS, TEMPLATE_TYPES, TEMPLATE_NICHES
+from stacks import AGENTS, STACKS, TEMPLATE_TYPES, TEMPLATE_NICHES, niches_for_stack
 from stack_picker import StackPickerDialog
 import ai_providers as aip
 import platform_compat as pc
@@ -5137,8 +5137,7 @@ class PcreativeStudio(QWidget):
         self.niche_combo = QComboBox()
         self.niche_combo.setEditable(True)
         self.niche_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        for n in TEMPLATE_NICHES:
-            self.niche_combo.addItem(n)
+        self._refresh_niches()
         self.niche_combo.setToolTip(
             "Industria / nicho objetivo del template. Elige uno de la lista "
             "o escribe el tuyo (ej: 'Tienda de surf en Tarifa').\n\n"
@@ -5566,6 +5565,32 @@ class PcreativeStudio(QWidget):
         cat = s.get("category", "")
         return cat not in ("Backend · API", "Sin definir", "")
 
+    def _refresh_niches(self):
+        """Reordena los nichos según lo que construya el stack elegido.
+
+        Son ciento treinta y ocho: si el stack hace una tienda, los cincuenta y
+        cuatro de comercio suben. No se quita ninguno —el desplegable además
+        admite escribir a mano— pero el que no se ve tampoco se piensa.
+
+        🔴 Se conserva LO QUE HAYA ESCRITO EL USUARIO, no el índice: reordenar
+        la lista deja el índice apuntando a otro nicho, así que cambiar de stack
+        le cambiaría el nicho sin decir nada.
+        """
+        elegido = self.niche_combo.currentText() if self.niche_combo.count() else ""
+        self.niche_combo.blockSignals(True)
+        self.niche_combo.clear()
+        for n in niches_for_stack(self._stack_key):
+            self.niche_combo.addItem(n)
+        if elegido:
+            i = self.niche_combo.findText(elegido)
+            if i >= 0:
+                self.niche_combo.setCurrentIndex(i)
+            else:
+                # Un nicho escrito a mano no está en la lista y hay que
+                # devolverlo tal cual, o se pierde al tocar el stack.
+                self.niche_combo.setEditText(elegido)
+        self.niche_combo.blockSignals(False)
+
     def _open_stack_picker(self):
         dlg = StackPickerDialog(self, initial=self._stack_key)
         if dlg.exec() == StackPickerDialog.DialogCode.Accepted and dlg.selected_key:
@@ -5577,6 +5602,8 @@ class PcreativeStudio(QWidget):
                 self.uipro_check.setChecked(self._is_ui_stack(self._stack_key))
             if hasattr(self, "taste_check"):
                 self.taste_check.setChecked(self._is_ui_stack(self._stack_key))
+            if hasattr(self, "niche_combo"):
+                self._refresh_niches()
             self._update_preview()
 
     def _on_vibe(self):
