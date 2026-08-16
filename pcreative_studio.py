@@ -408,7 +408,17 @@ def focus_new_project() -> bool:
 
 
 HOME = Path.home()
-BUILDER_DIR = HOME / "Proyectos" / "pcreative-studio"
+
+# 🔴 DE DÓNDE CUELGA ESTE FICHERO, NO DE UNA RUTA ESCRITA A MANO.
+#
+# Aquí ponía `HOME/"Proyectos"/"pcreative-studio"`, del rebrand. La carpeta
+# local nunca se renombró —sigue siendo `themeforge`— así que esa ruta no
+# existía, y `_read_context()` devolvía «no se pudo leer» para TODOS los
+# documentos: el CLAUDE.md de cada proyecto salía sin el checklist de Envato,
+# sin el instalador de demos y sin las reglas del contrato. No daba error en
+# ningún sitio: el agente simplemente recibía un contexto mutilado y hacía lo
+# que podía. `project_window.py` ya lo hacía así desde el principio.
+BUILDER_DIR = Path(__file__).resolve().parent
 PROJECTS_DIR = HOME / "Proyectos" / "themes"
 CONTEXT_DIR = BUILDER_DIR / "context"
 CONFIG_DIR = pc.app_config_dir()
@@ -1177,6 +1187,12 @@ _FORMAT_SHOPIFY = {
     "shopify-polaris-app", "shopify-functions", "shopify-checkout-extension",
     "shopify-storefront-webcomponents",
 }
+# Temas para NUESTRA plataforma. Formato aparte porque no es un producto de
+# Envato ni una web a medida: es un tema que se instala en una tienda que ya
+# existe, y lo que decide si vale no es una revisión humana sino `pcc-theme
+# validate`. Darle el checklist de ThemeForest sería mandarle a cumplir cosas
+# que aquí no aplican y callarle las que sí.
+_FORMAT_PCC_THEME = {"pcc-theme-next", "pcc-theme-astro"}
 _FORMAT_SCRIPT_APP = {
     "laravel-inertia", "nestjs-prisma", "fastapi", "django-tailwind", "t3-stack",
     "hono-bun", "hono-cloudflare", "phoenix-liveview", "rails-tailwind", "go-fiber",
@@ -1275,15 +1291,117 @@ No hay builder externo; trabajas con PHP, JS/Vue y bloques propios si necesitas 
 }
 
 
+def _pcc_theme_context(stack_key: str) -> str:
+    """Lo que el agente necesita saber del entorno para hacer un tema de la casa.
+
+    Va aparte del documento de reglas (`CONTRATO-TEMA-PCC.md`) porque esto es
+    el ESTADO de la carpeta —qué hay ya generado, qué comandos existen, dónde
+    está cada cosa— y aquello es la NORMA. Mezclarlos hace que el agente lea la
+    norma como si fuera opcional y el estado como si fuera negociable.
+    """
+    astro = stack_key == "pcc-theme-astro"
+    arbol = (
+        """```
+theme.json  tokens.json  settings.schema.json  settings.json
+sections.schema.json  templates/{home,product,category}.json
+locales/es.json  locales/es.schema.json  demo/contenido.json
+src/pages/       ← rutas, incluida pcc-seccion.astro (la usa el editor)
+src/secciones/   ← el catálogo de secciones + Secciones.astro
+src/layouts/     ← Tienda.astro (con cabecera y pie) y Suelta.astro (sin nada)
+src/lib/         ← commerce.ts, tema.ts, carrito.ts
+```"""
+        if astro
+        else """```
+theme.json  tokens.json  settings.schema.json  settings.json
+sections.schema.json  templates/{home,product,category}.json
+locales/es.json  locales/es.schema.json  demo/contenido.json
+src/app/(tienda)/    ← la tienda: home, tienda, producto, categoria, carrito
+src/app/(suelta)/    ← pcc-seccion: UNA sección sola, la usa el editor
+src/components/secciones/  ← el catálogo de secciones
+src/lib/             ← commerce.ts, theme.ts, carrito-leer.ts, carrito.ts
+```"""
+    )
+    nota_stack = (
+        "⚠️ Astro va en `output: \"server\"`. Una tienda tiene carrito, y un carrito no se "
+        "puede prerenderizar: servir el mismo HTML a dos personas es enseñarle a una el "
+        "carrito de la otra. Las páginas que sí son iguales para todos se pueden marcar "
+        "`prerender` una a una cuando interese."
+        if astro
+        else "⚠️ Dos grupos de rutas HERMANOS, `(tienda)` y `(suelta)`, y ninguno en "
+        "`app/layout.tsx`: un grupo se anida en el layout de arriba, así que con un layout "
+        "raíz la sección suelta saldría con cabecera y pie metidos dentro de otro `<html>`.\n\n"
+        "⚠️ La carpeta de la sección suelta **no puede empezar por `_`**: Next trata esas "
+        "como privadas y las deja fuera del enrutado — sin error en el build, sin salir en "
+        "la lista de rutas, y un 404 desde fuera."
+    )
+
+    return f"""
+## Entorno — el tema YA ESTÁ GENERADO Y VENDE
+
+Pcreative Studio ha ejecutado `pcc-theme init` antes de este setup. Lo que tienes
+delante **no es una maqueta**: es un tema completo que ya habla con el comercio.
+Portada componible, catálogo con paginación de servidor, ficha de producto,
+categoría y carrito, todo contra el backend de verdad.
+
+**Tu trabajo es el DISEÑO y las secciones del nicho. NO vuelvas a cablear el
+comercio**, ya está hecho y hecho bien.
+
+### El árbol
+
+{arbol}
+
+{nota_stack}
+
+### Los comandos
+
+```bash
+npm run dev                    # arrancar
+npx pcc-theme validate .       # 🔴 la prueba de aceptación: sin errores Y sin avisos
+npx pcc-theme audit .          # qué se ejecutaría al instalar y a qué dominios habla
+npx pcc-theme info .           # resumen del tema
+npx pcc-theme css .            # las variables CSS ya resueltas
+```
+
+`pcc-theme` vive en el clon de pcreative Commerce (los paquetes del contrato aún
+no están en npm). Si `npx pcc-theme` no lo encuentra, llámalo por su ruta:
+`node <clon>/packages/theme-contract/bin/pcc-theme.mjs validate .`
+
+### Antes de tocar nada
+
+Lee `theme.json`, `sections.schema.json` y `templates/home.json`. Ahí está el
+modelo entero: qué páginas declara el tema, qué secciones sabe pintar, y cómo se
+compone una página con ellas. Los tres ficheros juntos se leen en cinco minutos
+y ahorran rehacer el trabajo.
+
+### Añadir una sección son cuatro sitios, y los cuatro hacen falta
+
+1. Declararla en `sections.schema.json` (con sus campos y su `preset`).
+2. Añadir su `type` a `capabilities.blocks` de `theme.json` — si falta, `validate`
+   **da error**; si sobra, da aviso.
+3. Escribir el componente y registrarlo en el catálogo de secciones.
+4. Ponerla en la plantilla que corresponda, si quieres que venga de fábrica.
+
+### Dos comprobaciones que no se solapan
+
+`validateTheme()` mira la **coherencia entre ficheros** y corre hasta en el
+navegador. `pcc-theme validate` mira además la **forma de cada fichero** contra
+su esquema, y solo corre en consola. Pasó de verdad: un tema declaraba cinco
+funcionalidades que el esquema no admitía y la primera lo dio por bueno sin un
+aviso. **Ejecuta siempre `pcc-theme validate`.**
+"""
+
+
 def _wp_builder_context(stack_key: str) -> str:
     """Bloque de contexto específico del builder para el CLAUDE.md del proyecto."""
     return _WP_BUILDER_CONTEXT.get(stack_key, "")
 
 
 def product_format_for(stack_key: str) -> str:
-    """stack_key → 'site-template' | 'script-app' | 'mobile' | 'wordpress' | 'shopify' | 'unknown'."""
+    """stack_key → 'site-template' | 'script-app' | 'mobile' | 'wordpress' | 'shopify' | 'pcc-theme' | 'unknown'."""
     if stack_key == "none":
         return "unknown"
+    if stack_key in _FORMAT_PCC_THEME:
+        return "pcc-theme"
     if stack_key in _FORMAT_MOBILE:
         return "mobile"
     if stack_key in _FORMAT_WORDPRESS:
@@ -2856,7 +2974,12 @@ def render_context(
 
     # ── Formato de producto Envato derivado del stack ────────────────────
     product_format = product_format_for(stack_key)
-    if product_format in ("script-app", "mobile"):
+    if product_format == "pcc-theme":
+        # No es Envato: es NUESTRO contrato, y lo comprueba un validador que se
+        # ejecuta solo. Ver `context/CONTRATO-TEMA-PCC.md`.
+        envato_doc_name = "CONTRATO-TEMA-PCC.md"
+        requisitos_envato = _read_context(envato_doc_name)
+    elif product_format in ("script-app", "mobile"):
         envato_doc_name = "REQUISITOS-CODECANYON-SCRIPT.md"
         requisitos_envato = _read_context(envato_doc_name)
     elif product_format == "unknown":
@@ -2885,6 +3008,7 @@ def render_context(
         "script-app": "script / aplicación full-stack",
         "mobile": "app móvil",
         "wordpress": "tema / plugin de WordPress",
+        "pcc-theme": "tema de pcreative Commerce",
         "unknown": "producto digital (formato a determinar según el stack)",
     }
     _MARKETPLACES = {
@@ -2892,6 +3016,10 @@ def render_context(
         "script-app": "CodeCanyon (Envato), Gumroad y tu propia web",
         "mobile": "CodeCanyon (Envato), Apptopia, marketplaces de Flutter, GitHub",
         "wordpress": "ThemeForest / CodeCanyon (Envato), Gumroad",
+        "pcc-theme": (
+            "el mercado de pcreative Commerce (sin clave: la compra ya se comprueba al "
+            "descargar) y, si se vende fuera, ThemeForest con clave de activación"
+        ),
         "unknown": "ThemeForest o CodeCanyon (Envato) según el formato que elijas",
     }
     product_kind = _PRODUCT_KIND[product_format]
@@ -2965,6 +3093,9 @@ tienda de desarrollo (Partners → Stores → Add development store).
 {builder_block}
 """
         wp_installer_block = ""
+    elif product_format == "pcc-theme":
+        wp_dev_block = _pcc_theme_context(stack_key)
+        wp_installer_block = ""
     else:
         wp_dev_block = ""
         wp_installer_block = ""
@@ -3004,6 +3135,37 @@ tienda de desarrollo (Partners → Stores → Add development store).
 
 - Sin secretos hardcodeados; configuración por `.env` si el stack tiene backend.
 - WCAG AA y `prefers-reduced-motion` respetado en la UI.
+- Assets libres de derechos (ver sección §C abajo)."""
+    elif product_format == "pcc-theme":
+        objetivos_block = """## Objetivos finales — tema de pcreative Commerce
+
+1. **`npx pcc-theme validate .` sin errores Y SIN AVISOS**, y `npx pcc-theme
+   audit .` sin bloqueantes. Es la prueba de aceptación entera: si no pasa, el
+   tema no se instala. Y el esqueleto nace limpio, así que cualquier aviso lo
+   has metido tú.
+2. **Un diseño que se vea acabado con la tienda vacía y con mil productos.**
+   Las dos cosas pasan: la primera el día de la instalación, la segunda a los
+   seis meses.
+3. **Secciones componibles de verdad**: cada una tiene que aguantar cualquier
+   posición, repetirse, y quedarse sin datos. El dueño las ordena y duplica
+   desde el editor.
+4. **El personalizador, curado**: pocos ajustes y buenos, agrupados, con
+   nombres que se entienden sin manual y valores de fábrica que son frases
+   útiles, no «Título aquí».
+5. **Todo el color desde `tokens.json`.** Un hex escrito en un componente queda
+   fuera del personalizador para siempre.
+6. Multipágina real, WCAG AA, `prefers-reduced-motion`, y contenido de ejemplo
+   coherente (sin *Lorem ipsum*).
+
+## Restricciones
+
+- **El dinero se formatea, NO se calcula.** Ni multiplicar precio por cantidad,
+  ni sumar impuestos, ni convertir moneda: los importes vienen dados.
+- **El carrito no se cachea jamás.**
+- **Ni un dato en el código**: ni un producto, ni una categoría, ni un precio.
+- **Ningún secreto**: el tema habla con la API pública y la clave publicable.
+  Pedir base de datos, Admin API o pasarela hace que `validate` falle.
+- `data-pcc-seccion` en cada sección, con ese nombre exacto.
 - Assets libres de derechos (ver sección §C abajo)."""
     elif product_format == "shopify":
         objetivos_block = """## Objetivos finales — Shopify theme

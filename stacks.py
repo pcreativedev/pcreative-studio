@@ -15,6 +15,87 @@ Cada stack tiene:
   - notes       : Notas que se inyectarán en CLAUDE.md / AGENTS.md.
 """
 
+# ════════════════════════════════════════════════════════════════════
+#  Pasos compartidos de los temas de pcreative Commerce
+#
+#  Se comparten porque los dos stacks hacen LO MISMO salvo una palabra
+#  (`next` / `astro`), y dos copias del mismo shell acaban divergiendo
+#  justo en el paso que menos se mira.
+#
+#  Los pasos del scaffold se ejecutan con `eval` en el MISMO intérprete,
+#  así que una variable puesta en uno se ve en el siguiente.
+# ════════════════════════════════════════════════════════════════════
+
+# 🔴 Hace falta un clon de pcreative Commerce, y no hay forma de evitarlo:
+# los paquetes del contrato NO están publicados en npm, así que ni
+# `npx @pcreative/theme-contract` ni un rango de versión funcionan. Si no
+# aparece, se avisa y el setup SIGUE: abortar aquí deja al usuario sin
+# skills, sin MCP y sin agente, que es lo que de verdad aporta el programa.
+_PCC_LOCALIZAR_REPO = (
+    'PCC_DIR=""; '
+    'for __d in "$PCC_REPO" "$HOME/Proyectos/pcreative-commerce-rebrand" '
+    '"$HOME/Proyectos/pcreative-commerce" "$HOME/pcreative-commerce"; do '
+    '  if [ -n "$__d" ] && [ -f "$__d/packages/theme-contract/bin/pcc-theme.mjs" ]; then '
+    '    PCC_DIR="$__d"; break; fi; done; '
+    'if [ -n "$PCC_DIR" ]; then echo "  contrato de tema: $PCC_DIR"; else '
+    '  echo "  ⚠  No encuentro un clon de pcreative Commerce."; '
+    '  echo "     Los paquetes del contrato no están en npm todavía, así que hace falta el repo."; '
+    '  echo "     Ponlo en ~/Proyectos/pcreative-commerce o exporta PCC_REPO=/ruta/al/clon"; '
+    'fi'
+)
+
+# El id es la carpeta y la clave en la base de datos: minúsculas, números y
+# guiones. Se saca del slug del proyecto y se limpia, porque `pcc-theme init`
+# rechaza cualquier otra cosa (y hace bien).
+_PCC_ID_DEL_TEMA = (
+    'PCC_ID=$(printf "%s" "__SLUG__" | tr "[:upper:]_" "[:lower:]-" '
+    '| sed "s/[^a-z0-9-]//g; s/^-*//; s/-*$//"); '
+    'case "$PCC_ID" in "" ) PCC_ID="tema-nuevo";; [0-9]*) PCC_ID="tema-$PCC_ID";; esac; '
+    'if [ ${#PCC_ID} -lt 3 ]; then PCC_ID="tema-$PCC_ID"; fi; '
+    'echo "  id del tema: $PCC_ID"'
+)
+
+
+def _pcc_init(stack: str) -> str:
+    """El paso que genera el esqueleto. Sin repo, se dice y se sigue."""
+    return (
+        'if [ -n "$PCC_DIR" ]; then '
+        f'node "$PCC_DIR/packages/theme-contract/bin/pcc-theme.mjs" init . '
+        f'--id "$PCC_ID" --name "__PROJECT__" --stack {stack}; '
+        'else echo "  ⚠  Sin el repo no se puede generar el esqueleto del tema."; fi'
+    )
+
+
+# `--ignore-scripts` es lo mismo que hará el sistema al instalar el tema de
+# verdad: si algo solo funciona con un `postinstall`, mejor descubrirlo ahora.
+_PCC_INSTALAR = (
+    'if [ -f package.json ]; then npm install --ignore-scripts --no-audit --no-fund '
+    '|| echo "  ⚠  npm install incompleto (revisa Node 20+ y la red)"; fi'
+)
+
+# La prueba de aceptación del tema, desde el primer minuto: si el esqueleto ya
+# saliera con avisos, nadie volvería a leer un aviso.
+_PCC_VALIDAR = (
+    'if [ -n "$PCC_DIR" ] && [ -f theme.json ]; then '
+    'node "$PCC_DIR/packages/theme-contract/bin/pcc-theme.mjs" validate . || true; fi'
+)
+
+# Solo si de verdad hay tema. Dar instrucciones de arranque encima de una
+# carpeta vacía es peor que no decir nada: el usuario las sigue, no funcionan, y
+# el aviso de arriba —que era el que importaba— ya se le ha ido de la pantalla.
+_PCC_SIGUIENTE = (
+    'echo ""; '
+    'if [ -f theme.json ]; then '
+    '  echo "  Arrancar:  cp .env.example .env.local  (URL y clave publicable del backend)"; '
+    '  echo "             npm run dev"; '
+    '  echo "  Comprobar: npx pcc-theme validate .    → sin errores Y sin avisos"; '
+    'else '
+    '  echo "  ⚠  No hay tema: falta el clon de pcreative Commerce (ver arriba)."; '
+    '  echo "     Clónalo y vuelve a lanzar el proyecto, o dile al agente dónde está."; '
+    'fi'
+)
+
+
 STACKS = {
     "none": {
         "name": "(Sin stack — decidir con el agente)",
@@ -3035,6 +3116,80 @@ STACKS = {
             "El scaffold deja Medusa+Next.js+Postgres(pgvector)+Redis corriendo. Tu trabajo: construir TODO el growshop de arriba. Cuando el usuario te dé el NOMBRE del growshop, personaliza marca/eslogan/ciudad; mientras, usa un placeholder coherente.\n\n"
             "## 🎨 UI / DISEÑO (monorepo)\n"
             "Todo el diseño va en el storefront `backend-storefront/` (Next.js/React). Los MCP de diseño **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados — úsalos para los componentes. **framer-motion** para animaciones: instálalo en el storefront (`cd backend-storefront && npm install framer-motion`); Pcreative Studio no lo auto-instala por estar en subcarpeta. Estética growshop: verde natural + oscuro elegante, mobile-first, micro-interacciones suaves (respeta `prefers-reduced-motion`)."
+        ),
+    },
+
+    # ════════════════════════════════════════════════════════════════
+    #  TEMAS DE PCREATIVE COMMERCE
+    #
+    #  Aquí NO se monta una tienda: se crea un TEMA para una tienda que
+    #  ya existe. El esqueleto lo genera `pcc-theme init`, que vive en el
+    #  propio contrato — a propósito, para que las reglas no se dupliquen
+    #  aquí y se queden atrás en la primera versión que cambie algo.
+    # ════════════════════════════════════════════════════════════════
+    "pcc-theme-next": {
+        "name": "Tema de pcreative Commerce — Next 15 (SSR)",
+        "category": "Temas · pcreative Commerce",
+        "language": "TypeScript",
+        "scaffold": [
+            "echo '→ Tema de pcreative Commerce (Next 15)…'",
+            _PCC_LOCALIZAR_REPO,
+            _PCC_ID_DEL_TEMA,
+            _pcc_init("next"),
+            _PCC_INSTALAR,
+            _PCC_VALIDAR,
+            'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'.\')" 2>/dev/null '
+            '&& echo "  MCPs cableados en .mcp.json (magic, magicui, shadcn…)" || true',
+            _PCC_SIGUIENTE,
+        ],
+        "min_version": "Node 20+ · Next 15 · contrato de tema 2.0",
+        "skills": [
+            "anthropics/skills:frontend-design",
+            "vercel-labs/agent-skills:vercel-react-best-practices",
+        ],
+        "notes": (
+            "🎨 **TEMA de pcreative Commerce**, no una tienda. El cliente YA tiene su tienda montada "
+            "—sus productos, sus precios, sus textos— y al instalar tu tema **solo cambia cómo se ve**. "
+            "Todo lo que hay que cumplir está en la sección del contrato de tema; la prueba de aceptación "
+            "es `npx pcc-theme validate .` **sin errores y sin avisos**.\n\n"
+            "El esqueleto que ya tienes delante VENDE: portada componible, catálogo paginado en servidor, "
+            "ficha, categoría y carrito reales contra el backend. Tu trabajo es el DISEÑO y las secciones "
+            "del nicho, no cablear el comercio otra vez.\n\n"
+            "Estructura: `src/app/(tienda)/` (la tienda) y `src/app/(suelta)/pcc-seccion/` (una sección "
+            "sola, para el editor del panel) · `src/components/secciones/` (el catálogo de secciones) · "
+            "`src/lib/` (comercio, tema, carrito). Los ficheros del contrato en la raíz.\n\n"
+            "⚠️ Antes de tocar nada, lee `theme.json`, `sections.schema.json` y `templates/home.json`: "
+            "ahí está el modelo entero."
+        ),
+    },
+    "pcc-theme-astro": {
+        "name": "Tema de pcreative Commerce — Astro 5 (SSR)",
+        "category": "Temas · pcreative Commerce",
+        "language": "TypeScript",
+        "scaffold": [
+            "echo '→ Tema de pcreative Commerce (Astro 5)…'",
+            _PCC_LOCALIZAR_REPO,
+            _PCC_ID_DEL_TEMA,
+            _pcc_init("astro"),
+            _PCC_INSTALAR,
+            _PCC_VALIDAR,
+            'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'.\')" 2>/dev/null '
+            '&& echo "  MCPs cableados en .mcp.json (magic, magicui, shadcn…)" || true',
+            _PCC_SIGUIENTE,
+        ],
+        "min_version": "Node 20+ · Astro 5 · contrato de tema 2.0",
+        "skills": ["anthropics/skills:frontend-design"],
+        "notes": (
+            "🎨 **TEMA de pcreative Commerce** en Astro, no una tienda. El cliente YA tiene su tienda; "
+            "tu tema **solo cambia cómo se ve**. La prueba de aceptación es `npx pcc-theme validate .` "
+            "**sin errores y sin avisos**.\n\n"
+            "El esqueleto ya vende: portada componible, catálogo paginado en servidor, ficha, categoría y "
+            "carrito reales. Tu trabajo es el DISEÑO y las secciones del nicho.\n\n"
+            "Estructura: `src/pages/` (rutas, incluida `pcc-seccion.astro` para el editor del panel) · "
+            "`src/secciones/` (el catálogo de secciones + `Secciones.astro`, que es quien pone el "
+            "`data-pcc-seccion`) · `src/layouts/` · `src/lib/`. Los ficheros del contrato en la raíz.\n\n"
+            "⚠️ Astro va en `output: \"server\"`: una tienda tiene carrito y un carrito no se prerenderiza. "
+            "Las páginas que sí son iguales para todos se pueden marcar `prerender` una a una."
         ),
     },
 

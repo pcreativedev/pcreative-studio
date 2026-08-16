@@ -40,6 +40,10 @@ CATEGORY_ORDER = [
     "CMS · WordPress",
     "CMS · Shopify",
     "Headless CMS",
+    # Justo encima de E-commerce y no al final: es el grupo de la casa, y quien
+    # abre el selector para hacer un tema nuestro no debería tener que buscarlo
+    # entre ochenta y siete stacks.
+    "Temas · pcreative Commerce",
     "E-commerce",
     "Docs · Static",
     "Móvil · Cross-platform",
