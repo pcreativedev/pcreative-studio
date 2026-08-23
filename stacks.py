@@ -3191,6 +3191,124 @@ STACKS = {
         ),
     },
 
+    "pcc-theme-sveltekit": {
+        "name": "Tema de pcreative Commerce — SvelteKit 2 (SSR)",
+        "category": "Temas · pcreative Commerce",
+        "language": "TypeScript",
+        "scaffold": [
+            "echo '→ Tema de pcreative Commerce (SvelteKit 2)…'",
+            _PCC_LOCALIZAR_REPO,
+            _PCC_ID_DEL_TEMA,
+            _pcc_init("sveltekit"),
+            _PCC_INSTALAR,
+            _PCC_VALIDAR,
+            _PCC_SIGUIENTE,
+        ],
+        "min_version": "Node 20+ · SvelteKit 2 · Svelte 5 · contrato de tema 2.0",
+        "skills": ["anthropics/skills:frontend-design"],
+        "notes": (
+            "🎨 **TEMA de pcreative Commerce** en SvelteKit, no una tienda. El cliente YA tiene su "
+            "tienda; tu tema **solo cambia cómo se ve**. La prueba de aceptación es "
+            "`npx pcc-theme validate .` **sin errores y sin avisos**.\n\n"
+            "El esqueleto ya vende: portada componible, catálogo paginado en servidor, ficha, categoría "
+            "y carrito reales. Tu trabajo es el DISEÑO y las secciones del nicho.\n\n"
+            "## 🔴 Lo que aquí es distinto de Next y de Astro\n"
+            "Un `.svelte` se ejecuta en el servidor **y en el navegador**. Por eso:\n"
+            "- Lo que lee el disco vive en `src/lib/tema.server.ts`. Importarlo desde un componente "
+            "arrastra el paquete del tema al navegador y la construcción falla con «No known conditions "
+            "for ./load», un mensaje que no dice nada de lo que ha pasado.\n"
+            "- **Las secciones NO consultan el catálogo.** Lo carga el `+page.server.ts` y lo reparte "
+            "por contexto. Ahí no hay clave publicable ni tiene por qué haberla.\n"
+            "- Los ajustes bajan por `+layout.server.ts` y se leen con `ajuste()`, que va por contexto.\n\n"
+            "Estructura: `src/routes/(tienda)/` (la tienda, con su cabecera y su pie) · "
+            "`src/routes/pcc-seccion/` (una sección sola, para el editor del panel — cuelga de la RAÍZ "
+            "para que no salga envuelta en la tienda) · `src/lib/secciones/` (el catálogo + "
+            "`Secciones.svelte`, que es quien pone el `data-pcc-seccion`) · `src/hooks.server.ts` "
+            "(inyecta las variables del tema y el puente del editor).\n\n"
+            "⚠️ Antes de tocar nada, lee `theme.json`, `sections.schema.json` y `templates/home.json`: "
+            "ahí está el modelo entero."
+        ),
+    },
+    "pcc-theme-nuxt": {
+        "name": "Tema de pcreative Commerce — Vue · Nuxt 4 (SSR)",
+        "category": "Temas · pcreative Commerce",
+        "language": "TypeScript",
+        "scaffold": [
+            "echo '→ Tema de pcreative Commerce (Vue · Nuxt 4)…'",
+            _PCC_LOCALIZAR_REPO,
+            _PCC_ID_DEL_TEMA,
+            _pcc_init("nuxt"),
+            _PCC_INSTALAR,
+            _PCC_VALIDAR,
+            _PCC_SIGUIENTE,
+        ],
+        "min_version": "Node 20+ · Nuxt 4 · Vue 3.5 · contrato de tema 2.0",
+        "skills": ["anthropics/skills:frontend-design"],
+        "notes": (
+            "🎨 **TEMA de pcreative Commerce** en Vue, no una tienda. El cliente YA tiene su tienda; "
+            "tu tema **solo cambia cómo se ve**. La prueba de aceptación es "
+            "`npx pcc-theme validate .` **sin errores y sin avisos**.\n\n"
+            "## Por qué Nuxt y no Vue a secas\n"
+            "Porque una tienda se busca en Google. Un Vue montado en el navegador entrega un `<div>` "
+            "vacío: la ficha de producto no existe hasta que se ejecuta JavaScript, y quien acaba de "
+            "migrar pierde justo el tráfico que fue a buscar. **No pongas `ssr: false`.**\n\n"
+            "## 🔴 Lo que aquí es distinto\n"
+            "Un `.vue` se ejecuta en el servidor **y en el navegador**, así que lo que lee el disco o "
+            "lleva la clave publicable vive en `server/`. Las páginas piden a rutas propias bajo "
+            "`server/api/` y **nunca al comercio directamente**. Los ajustes bajan una vez por "
+            "`useState` y se leen con `useAjuste()`.\n\n"
+            "Estructura: `app/pages/` (rutas, incluida `pcc-seccion.vue` para el editor del panel, que "
+            "usa el layout `suelta` para salir sin cabecera ni pie) · `app/secciones/` (el catálogo) · "
+            "`app/components/Secciones.vue` (quien pone el `data-pcc-seccion`) · `app/layouts/` · "
+            "`server/api/` + `server/utils/` + `server/plugins/inyectar.ts` (las variables del tema y el "
+            "puente del editor).\n\n"
+            "⚠️ Antes de tocar nada, lee `theme.json`, `sections.schema.json` y `templates/home.json`."
+        ),
+    },
+    "pcc-theme-vite-react": {
+        "name": "Tema de pcreative Commerce — Vite + React (estático · NO para escaparate público)",
+        "category": "Temas · pcreative Commerce",
+        "language": "TypeScript",
+        "scaffold": [
+            "echo '→ Tema de pcreative Commerce (Vite + React, estático)…'",
+            _PCC_LOCALIZAR_REPO,
+            _PCC_ID_DEL_TEMA,
+            _pcc_init("vite-react"),
+            _PCC_INSTALAR,
+            _PCC_VALIDAR,
+            _PCC_SIGUIENTE,
+        ],
+        "min_version": "Node 20+ · Vite 5 · React 19 · contrato de tema 2.0",
+        "skills": ["anthropics/skills:frontend-design"],
+        "notes": (
+            "🎨 **TEMA de pcreative Commerce**, no una tienda. El cliente YA tiene la suya; tu tema "
+            "**solo cambia cómo se ve**. La prueba de aceptación es `npx pcc-theme validate .` "
+            "**sin errores y sin avisos**.\n\n"
+            "## 🔴 PARA ANTES DE EMPEZAR: esto es ESTÁTICO\n"
+            "Se construye a ficheros y no arranca ningún proceso. El HTML que llega al navegador está "
+            "**vacío** hasta que se ejecuta JavaScript, así que un buscador no ve ni una ficha de "
+            "producto. **Si el tema es para un escaparate público, este stack es la elección "
+            "equivocada** — usa Next, Astro, SvelteKit o Nuxt. Y no da ningún error: la tienda se ve "
+            "perfecta y simplemente no la encuentra nadie.\n\n"
+            "Este vale para lo otro, que también existe: una tienda DENTRO de una aplicación que ya es "
+            "una SPA, un escaparate detrás de una contraseña (mayoristas, socios), un quiosco en tienda "
+            "física, o el envoltorio web de la app móvil.\n\n"
+            "## Las dos consecuencias de no tener servidor\n"
+            "1. **Se construye POR TIENDA.** La URL, la clave publicable y los ajustes del tema entran "
+            "en el paquete al compilar (por eso llevan prefijo `VITE_`). Un build no vale para dos "
+            "tiendas, y si cambian los ajustes desde el panel hay que volver a construir.\n"
+            "2. **El id del carrito vive en `localStorage`**, no en una cookie `httpOnly`: no hay dónde "
+            "poner una. Cualquier guion de la página lo puede leer. Y **no se puede devolver un 404 de "
+            "verdad**: `index.html` sale siempre con 200, así que un producto retirado se ve como «aquí "
+            "no hay nada» pero para un buscador la dirección sigue existiendo.\n\n"
+            "Estructura: `src/paginas/` (rutas de react-router, incluida `pcc-seccion.tsx` para el "
+            "editor del panel, fuera del armazón de la tienda) · `src/secciones/` (el catálogo + "
+            "`Secciones.tsx`, que es quien pone el `data-pcc-seccion`) · `src/lib/` · `vite.config.ts` "
+            "(resuelve el tema al compilar y lo sirve como `virtual:pcc-tema`).\n\n"
+            "⚠️ Antes de tocar nada, lee `theme.json`, `sections.schema.json` y `templates/home.json`."
+        ),
+    },
+
     # ════════════════════════════════════════════════════════════════
     #  COMPONENT LIBRARIES
     # ════════════════════════════════════════════════════════════════
