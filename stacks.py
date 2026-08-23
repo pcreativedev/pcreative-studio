@@ -55,6 +55,39 @@ _PCC_ID_DEL_TEMA = (
     'echo "  id del tema: $PCC_ID"'
 )
 
+# 🔴 REESCRITO 2026-08-23. Antes esto clonaba el arranque por defecto de la
+# plataforma de terceros de la que se partió, y el nombre del stack la nombraba.
+#
+# Las dos cosas dejaron de ser verdad el 2026-08-18, cuando `npm start` pasó a
+# levantar el motor PROPIO. Un stack que promete una cosa y monta otra es peor
+# que no tenerlo: quien lo elija se encuentra una arquitectura que ya no
+# recibe trabajo, y el nombre además incumple la regla de no nombrar la base
+# anterior en nada que vea un usuario.
+#
+# Ahora monta lo que dice la documentación oficial de instalación: la vía
+# Docker, que es la recomendada.
+_PCC_TIENDA = [
+    "echo '-> pcreative Commerce: motor propio + panel + escaparate'",
+    _PCC_LOCALIZAR_REPO,
+    'if [ -z "$PCC_DIR" ]; then '
+    '  echo "  ⚠  Sin el repositorio no se puede montar la tienda. El resto del proyecto sigue."; '
+    'else '
+    # Se COPIAN los dos ficheros y no se enlaza el repo: el proyecto tiene que
+    # poder tener sus propios puertos, su marca y sus secretos sin tocar el
+    # clon, que es el mismo para todas las tiendas de la máquina.
+    '  cp "$PCC_DIR/docker-compose.full.yml" . 2>/dev/null && echo "  compose copiado"; '
+    '  if [ ! -f .env ]; then cp "$PCC_DIR/.env.docker.example" .env; '
+    # Los secretos se generan AQUÍ. Dejar los del ejemplo es publicar una tienda
+    # con las llaves que trae el manual, y eso no lo cambia nadie después.
+    '    JWT=$(head -c 32 /dev/urandom | base64 | tr -d "=+/" | cut -c1-40); '
+    '    CK=$(head -c 32 /dev/urandom | base64 | tr -d "=+/" | cut -c1-40); '
+    '    sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$JWT|; s|^COOKIE_SECRET=.*|COOKIE_SECRET=$CK|" .env; '
+    '    echo "  .env con secretos propios (no los del ejemplo)"; fi; '
+    '  echo "  Arranca con: docker compose -f docker-compose.full.yml up -d"; '
+    'fi',
+]
+
+
 
 def _pcc_init(stack: str) -> str:
     """El paso que genera el esqueleto. Sin repo, se dice y se sigue."""
@@ -2994,128 +3027,93 @@ STACKS = {
         "notes": "Medusa 2 (admin + backend) + Next.js storefront en el mismo proyecto. Alternativa OSS a Shopify. Vendible como template.",
     },
     "pcreative-commerce": {
-        "name": "pcreative Commerce — Medusa 2 + Next.js (headless, multi-pasarela, IA, self-hosted)",
+        "name": "pcreative Commerce — tienda completa (motor propio, multi-pasarela, IA, self-hosted)",
         "category": "E-commerce",
-        "language": "TypeScript + Medusa + Next.js",
-        "scaffold": [
-            "echo '-> pcreative Commerce: backend Medusa + admin Aurora + storefront (animaciones)...'",
-            # Logica en la plantilla privada templates/pcreative-commerce/scaffold.sh
-            # (clona backend Medusa, copia admin Aurora + storefront Dulce Obrador,
-            #  genera .env, docker pg+redis, migra, crea admin, instala deps). NO-fatal.
-            'bash "__TFDIR__/templates/pcreative-commerce/scaffold.sh" || echo "  scaffold pcreative Commerce incompleto (revisa Node 20+/Docker/red)"',
-            'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'./storefront\')" 2>/dev/null && echo "  MCPs cableados en storefront/.mcp.json" || true',
-        ],
-        "min_version": "Medusa 2 / Node 20+ / Next.js 15 / Postgres 16 (pgvector) / Redis 7",
+        "language": "TypeScript + pcreative Commerce",
+        "scaffold": _PCC_TIENDA,
+        "min_version": "Node 22+ / Postgres 16 (pgvector) / Docker",
         "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "pcreative-commerce",
         "notes": (
-            "🏗️ pcreative Commerce = e-commerce PROPIO super-avanzado y super-seguro, productizado para la agencia: "
-            "el CLIENTE LO POSEE, 0% comisión, self-hosted, headless (sirve web Y app móvil), con LIBERTAD TOTAL de "
-            "pasarela (incluida alto riesgo cannabis/CBD que Stripe/Shopify rechazan) e IA nativa. Base: Medusa 2 "
-            "(Node/TS, MIT) en `backend/` (dashboard de Medusa OFF) + **admin Aurora branded** en `admin/` (panel servido en /admin) + **storefront Vite/React con animaciones** (framer-motion, efectos, Quick View) en `storefront/`, Postgres(pgvector)+Redis por Docker. Arranca TODO con `bash start.sh` (unifica / + /admin + /medusa bajo un puerto, sin CORS).\n\n"
-            "## 🔒 SEGURIDAD — OBLIGATORIO (es 'super seguro' o no es)\n"
-            "- **PCI = SAQ-A:** la captura de tarjeta SIEMPRE en página alojada del proveedor por REDIRECT (no iframe, no server-to-server). NUNCA toques ni almacenes datos de tarjeta. El redirect además esquiva bugs del ciclo de pago server-to-server de Medusa.\n"
-            "- **OWASP API #1 = BOLA:** autoriza POR OBJETO en cada endpoint (carrito/pedido/cliente) — comprueba propiedad, no basta con estar logueado.\n"
-            "- **Recalcula SIEMPRE los totales en el servidor** (jamás confíes en precios/cantidades del cliente).\n"
-            "- **Verifica la firma de TODOS los webhooks** de pasarela antes de marcar un pedido pagado.\n"
-            "- Cabeceras **CSP + HSTS**, rate-limiting, secretos solo en `.env` (NUNCA al repo), validación de input (Zod), 2FA admin + RBAC, RGPD (consentimiento + derecho al olvido), audit log.\n\n"
-            "## 💳 MULTI-PASARELA — cada método un payment provider de Medusa\n"
-            "Implementa cada pasarela como un módulo que EXTIENDE `AbstractPaymentProvider` (`@medusajs/framework/utils`), registrado en `medusa-config.ts` bajo el módulo `@medusajs/payment`; cada método su propio provider id (initiatePayment/authorizePayment/capturePayment/refundPayment + identifier). Patrón probado (plugin Mollie de la comunidad).\n"
-            "- **Tarjeta (REDIRECT alojado):** MONEI (acepta CBD/alto riesgo en ES; agrega tarjeta + Bizum + SEPA; condicional THC<0,2%, UE) y/o GreenexPay (cannabis/growshops/seedbanks; capa sobre Redsys/Stripe/Monei).\n"
-            "- **Cripto:** BTCPay Server self-hosted (Greenfield REST API, no-custodial).\n"
-            "- **Transferencia y Contrarreembolso:** providers 'offline' (autoriza en checkout, captura/liquida en entrega) + Bizum.\n"
-            "- ⚠️ Para catálogos de ALTO RIESGO (growshop/CBD): NUNCA Stripe/Shopify Payments/Adyen (rechazan). MONEI/GreenexPay/cripto/transferencia/COD. Valida con alta real + transacción de prueba antes de lanzar (las páginas de MONEI/GreenexPay son marketing).\n\n"
-            "## 🤖 IA NATIVA (el diferencial)\n"
-            "- **Búsqueda semántica/vectorial + recomendaciones** con `pgvector` en el MISMO Postgres (texto→embedding→similitud coseno). Reusa backups/seguridad del Postgres. (pgvector escala bien ~1-10M vectores.)\n"
-            "- **Generación de descripciones** de producto (LLM) e **imágenes** de producto (Runware, ya integrado en Pcreative Studio).\n"
-            "- Opcional: asistente de compra / soporte con RAG agéntico.\n\n"
-            "## 🌍 COMERCIO\n"
-            "Multi-idioma + multi-moneda + IVA vía Regions de Medusa; promociones/cupones, inventario, envíos por zonas, carrito abandonado, reseñas. Admin de Medusa (+ widgets custom). API headless para web + la app móvil de Pcreative Studio.\n\n"
-            "## 📦 LICENCIAS\n"
-            "Integra el sistema de licencias pcreative (el cliente lo posee pero el producto va protegido/licenciado) siguiendo el patrón anti-nulled de la agencia (JWT RS256 + verify offline).\n\n"
-            "Estructura: `backend/` (Medusa, dashboard OFF) + `admin/` (panel Aurora branded por env `NEXT_PUBLIC_STORE_*`) + `storefront/` (Vite/React con framer-motion + efectos) + `docker-compose.yml` + `start.sh`. El panel es **/admin** (admin@forge.local / forgecommerce123), NUNCA el dashboard de Medusa (/app está desactivado). El scaffold deja el sistema ENTERO corriendo y migrado. Tu trabajo: re-tematizar el storefront por nicho (theme.config.ts + demo data) + TODO lo de arriba (seguridad, multi-pasarela, IA, licencias).\n\n"
-            "## 🎨 UI / DISEÑO (monorepo)\n"
-            "El storefront `storefront/` es Vite/React y YA trae **framer-motion + efectos** (Quick View, transiciones de página, banner animado, catálogo) — aplica AHÍ todo lo de UI y **re-tematiza por nicho** (`storefront/client/src/lib/theme.config.ts` + demo data en `storefront/client/src/data/`). Los MCP **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados en `storefront/.mcp.json`. El panel `admin/` (Aurora) ya es pro; su marca se cambia por env (`NEXT_PUBLIC_STORE_NAME`/`_TAGLINE`/`_ACCENT`, **hex ENTRECOMILLADO** o dotenv lo lee como comentario). El backend (`backend/`) no lleva UI propia (su dashboard está OFF)."
+            "🏗️ **pcreative Commerce** es el e-commerce PROPIO de la agencia: el CLIENTE LO POSEE, "
+            "0 % de comisión, alojado por él, sin ninguna plataforma cobrando por vender. Headless, "
+            "así que la misma tienda sirve la web y la app móvil.\n\n"
+
+            "## Qué acaba de montarse\n"
+            "`docker-compose.full.yml` + `.env` con secretos GENERADOS (no los del ejemplo). "
+            "Arranca con `docker compose -f docker-compose.full.yml up -d` y levanta tres cosas: "
+            "el **motor** (catálogo, carrito, pagos, envíos, pedidos), el **panel** de gestión y el "
+            "**escaparate** con el tema elegido.\n\n"
+
+            "## 🔴 Lo primero que tienes que saber\n"
+            "El motor es PROPIO desde el 2026-08-18. No se programa contra ninguna plataforma de "
+            "terceros: las rutas de tienda son `/tienda/*` y las de gestión `/gestion/*`. Si ves "
+            "código llamando a `/store/*`, es de la base anterior y está mal.\n\n"
+
+            "## 🔒 SEGURIDAD — no es opcional\n"
+            "- **PCI = SAQ-A:** la tarjeta SIEMPRE en página alojada del proveedor, por REDIRECT. Nunca "
+            "toques ni guardes datos de tarjeta.\n"
+            "- **Autoriza POR OBJETO** en cada ruta (carrito, pedido, cliente): estar logueado no basta. "
+            "Es el fallo nº 1 de OWASP para APIs.\n"
+            "- **Recalcula los totales en el servidor.** Jamás confíes en el precio que manda el navegador.\n"
+            "- **Verifica la firma de todos los webhooks** antes de dar un pedido por pagado.\n"
+            "- CSP + HSTS, límites de peticiones, secretos solo en `.env`, validación de entrada, RGPD.\n\n"
+
+            "## 💳 PAGOS — por el contrato, no a mano\n"
+            "Cada pasarela es un adaptador de `@pcreative/payments-contract` **sobre su SDK oficial**. "
+            "No se escribe ni una firma criptográfica a mano. Ya hay BTCPay (cripto) y pagos fuera de "
+            "línea (transferencia, contrarreembolso, Bizum) en `apps/backend/src/modules/`.\n"
+            "- El dinero viaja SIEMPRE en enteros de unidad mínima (céntimos) con su moneda al lado. "
+            "Mezclar euros y céntimos ya provocó portes cien veces mayores, sin un solo error.\n\n"
+
+            "## 🎨 EL TEMA\n"
+            "El escaparate es un **tema** que cumple el contrato (`packages/theme-contract`). Se cambia "
+            "sin tocar el motor. Hay temas hechos: base, dulce-obrador, growshop-premium, mascotas. "
+            "Para uno nuevo, el stack «Tema de pcreative Commerce».\n\n"
+
+            "## 📦 TRAERSE UNA TIENDA QUE YA EXISTE\n"
+            "Panel → Migración. Se conecta por API a Shopify y a WooCommerce y trae catálogo, clientes, "
+            "historial de pedidos, cupones, reseñas, blog, páginas, envíos e impuestos — más el mapa de "
+            "redirecciones 301, que es la mitad del trabajo de una mudanza.\n\n"
+
+            "## 🤖 IA\n"
+            "Búsqueda semántica con pgvector en el MISMO Postgres, descripciones e imágenes generadas, "
+            "y un copiloto que propone cambios (`apps/backend/src/modules/ai`). Cada usuario pone SU clave."
         ),
     },
     "pcreative-commerce-growshop": {
-        "name": "pcreative Commerce Growshop — tienda cannabis (Medusa 2 + Next.js · alto riesgo · age-gate)",
+        "name": "pcreative Commerce Growshop — tienda cannabis (alto riesgo · age-gate)",
         "category": "E-commerce",
-        "language": "TypeScript + Medusa + Next.js",
-        "scaffold": [
-            "echo '→ pcreative Commerce Growshop: Medusa 2 + Next.js + Postgres(pgvector) + Redis…'",
-            "echo '→ create-medusa-app (backend + storefront Next.js — descarga grande, varios min)…'",
-            'npx --yes create-medusa-app@latest backend --db-url "postgres://medusa:medusa@localhost:5433/medusa" --with-nextjs-starter --no-migrations --no-browser --use-npm </dev/null || echo "  ⚠️ create-medusa-app falló (necesita Node 20+ y red)"',
-            "echo '→ docker-compose: Postgres(pgvector) + Redis…'",
-            'cat > docker-compose.yml <<PCREATIVE STUDIO_EOF\n'
-            'services:\n'
-            '  db:\n'
-            '    image: pgvector/pgvector:pg16\n'
-            '    environment:\n'
-            '      POSTGRES_USER: medusa\n'
-            '      POSTGRES_PASSWORD: medusa\n'
-            '      POSTGRES_DB: medusa\n'
-            '    ports:\n'
-            '      - "5433:5432"\n'
-            '    volumes:\n'
-            '      - fc-db:/var/lib/postgresql/data\n'
-            '    restart: unless-stopped\n'
-            '  redis:\n'
-            '    image: redis:7-alpine\n'
-            '    ports:\n'
-            '      - "6380:6379"\n'
-            '    restart: unless-stopped\n'
-            'volumes:\n'
-            '  fc-db:\n'
-            'PCREATIVE STUDIO_EOF',
-            'if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then '
-            'docker compose up -d || echo "  ⚠️ docker compose up falló"; '
-            'echo "  ⏳ Esperando a Postgres…"; '
-            'for i in $(seq 1 40); do if docker compose exec -T db pg_isready -U medusa >/dev/null 2>&1; then echo "  ✅ Postgres listo"; break; fi; sleep 2; done; '
-            'docker compose exec -T db psql -U medusa -d medusa -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 && echo "  ✅ pgvector habilitado (búsqueda semántica IA)"; '
-            'if [ -d backend ]; then echo "  → migraciones + admin…"; (cd backend && (npx medusa db:migrate || true) && (npx medusa user -e admin@forge.local -p forgecommerce123 || true)); fi; '
-            'else echo "  ⚠️ Docker no disponible: arranca db/redis con docker compose up -d y luego (cd backend && npx medusa db:migrate && npx medusa user -e admin@forge.local -p forgecommerce123)"; fi',
-            'python3 -c "import sys; sys.path.insert(0, \'__TFDIR__\'); import web_enhancements as we; we.ensure_mcps(\'.\')" 2>/dev/null && echo "  ✅ MCPs cableados en .mcp.json (magic, magicui, shadcn, fetch, playwright)" || echo "  ⚠️ no se pudo cablear .mcp.json"',
-            'echo ""',
-            'echo "✅ Base pcreative Commerce lista — el agente construye el GROWSHOP completo según CLAUDE.md."',
-            'echo "   🧩 Backend Medusa:  cd backend && npm run dev  → admin http://localhost:9000/app  (admin@forge.local / forgecommerce123)"',
-            'echo "   🛍  Storefront:      cd backend-storefront && npm run dev  → http://localhost:8000"',
-            'echo "   🗄  Postgres+pgvector :5433 · Redis :6380 (Docker)"',
-        ],
-        "min_version": "Medusa 2 / Node 20+ / Next.js 15 / Postgres 16 (pgvector) / Redis 7",
+        "language": "TypeScript + pcreative Commerce",
+        "scaffold": _PCC_TIENDA,
+        "min_version": "Node 22+ / Postgres 16 (pgvector) / Docker",
         "skills": ["anthropics/skills:frontend-design", "vercel-labs/agent-skills:vercel-react-best-practices"],
         "ux_pack": "pcreative-commerce",
         "notes": (
-            "🌱 GROWSHOP COMPLETO sobre pcreative Commerce (Medusa 2 + Next.js, self-hosted, el cliente lo posee, 0% comisión). "
-            "Construye la tienda ENTERA de una sentada, multipágina, con datos demo realistas, sin pedir confirmación. "
-            "Base en `backend/` (Medusa) + `backend-storefront/` (Next.js).\n\n"
-            "## 🛒 EL NEGOCIO (growshop en España — cultivo de cannabis)\n"
-            "Vende a cultivadores (novatos y expertos) y adultos. **Categorías** (deja estructura + atributos lista; productos reales se cargan luego): "
-            "(1) Cultivo — iluminación LED/HPS, armarios/tents, ventilación/extracción, control de clima, sustratos/macetas, riego; "
-            "(2) Fertilizantes y aditivos; (3) **Semillas de cannabis** (artículo de COLECCIÓN / preservación genética); "
-            "(4) **CBD y derivados** (flores, aceites, cosmética); (5) Vaporizadores, grinders, papeles y parafernalia; (6) Accesorios y control de plagas.\n\n"
-            "## 🎨 TONO Y ESTÉTICA\n"
-            "Profesional, moderno y de CONFIANZA: verde natural + oscuro elegante, NADA de estética 'stoner' cutre. Mobile-first, carga rápida, fotos grandes, transmite seriedad + envío DISCRETO + atención experta.\n\n"
-            "## 📄 PÁGINAS\n"
-            "Home (hero + categorías destacadas + novedades + más vendidos + sello envío discreto + reseñas), catálogo por categoría con FILTROS avanzados "
-            "(semillas: banco/marca, indica/sativa/híbrida, feminizada/autofloreciente, %THC, %CBD, tiempo de floración, interior/exterior, dificultad; cultivo: marca, potencia, tamaño), "
-            "ficha de producto (galería, genética/efectos/sabor/dificultad o specs técnicas, stock, relacionados, reseñas), carrito, checkout, cuenta cliente (pedidos/direcciones/wishlist), "
-            "Blog/Guías de cultivo (SEO long-tail), Sobre nosotros, Contacto, FAQ, páginas legales.\n\n"
-            "## ⚖️ CUMPLIMIENTO LEGAL (OBLIGATORIO)\n"
-            "- **Age-gate 18+** al entrar (modal que bloquea hasta confirmar mayoría de edad, recordado por sesión).\n"
-            "- **Disclaimers:** las SEMILLAS se venden como objeto coleccionable / preservación genética, NO para germinar/cultivar. El CBD es <0,2% THC.\n"
-            "- Avisos legales, privacidad/RGPD (consentimiento + derecho al olvido), cookies, términos, política de envíos/devoluciones, y casilla 'soy mayor de edad y acepto los términos' en el checkout.\n\n"
-            "## 💳 PAGOS — NO Stripe/Shopify (rechazan cannabis/CBD)\n"
-            "Por defecto: **Transferencia bancaria + Contrarreembolso (recargo configurable + pedido mínimo) + Bizum**. Deja PREPARADOS pero desactivados (hasta alta del cliente) los providers de tarjeta de alto riesgo **MONEI / GreenexPay** (flujo REDIRECT alojado) y cripto **BTCPay**. Cada método = payment provider de Medusa (extiende `AbstractPaymentProvider`, registrado en medusa-config.ts). Muestra los métodos disponibles claros en el checkout.\n\n"
-            "## 🤖 IA NATIVA\n"
-            "**Búsqueda semántica con pgvector** que entienda lenguaje natural ('variedad fácil de cultivar en interior, efecto relajante, floración corta') → texto→embedding→similitud; recomendaciones; asistente/guía de cultivo básico (RAG). Descripciones por LLM e imágenes de producto con Runware.\n\n"
-            "## 🔒 SEGURIDAD — OBLIGATORIO\n"
-            "PCI **SAQ-A vía REDIRECT** (nunca toques datos de tarjeta; además esquiva bugs server-to-server de Medusa) · OWASP API #1 **BOLA** (autorización por objeto en carrito/pedido/cliente) · **recalcula totales en servidor** · **verifica firma de todos los webhooks** · CSP/HSTS · secretos solo en .env · rate-limiting · RBAC/2FA admin · RGPD · audit log.\n\n"
-            "## 🌍 COMERCIO + LICENCIAS\n"
-            "Multi-idioma (ES base) + multi-moneda + IVA vía Regions de Medusa; promos/cupones, inventario, envíos por zonas (transportistas con contrarreembolso), wishlist, newsletter, puntos/fidelización opcional. Admin de Medusa para que el cliente gestione productos/stock/pedidos. Integra el sistema de licencias pcreative (JWT RS256 + verify offline).\n\n"
-            "El scaffold deja Medusa+Next.js+Postgres(pgvector)+Redis corriendo. Tu trabajo: construir TODO el growshop de arriba. Cuando el usuario te dé el NOMBRE del growshop, personaliza marca/eslogan/ciudad; mientras, usa un placeholder coherente.\n\n"
-            "## 🎨 UI / DISEÑO (monorepo)\n"
-            "Todo el diseño va en el storefront `backend-storefront/` (Next.js/React). Los MCP de diseño **21st.dev (`magic`, `magicui`, `shadcn`)** están cableados — úsalos para los componentes. **framer-motion** para animaciones: instálalo en el storefront (`cd backend-storefront && npm install framer-motion`); Pcreative Studio no lo auto-instala por estar en subcarpeta. Estética growshop: verde natural + oscuro elegante, mobile-first, micro-interacciones suaves (respeta `prefers-reduced-motion`)."
+            "🌿 **Growshop con pcreative Commerce**: todo lo del stack general, más lo que hace falta "
+            "para vender cannabis/CBD legalmente en España.\n\n"
+
+            "## 🔴 LA PASARELA ES EL PROBLEMA, Y SE RESUELVE ANTES DE PROGRAMAR\n"
+            "Stripe, Shopify Payments y Adyen RECHAZAN este catálogo. No es que sea difícil: te cierran "
+            "la cuenta con el dinero dentro. Las vías reales son MONEI o GreenexPay (tarjeta por "
+            "redirect), cripto con BTCPay, transferencia, contrarreembolso y Bizum.\n"
+            "⚠️ Las páginas de MONEI y GreenexPay son MARKETING: da de alta la cuenta y haz una "
+            "transacción de prueba ANTES de comprometerte con el cliente.\n\n"
+
+            "## 🔞 EDAD Y CUMPLIMIENTO\n"
+            "- Verificación de edad a la entrada, recordada por sesión y comprobada TAMBIÉN en el "
+            "servidor: un aviso que solo vive en el navegador no protege de nada.\n"
+            "- THC < 0,2 % declarado por producto. Nada de afirmaciones medicinales ni de consumo: "
+            "es lo que convierte una tienda legal en una sancionada.\n"
+            "- Aviso legal, condiciones y política de devoluciones específicas del sector.\n\n"
+
+            "## LO DEMÁS\n"
+            "Igual que el stack general: motor propio (`/tienda/*` y `/gestion/*`, nunca `/store/*`), "
+            "pagos por `@pcreative/payments-contract`, dinero en céntimos, tema por contrato, y la "
+            "migración del panel si el cliente ya vendía en otro sitio.\n\n"
+
+            "El tema `growshop-premium` ya existe y está pensado para esto: empieza por ahí en vez de "
+            "desde cero."
         ),
     },
 
