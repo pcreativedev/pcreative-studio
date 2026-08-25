@@ -3265,6 +3265,52 @@ STACKS = {
             "⚠️ Antes de tocar nada, lee `theme.json`, `sections.schema.json` y `templates/home.json`."
         ),
     },
+    "pcc-theme-react-router": {
+        "name": "Tema de pcreative Commerce — React Router 8 (SSR)",
+        "category": "Temas · pcreative Commerce",
+        "language": "TypeScript",
+        "scaffold": [
+            "echo '→ Tema de pcreative Commerce (React Router 8)…'",
+            _PCC_LOCALIZAR_REPO,
+            _PCC_ID_DEL_TEMA,
+            _pcc_init("react-router"),
+            _PCC_INSTALAR,
+            _PCC_VALIDAR,
+            _PCC_SIGUIENTE,
+        ],
+        "min_version": "Node 22.22+ · React Router 8 · React 19 · contrato de tema 2.0",
+        "skills": ["anthropics/skills:frontend-design"],
+        "notes": (
+            "🎨 **TEMA de pcreative Commerce** en React Router (modo framework), no una tienda. "
+            "El cliente YA tiene su tienda; tu tema **solo cambia cómo se ve**. La prueba de "
+            "aceptación es `npx pcc-theme validate .` **sin errores y sin avisos**.\n\n"
+            "El esqueleto ya vende: portada componible, catálogo paginado en servidor, ficha, "
+            "categoría, carrito, blog y páginas sueltas. Tu trabajo es el DISEÑO y las secciones "
+            "del nicho.\n\n"
+            "## Cuándo elegir este y no Next\n"
+            "Es **el otro React con servidor**: lo que era Remix, fusionado en la v7. Si quieres "
+            "React sin Next, este es el camino. No lo confundas con `vite-react`, que es una SPA "
+            "y **no sirve para un escaparate público**.\n\n"
+            "## 🔴 Lo que aquí es distinto\n"
+            "- **Pide Node 22.22**, más que los demás stacks. Va declarado en `engines`.\n"
+            "- Un componente corre en el servidor **y en el navegador**, igual que en Svelte y en "
+            "Vue. Lo que lee el disco vive en `app/lib/tema.server.ts`; importarlo desde un "
+            "componente arrastra el paquete del tema al navegador y falla con «No known conditions "
+            "for ./load», un mensaje que no dice nada de lo que ha pasado.\n"
+            "- **Los datos los carga el `loader` de la ruta, no la sección.** Si cada sección "
+            "consultara por su cuenta, una portada con tres secciones de productos haría tres veces "
+            "la misma llamada.\n"
+            "- El carrito se añade con una `action`, así que **funciona sin JavaScript**: si un "
+            "script falla al cargar, la tienda sigue vendiendo.\n\n"
+            "Estructura: `app/routes.ts` (las rutas, declaradas — se ven todas de un vistazo) · "
+            "`app/rutas/tienda-layout.tsx` (cabecera y pie) · `app/rutas/pcc-seccion.tsx` (una "
+            "sección sola para el editor del panel; va FUERA del layout de la tienda a propósito) · "
+            "`app/secciones/` (el catálogo + `index.tsx`, que es el único sitio donde se pone el "
+            "`data-pcc-seccion`).\n\n"
+            "⚠️ Antes de tocar nada, lee `theme.json`, `sections.schema.json` y "
+            "`templates/home.json`: ahí está el modelo entero."
+        ),
+    },
     "pcc-theme-vite-react": {
         "name": "Tema de pcreative Commerce — Vite + React (estático · NO para escaparate público)",
         "category": "Temas · pcreative Commerce",
