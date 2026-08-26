@@ -206,6 +206,7 @@ class ProjectWindow(QWidget):
         # UI pro al ABRIR un tema (Galería): guía UI-MOTION.md + MCP 21st.dev +
         # framer-motion. En proyectos nuevos ya lo hace el setup script.
         self._ensure_web_enhancements()
+        self._ensure_skills_tab()
 
         # Auto-re-detect: si el perfil aún no se detectó (modo "existing"
         # o setup en curso), reintentamos cada 3 segundos durante 5 min.
@@ -218,6 +219,39 @@ class ProjectWindow(QWidget):
             self._auto_detect_timer.start()
         else:
             self._auto_detect_timer = None
+
+    def _ensure_skills_tab(self):
+        """Instala las skills del proyecto EN UNA PESTAÑA VISIBLE.
+
+        🔴 Antes esto corría en segundo plano, en silencio, y tardaba ~45 s. El
+        único aviso era un `print` a stderr, que solo se ve lanzando el programa
+        desde una terminal. Resultado: abrías un tema, te ponías a trabajar, y
+        las skills todavía no estaban — sin que nada te lo dijera. Parecía que no
+        se instalaban.
+
+        Ahora se ve, como ya se veía la instalación de framer-motion.
+        """
+        if self._initial_cmd:
+            return                      # proyecto NUEVO: lo hace el setup script
+        try:
+            import pcreative_studio as ps
+            cmd = ps.skills_bootstrap_cmd(self.project_path)
+            if not cmd:
+                return                  # ya las tiene, o no hay stack todavía
+            ps.marcar_skills_lanzadas(self.project_path, "la ventana del proyecto")
+            self._add_term_tab(
+                "🧠 Skills", "bash",
+                ["-c", "echo '→ Instalando las skills de este proyecto (~45 s)…'; "
+                       "echo '  Puedes seguir trabajando; el agente las verá al terminar.'; "
+                       "echo; "
+                       f"{cmd}; "
+                       "echo; echo '✓ Skills listas.'; "
+                       "exec bash -i"])
+        except Exception as e:
+            try:
+                self.logs.appendPlainText(f"[skills] {e}")
+            except Exception:
+                pass
 
     def _ensure_web_enhancements(self):
         """Al abrir un tema React desde la Galería: escribe UI-MOTION.md, asegura

@@ -247,19 +247,19 @@ def _has_real_skills(root: Path) -> bool:
     return False
 
 
-def _maybe_bootstrap_skills(root: Path) -> bool:
-    """Si el proyecto tiene stack pero NO las skills de Pcreative Studio (autoskills/uipro),
-    lánzalas en segundo plano (detached) — así un proyecto adoptado en la galería sin
-    pasar por el setup deja de quejarse. Idempotente vía marcador (no re-lanza aunque
-    la instalación tarde). NO bloquea la apertura de la ventana."""
-    import subprocess
+def skills_bootstrap_cmd(root: Path) -> str | None:
+    """La orden que instala las skills de este proyecto, o None si no toca.
+
+    Separada de `_maybe_bootstrap_skills` para que la VENTANA pueda enseñarla en
+    una pestaña en vez de lanzarla a ciegas. No escribe el marcador ni ejecuta
+    nada: solo decide y devuelve.
+    """
     try:
         if _has_real_skills(root):
-            return False
+            return None
         marker = root / ".pcreative-studio" / ".skills-bootstrap"
-        if marker.exists():  # ya lanzado antes (puede seguir corriendo)
-            return False
-        # ¿hay stack escaffoldeado hasta 3 niveles?
+        if marker.exists():
+            return None
         has_stack = False
         for m in _STACK_MARKERS:
             try:
@@ -270,15 +270,9 @@ def _maybe_bootstrap_skills(root: Path) -> bool:
             except OSError:
                 continue
         if not has_stack or not shutil.which("npx"):
-            return False
-        # Taste-Skill solo si el proyecto tiene cara visible. Aquí no hay tipo de
-        # plantilla que consultar —el proyecto ya existe— así que se mira su forma.
+            return None
         import taste_skills
         taste_ok, taste_motivo = taste_skills.detectar_en_disco(root)
-
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text("autoskills+uipro+taste lanzados al abrir desde galería\n")
-        log = root / ".pcreative-studio" / "skills-install.log"
         if taste_ok:
             _args = " ".join(f"-s {s}" for s in taste_skills.TODAS)
             _taste_cmd = (
@@ -287,10 +281,41 @@ def _maybe_bootstrap_skills(root: Path) -> bool:
             )
         else:
             _taste_cmd = f'echo "=== taste-skill: saltado — {taste_motivo} ==="; '
-        cmd = ('echo "=== autoskills ==="; npx --yes autoskills -a claude 2>&1; '
-               'echo "=== uipro-cli ==="; npx --yes uipro-cli init --ai claude 2>&1; '
-               + _taste_cmd +
-               'echo "=== DONE ==="')
+        return ('echo "=== autoskills ==="; npx --yes autoskills -a claude 2>&1; '
+                'echo "=== uipro-cli ==="; npx --yes uipro-cli init --ai claude 2>&1; '
+                + _taste_cmd +
+                'echo "=== DONE ==="')
+    except Exception as e:
+        print(f"[wiring] skills_bootstrap_cmd falló: {e}", file=sys.stderr)
+        return None
+
+
+def marcar_skills_lanzadas(root: Path, quien: str) -> None:
+    """Deja el marcador para que no se relance. Lo escribe QUIEN vaya a ejecutar."""
+    try:
+        marker = root / ".pcreative-studio" / ".skills-bootstrap"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(f"autoskills+uipro+taste lanzados por {quien}\n")
+    except OSError:
+        pass
+
+
+def _maybe_bootstrap_skills(root: Path) -> bool:
+    """Lanza las skills en segundo plano. Para quien NO tiene ventana que enseñar
+    —el panel de webs del VPS, un arranque sin interfaz—. Cuando hay ventana, la
+    ventana abre una pestaña visible: ver `ProjectWindow._ensure_skills_tab`.
+
+    🔴 Tarda ~45 s y no se ve nada. Eso hizo creer que las skills NO se
+    instalaban al abrir un proyecto: se instalaban, pero en silencio y después de
+    que ya te hubieras puesto a trabajar.
+    """
+    import subprocess
+    cmd = skills_bootstrap_cmd(root)
+    if not cmd:
+        return False
+    try:
+        marcar_skills_lanzadas(root, "el arranque sin ventana")
+        log = root / ".pcreative-studio" / "skills-install.log"
         with open(log, "w") as fh:
             subprocess.Popen(["bash", "-lc", cmd], cwd=str(root),
                              stdout=fh, stderr=subprocess.STDOUT,
@@ -300,8 +325,7 @@ def _maybe_bootstrap_skills(root: Path) -> bool:
         print(f"[wiring] bootstrap skills falló: {e}", file=sys.stderr)
         return False
 
-
-def _ensure_project_wiring(project_path: Path) -> list[str]:
+def _ensure_project_wiring(project_path: Path, diferir_skills: bool = False) -> list[str]:
     """Auto-cablea el wiring que Pcreative Studio espera (context/, .mcp.json, skills)
     en proyectos que NO pasaron por el setup — symlinks, adopciones externas,
     repos clonados a mano. El init-prompt del agente asume que existen; sin esto
@@ -358,7 +382,7 @@ def _ensure_project_wiring(project_path: Path) -> list[str]:
                 pass
         # 4. autoskills/uipro — si hay stack pero faltan, instalarlas en background
         #    (proyectos adoptados en la galería sin pasar por el setup).
-        if _maybe_bootstrap_skills(root):
+        if not diferir_skills and _maybe_bootstrap_skills(root):
             done.append("skills-bootstrap (autoskills+uipro en background)")
     except Exception as e:
         print(f"[wiring] auto-cableado: {e}", file=sys.stderr)
@@ -375,7 +399,8 @@ def open_project_window(project_path: Path, initial_cmd: str | None = None,
     # Auto-cablea el wiring faltante (context/skills/MCP) antes de lanzar el
     # agente — así un proyecto que entró a la galería sin pasar por el setup
     # (symlink/adopción) se abre listo sin quejarse de `context/`.
-    _wired = _ensure_project_wiring(project_path)
+    # Las skills se DIFIEREN a la ventana: ahí se ven instalándose.
+    _wired = _ensure_project_wiring(project_path, diferir_skills=True)
     if _wired:
         print(f"[wiring] cableado al abrir {Path(project_path).name}: {', '.join(_wired)}", file=sys.stderr)
     try:
