@@ -28,6 +28,79 @@ const fld = { width: '100%', background: 'var(--panel2)', border: '1px solid var
 const btn = { background: 'var(--accent)', color: '#062018', border: 'none', borderRadius: 10, padding: '11px 16px', fontWeight: 700 };
 const ghost = { background: 'var(--panel2)', color: 'var(--tx)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px' };
 
+/* ============================ Selector de nicho ============================
+ *
+ * 🔴 ESTO ERA UN <datalist> Y NO PODÍA FUNCIONAR EN EL MÓVIL.
+ *
+ * Eran ciento cuarenta y un nichos cortados con `.slice(0, 60)`, así que
+ * ochenta y uno no había forma de elegirlos — entre ellos «Inmobiliaria /
+ * Real estate», que es la vertical de CRM más pedida que hay.
+ *
+ * Y quitar el corte no arreglaba nada, porque el problema de fondo es el
+ * elemento: en Chrome de Android un `datalist` con las opciones ya filtradas
+ * **enseña solo la primera**, y dentro de un WebView —que es como se sirve
+ * esto empaquetado con Capacitor— directamente no aparece. Es de los fallos
+ * que no dan error: el campo se ve bien y la lista no sale.
+ *
+ * Así que la lista se pinta a mano. Son divs normales: se ven igual en el
+ * navegador y en el APK, y no hay ninguna cantidad a partir de la cual el
+ * navegador decida esconder cosas.
+ *
+ * Se sigue pudiendo escribir un nicho que no esté —igual que en el escritorio—
+ * porque la lista es una ayuda, no una jaula.
+ */
+const listaNicho = {
+  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4,
+  background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 10,
+  maxHeight: '44vh', overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,.45)',
+};
+// 44 px de alto mínimo: por debajo de eso se falla el toque y se elige el de al lado.
+const opcionNicho = { padding: '12px 13px', color: 'var(--tx)', borderBottom: '1px solid var(--line)', minHeight: 44 };
+
+// Sin tildes y en minúsculas: quien escribe «automocion» en un teclado de móvil
+// espera encontrar «Automoción / Concesionario». El rango \u0300-\u036f va
+// explícito en vez de \p{Diacritic} porque los WebView viejos no lo traen.
+const plano = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+function SelectorNicho({ valor, alCambiar, opciones, desactivado }) {
+  const [abierto, setAbierto] = useState(false);
+  const q = plano(valor).trim();
+  const coinciden = q ? opciones.filter(n => plano(n).includes(q)) : opciones;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <input
+        value={valor}
+        onChange={e => { alCambiar(e.target.value); setAbierto(true); }}
+        onFocus={() => setAbierto(true)}
+        onBlur={() => setAbierto(false)}
+        placeholder="nicho (opcional: restaurante, clínica…)"
+        style={fld} disabled={desactivado} autoCapitalize="off" autoComplete="off"
+      />
+      {abierto && !desactivado && (
+        <div style={listaNicho}>
+          {coinciden.map(n => (
+            <div
+              key={n}
+              /* `onPointerDown` con `preventDefault`, y no `onClick`: al tocar
+               * una opción el input pierde el foco ANTES de que llegue el
+               * click, la lista se cierra y el toque cae en el vacío. Esto
+               * evita que el foco se mueva, así que el `onBlur` ni se dispara. */
+              onPointerDown={e => { e.preventDefault(); alCambiar(n); setAbierto(false); }}
+              style={opcionNicho}
+            >{n}</div>
+          ))}
+          {coinciden.length === 0 && (
+            <div style={{ ...opcionNicho, color: 'var(--dim)', borderBottom: 'none' }}>
+              Ninguno coincide — se usará lo que has escrito
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ============================ Config ============================ */
 function ConfigScreen({ onSaved }) {
   const c = cfg();
@@ -129,8 +202,7 @@ function CrearScreen() {
               <optgroup key={cat} label={cat}>{arr.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}</optgroup>
             ))}
           </select>
-          <input value={niche} onChange={e => setNiche(e.target.value)} placeholder="nicho (opcional: restaurante, clínica…)" style={fld} list="niches" disabled={running} />
-          <datalist id="niches">{niches.slice(0, 60).map(n => <option key={n} value={n} />)}</datalist>
+          <SelectorNicho valor={niche} alCambiar={setNiche} opciones={niches} desactivado={running} />
         </>}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <select value={provider} onChange={e => setProvider(e.target.value)} style={{ ...fld, flex: 1 }} disabled={running}>
