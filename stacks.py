@@ -3622,7 +3622,16 @@ STACKS = {
             "npx --yes shadcn@latest add button card --yes",
         ],
         "min_version": "Astro 5+ / shadcn 2.x",
-        "skills": [],
+        # La misma que `astro-tailwind`, y aquí hace MÁS falta: éste es el stack
+        # al que se viene a hacer diseño —islas de React con componentes que se
+        # tocan— y era el único de los dos que la tenía vacía. Sin ella el
+        # resultado sale correcto y plano, que no da error y por eso no se nota.
+        #
+        # 🔴 El formato es `repo:skill`, NO `owner/repo/skill`. Con la ruta de
+        # tres tramos el CLI clona el repo, no encuentra nada y sale con error;
+        # así estuvieron 33 stacks sin instalar una sola skill, y lo único que
+        # salía era «no se pudo añadir, continuamos».
+        "skills": ["anthropics/skills:frontend-design"],
         "notes": "Astro + React islands + shadcn. Mejor de los dos mundos: estático rápido + componentes interactivos donde hacen falta.",
     },
     "react-mantine": {
