@@ -93,13 +93,21 @@ STREAM: dict = {}
 
 # ===================== Crear proyecto (Vibe / Recreate / Stack) =====================
 def _list_stacks(p):
-    """Datos para los pickers del móvil: stacks, tipos, nichos, agentes."""
-    from stacks import STACKS, TEMPLATE_TYPES, TEMPLATE_NICHES, AGENTS
+    """Datos para los pickers del móvil: stacks, tipos, nichos, agentes.
+
+    `stack` y `type` son opcionales y ordenan los nichos igual que en el
+    escritorio: con tipo «CRM» suben sus verticales, con un stack de comercio
+    suben las de tienda. Sin ninguno de los dos devuelve la lista tal cual, que
+    es lo que hacía antes y lo que sigue esperando el cliente de hoy.
+    """
+    from stacks import STACKS, TEMPLATE_TYPES, AGENTS, niches_for
+    p = p or {}
     stacks = [{"key": k, "name": v.get("name", k),
                "category": v.get("category", "") or ("Sin definir" if k == "none" else ""),
                "language": v.get("language", "")} for k, v in STACKS.items()]
     return {"ok": True, "stacks": stacks, "template_types": list(TEMPLATE_TYPES),
-            "niches": list(TEMPLATE_NICHES), "providers": list(AGENTS.keys())}
+            "niches": niches_for(p.get("stack") or "", p.get("type") or ""),
+            "providers": list(AGENTS.keys())}
 
 
 def _suggest(description: str, provider: str, web_research: bool = True) -> dict:

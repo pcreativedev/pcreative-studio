@@ -3736,6 +3736,15 @@ STACKS = {
 TEMPLATE_TYPES = [
     "(Sin tipo — detectar de la referencia)",
     "Admin / Dashboard",
+    # Un CRM es un panel, sí, pero pedirlo como «Admin / Dashboard» da un panel
+    # genérico: lo que lo hace un CRM son sus módulos —contactos y empresas,
+    # leads, oportunidades con su embudo, actividades, presupuestos— y esos no
+    # los deduce nadie de la palabra «dashboard».
+    #
+    # Va PLANO, sin «CRM · Ventas» ni «CRM · Inmobiliario»: la vertical es el
+    # NICHO, no el tipo. Tipo CRM + nicho Inmobiliaria es un CRM inmobiliario,
+    # y así no hay que inventar una entrada por sector.
+    "CRM",
     "Landing Page",
     "SaaS",
     "E-commerce",
@@ -3769,6 +3778,12 @@ TEMPLATE_NICHES = [
     "Corporativo / Empresa",
     "Consultoría / Coaching",
     "Servicios profesionales",
+    # Las tres siguientes entraron con el tipo CRM: son sectores donde el CRM
+    # ES el producto —Bullhorn en selección, Veeva en farmacéutica— y no
+    # estaban. «Farmacia / Parafarmacia» existe pero es la tienda de barrio,
+    # que no tiene nada que ver con vender a hospitales.
+    "Selección de personal / ATS",
+    "Call center / Atención al cliente",
     "Legal / Abogados",
     "Financiero / Banking / Fintech",
     "Seguros",
@@ -3781,6 +3796,7 @@ TEMPLATE_NICHES = [
     "Nutricionista / Dietista",
     "Spa / Belleza",
     "Psicología / Terapia",
+    "Farmacéutica / Life sciences",
     # Tech & Digital
     "Agencia digital / Marketing",
     "Software / Tech",
@@ -3943,25 +3959,100 @@ TEMPLATE_NICHES_COMERCIO = TEMPLATE_NICHES[_COMERCIO_DESDE:_COMERCIO_HASTA]
 _CATEGORIAS_QUE_VENDEN = {"E-commerce", "Temas · pcreative Commerce", "CMS · Shopify"}
 
 
-def niches_for_stack(stack_key: str) -> list[str]:
-    """Los nichos, ordenados por lo que va a construir este stack.
+# ── Las verticales de un CRM ──────────────────────────────────────────────────
+#
+# No son un bloque contiguo como las de comercio: un CRM se vende POR SECTOR y
+# esos sectores ya estaban repartidos por toda la lista (salud, legal, finanzas,
+# inmobiliaria…). Por eso aquí van por NOMBRE y no por rebanada.
+#
+# 🔴 Se comprueba al importar que todos existan. Un nombre mal escrito no daría
+# error: simplemente esa vertical no subiría, y el fallo se vería como «CRM
+# inmobiliario no sale en la lista», que no lleva a nadie hasta aquí.
+_NICHOS_CRM = (
+    "Inmobiliaria / Real estate",
+    "Property management",
+    "Legal / Abogados",
+    "Seguros",
+    "Financiero / Banking / Fintech",
+    "Automoción / Concesionario",
+    "Médico / Clínica",
+    "Dental",
+    "Farmacéutica / Life sciences",
+    "Selección de personal / ATS",
+    "Call center / Atención al cliente",
+    "Servicios profesionales",
+    "Consultoría / Coaching",
+    "Agencia digital / Marketing",
+    "Construcción",
+    "Industria / Manufactura",
+    "Logística / Transporte",
+    "E-learning / Cursos online",
+    "Universidad / Academia",
+    "Hotel / Hospedaje",
+    "Agencia de viajes / Tour operator",
+    "Fitness / Gym",
+    "Spa / Belleza",
+    "ONG / Charity",
+    "Mayorista / B2B",
+)
+_faltan = [n for n in _NICHOS_CRM if n not in TEMPLATE_NICHES]
+if _faltan:
+    raise ValueError(f"_NICHOS_CRM nombra nichos que no existen: {_faltan}")
+
+# En el orden de TEMPLATE_NICHES, no en el de la tupla: así el desplegable
+# mantiene el agrupado temático que ya tenía.
+_CRM = set(_NICHOS_CRM)
+TEMPLATE_NICHES_CRM = [n for n in TEMPLATE_NICHES if n in _CRM]
+
+# Tipos de plantilla que tienen verticales propias. Un dict y no un `if` para
+# que añadir otro tipo con verticales —un ERP, un helpdesk— sea una entrada.
+_VERTICALES_POR_TIPO = {"CRM": TEMPLATE_NICHES_CRM}
+
+
+def niches_for(stack_key: str = "", template_type: str = "") -> list[str]:
+    """Los nichos, ordenados por lo que se va a construir.
 
     Con ciento cuarenta entradas en una lista plana, el nicho que necesitas
     queda enterrado: quien hace un tema de comercio se traga cuarenta nichos de
     servicios profesionales antes de llegar a «Ferretería». Aquí no se quita
     nada —el resto sigue debajo, y el desplegable admite escribir a mano— solo
     se sube lo que toca.
+
+    🔴 MIRA EL TIPO ANTES QUE EL STACK, y no al revés.
+
+    Antes solo miraba el stack, y para un CRM eso no vale: un CRM no tiene
+    stack propio —se hace con Next, con Laravel o con lo que sea— así que sus
+    verticales no subían nunca. Lo que dice que esto es un CRM es el TIPO.
+
+    Cuando los dos aplican, manda el tipo: un CRM montado sobre un stack de
+    comercio sigue siendo un CRM, y quien lo pide busca «Inmobiliaria», no
+    «Ferretería».
     """
-    stack = STACKS.get(stack_key) or {}
-    if stack.get("category") not in _CATEGORIAS_QUE_VENDEN:
+    subir: list[str] = _VERTICALES_POR_TIPO.get((template_type or "").strip(), [])
+
+    if not subir:
+        stack = STACKS.get(stack_key) or {}
+        if stack.get("category") in _CATEGORIAS_QUE_VENDEN:
+            subir = TEMPLATE_NICHES_COMERCIO
+
+    if not subir:
         return list(TEMPLATE_NICHES)
 
-    comercio = set(TEMPLATE_NICHES_COMERCIO)
+    arriba = set(subir)
     # La primera entrada es «(Sin nicho…)» y se queda arriba: es el valor por
     # defecto, y moverlo cambiaría lo que sale elegido al abrir el diálogo.
     cabeza = [n for n in TEMPLATE_NICHES[:1]]
     resto = TEMPLATE_NICHES[1:]
-    return cabeza + [n for n in resto if n in comercio] + [n for n in resto if n not in comercio]
+    return cabeza + [n for n in resto if n in arriba] + [n for n in resto if n not in arriba]
+
+
+def niches_for_stack(stack_key: str) -> list[str]:
+    """Compatibilidad: `niches_for` con solo el stack.
+
+    Se conserva porque la usan la pasarela del móvil y el asistente de alta, y
+    porque un stack sin tipo sigue siendo una pregunta legítima.
+    """
+    return niches_for(stack_key=stack_key)
 
 # AGENTS se sincroniza desde ai_providers.PROVIDERS para que la GUI y
 # write_setup_script vean los 7 providers (Claude/Codex/Gemini/OpenCode/

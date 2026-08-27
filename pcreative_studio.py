@@ -195,7 +195,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from stacks import AGENTS, STACKS, TEMPLATE_TYPES, TEMPLATE_NICHES, niches_for_stack
+from stacks import AGENTS, STACKS, TEMPLATE_TYPES, TEMPLATE_NICHES, niches_for, niches_for_stack
 from stack_picker import StackPickerDialog
 import ai_providers as aip
 import platform_compat as pc
@@ -5559,6 +5559,10 @@ class PcreativeStudio(QWidget):
         # señales para preview
         for w in (self.type_combo, self.ref_kind_combo, self.repo_combo):
             w.currentIndexChanged.connect(self._update_preview)
+        # El tipo reordena los nichos igual que el stack: elegir «CRM» sube sus
+        # verticales. Sin esta línea el tipo se guarda bien pero la lista no se
+        # mueve, que es justo el fallo que no da error.
+        self.type_combo.currentIndexChanged.connect(self._refresh_niches)
         # Persistir el provider elegido como default → lo usan las ventanas de
         # proyecto (galería / abrir otro) para abrir SOLO esa IA.
         self.provider_picker.providerChanged.connect(
@@ -5604,7 +5608,8 @@ class PcreativeStudio(QWidget):
         elegido = self.niche_combo.currentText() if self.niche_combo.count() else ""
         self.niche_combo.blockSignals(True)
         self.niche_combo.clear()
-        for n in niches_for_stack(self._stack_key):
+        tipo = self.type_combo.currentText() if hasattr(self, "type_combo") else ""
+        for n in niches_for(self._stack_key, tipo):
             self.niche_combo.addItem(n)
         if elegido:
             i = self.niche_combo.findText(elegido)
