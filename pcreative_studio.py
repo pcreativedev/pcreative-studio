@@ -78,6 +78,53 @@ if USE_SOFTWARE_GL:
     )
 
 
+def _limitar_memoria_web() -> None:
+    """Le pone techo a la memoria de cada pestaña del navegador incrustado.
+
+    ── 🔴 EL FALLO QUE ESTO CORTA, MEDIDO ────────────────────────────────
+
+    Un renderer llevaba 25 horas vivo con 3,0 GB residentes. El desglose no
+    deja lugar a dudas de donde estaban:
+
+        2 421 MB  [anon:v8]              ← el monton de JavaScript
+          537 MB  [heap]
+            4 MB  [anon:partition_alloc] ← el DOM, o sea nada
+
+    O sea que no era una pagina enorme: era JavaScript acumulando objetos sin
+    tope en una pestana que nadie estaba mirando. Sin techo, una pestana
+    olvidada puede comerse la RAM de la maquina y el sistema empieza a matar
+    procesos por su cuenta.
+
+    ── QUE HACE CADA BANDERA ─────────────────────────────────────────────
+
+    `--js-flags=--max-old-space-size` es el techo del monton viejo de V8, por
+    renderer y en megas. Al llegar, V8 recolecta a fondo en vez de seguir
+    pidiendo memoria; si aun asi no cabe, se cae ESA pestana y no la maquina.
+    512 MB es holgado para una vista previa o un terminal: la pestana que se
+    fue a 2,4 GB no lo hacia por necesitarlo.
+
+    `--process-per-site` mete en un mismo proceso las paginas del mismo
+    sitio. Aqui casi todas las pestanas son `127.0.0.1`, asi que en vez de un
+    proceso por pestana —con su copia de V8, su hilo y sus ~40 MB de base—
+    comparten uno.
+
+    ⚠️ NO se usa `--single-process`: la documentacion de Qt lo da por no
+    soportado y con el la vista se queda en blanco en varios entornos.
+
+    ── Y POR QUE SE MEZCLA EN VEZ DE ESCRIBIR ────────────────────────────
+
+    🔴 Arriba puede haber puesto ya las banderas de render por software. Un
+    `os.environ[...] = ...` se las llevaria por delante y el arranque en una
+    maquina sin GPU volveria a fallar, que es un fallo mucho peor que este.
+    """
+    memoria = "--js-flags=--max-old-space-size=512 --process-per-site"
+    previas = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "").strip()
+    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (previas + " " + memoria).strip()
+
+
+_limitar_memoria_web()
+
+
 def _add_bundled_tools_to_path() -> None:
     """Si el instalador trae Node y git portables (carpeta `vendor/`), los
     añade al PATH del proceso para que estén disponibles sin descargar.

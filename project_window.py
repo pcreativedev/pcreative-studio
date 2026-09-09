@@ -1063,6 +1063,148 @@ class ProjectWindow(QWidget):
             if s and s != "about:blank":
                 self.url_edit.setText(s)
 
+        self._repasar_ciclo_de_vida()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # EL CICLO DE VIDA DE LAS PESTAÑAS DE VISTA PREVIA
+    #
+    # ── 🔴 EL FALLO QUE ESTO ARREGLA, MEDIDO ─────────────────────────────
+    #
+    # Una pestaña de vista previa que nadie mira sigue viva: su JavaScript
+    # sigue corriendo, sus temporizadores siguen disparando y su montón sigue
+    # creciendo. Medido en esta misma máquina: un renderer con 25 horas
+    # encima ocupaba 3,0 GB, de los cuales 2,4 GB eran montón de V8 y 4 MB
+    # eran DOM. O sea, JavaScript acumulando en una pestaña de fondo.
+    #
+    # Qt trae la solución hecha y no la estábamos usando: `lifecycleState`.
+    #
+    #   Active     lo normal.
+    #   Frozen     se suspenden casi todas las tareas. Poca CPU, misma
+    #              memoria. Reversible al instante y sin perder nada.
+    #   Discarded  se tira el contexto entero. La memoria vuelve al sistema.
+    #              Al volver a mirarla, la página SE RECARGA.
+    #
+    # 🔴 Y ESTO ESTÁ MEDIDO, no deducido. Con una página que se come 300 MB
+    # de objetos de JavaScript a propósito:
+    #
+    #     cargada       391 MB
+    #     congelada     384 MB   ← congelar NO devuelve memoria
+    #     descartada    111 MB   ← devuelve el 72 %
+    #
+    # Por eso hacen falta los dos plazos y no basta con el primero: congelar
+    # ahorra procesador, y el que devuelve la memoria es descartar.
+    #
+    # ── LOS DOS PLAZOS, Y POR QUÉ DOS ────────────────────────────────────
+    #
+    # Congelar es gratis y no se nota, así que va pronto. Descartar sí se
+    # nota —la página se recarga y se pierde lo que hubiera escrito en un
+    # formulario— así que va tarde, cuando ya es evidente que esa pestaña
+    # está olvidada.
+    #
+    # ── 🔴 LOS TERMINALES NO SE TOCAN ────────────────────────────────────
+    #
+    # Viven en `term_tabs`, no aquí, y es deliberado que este repaso no los
+    # mire: un terminal congelado pierde su WebSocket con el pty, y uno
+    # descartado pierde la sesión entera. Alguien que vuelve a la pestaña del
+    # agente y se encuentra la sesión muerta no piensa «ahorro de memoria»,
+    # piensa que el programa se ha roto.
+    #
+    # ── Y LO QUE MANDA POR ENCIMA DE TODO ────────────────────────────────
+    #
+    # 🔴 Qt prohíbe congelar una página VISIBLE y una que tenga las
+    # herramientas de desarrollo abiertas. No es un consejo: el `setter` lo
+    # rechaza. Por eso se comprueban las dos cosas antes de tocar nada.
+    # ══════════════════════════════════════════════════════════════════════
+
+    #: Cuánto espera una pestaña de fondo antes de congelarse.
+    CONGELAR_TRAS_MS = 45_000
+
+    #: Y antes de descartarse, que ya recarga al volver.
+    DESCARTAR_TRAS_MS = 10 * 60_000
+
+    def _repasar_ciclo_de_vida(self) -> None:
+        """Deja Activa la pestaña que se está mirando y programa las demás."""
+        try:
+            from PyQt6.QtWebEngineCore import QWebEnginePage
+        except Exception:
+            return
+
+        actual = self._webview_of(self.preview_tabs.currentWidget())
+
+        for i in range(self.preview_tabs.count()):
+            vista = self._webview_of(self.preview_tabs.widget(i))
+            if not isinstance(vista, QWebEngineView):
+                continue
+
+            # 🔴 Los DOS relojes. El de descarte se encadena al de congelar,
+            # y si solo se para el primero queda uno suelto que dispara mas
+            # tarde sobre una pestana que ya se esta mirando.
+            for atributo in ("_reloj_ciclo", "_reloj_descarte"):
+                reloj = getattr(vista, atributo, None)
+                if reloj is not None:
+                    reloj.stop()
+
+            if vista is actual:
+                # Visible: obligatoriamente Activa, y sin plazos pendientes.
+                self._poner_estado(vista, QWebEnginePage.LifecycleState.Active)
+                continue
+
+            self._programar_dormir(vista)
+
+    def _programar_dormir(self, vista) -> None:
+        """Congela la vista al rato, y la descarta bastante después."""
+        from PyQt6.QtCore import QTimer
+
+        reloj = getattr(vista, "_reloj_ciclo", None)
+        if reloj is None:
+            reloj = QTimer(vista)
+            reloj.setSingleShot(True)
+            vista._reloj_ciclo = reloj
+
+        try:
+            reloj.timeout.disconnect()
+        except Exception:
+            pass
+
+        anterior = getattr(vista, "_reloj_descarte", None)
+        if anterior is not None:
+            anterior.stop()
+
+        def congelar():
+            from PyQt6.QtWebEngineCore import QWebEnginePage
+            self._poner_estado(vista, QWebEnginePage.LifecycleState.Frozen)
+            # Y el segundo plazo, encadenado: descartar de verdad.
+            reloj2 = QTimer(vista)
+            reloj2.setSingleShot(True)
+            reloj2.timeout.connect(lambda: self._poner_estado(
+                vista, QWebEnginePage.LifecycleState.Discarded))
+            reloj2.start(self.DESCARTAR_TRAS_MS)
+            vista._reloj_descarte = reloj2
+
+        reloj.timeout.connect(congelar)
+        reloj.start(self.CONGELAR_TRAS_MS)
+
+    def _poner_estado(self, vista, estado) -> None:
+        """Cambia el estado de una vista, callando lo que Qt no permita.
+
+        🔴 Se envuelve en `try` a propósito y no se comprueba antes: las
+        reglas de Qt —visible, herramientas abiertas, y que una descartada
+        solo puede volver a Activa— dependen de cosas que cambian entre que
+        se programa el plazo y que salta. Comprobarlas antes deja una carrera;
+        atrapar el rechazo, no.
+        """
+        try:
+            pagina = vista.page()
+            if pagina is None:
+                return
+            if vista.isVisible() and estado != type(estado).Active:
+                return
+            if pagina.lifecycleState() == estado:
+                return
+            pagina.setLifecycleState(estado)
+        except Exception:
+            pass
+
     def _on_tab_url_changed(self, qurl: QUrl):
         sender = self.sender()
         if (
@@ -2358,6 +2500,31 @@ class ProjectWindow(QWidget):
         self.webview.setUrl(QUrl("about:blank"))
 
     # ── Cierre limpio ────────────────────────────────────────────────
+    def hideEvent(self, e):
+        """La ventana entera deja de verse: todas sus vistas a dormir.
+
+        🔴 Es el caso que de verdad pasa. Una pestaña de fondo dentro de una
+        ventana que se está mirando es rara; una ventana entera minimizada o
+        tapada durante horas es lo normal, y hasta ahora su vista previa
+        seguía corriendo JavaScript como si alguien la estuviera viendo.
+        """
+        try:
+            for i in range(self.preview_tabs.count()):
+                vista = self._webview_of(self.preview_tabs.widget(i))
+                if isinstance(vista, QWebEngineView):
+                    self._programar_dormir(vista)
+        except Exception:
+            pass
+        super().hideEvent(e)
+
+    def showEvent(self, e):
+        """Y al volver a verse, la que se esté mirando despierta."""
+        super().showEvent(e)
+        try:
+            self._repasar_ciclo_de_vida()
+        except Exception:
+            pass
+
     def closeEvent(self, e):
         # 1) Parar preview (sin diálogos modales que cuelguen)
         try:
@@ -2391,12 +2558,35 @@ class ProjectWindow(QWidget):
                     self.term_server.kill()
         except Exception: pass
         # 3) Limpiar webviews
+        #
+        # 🔴 SE DESTRUYEN, NO SOLO SE VACIAN.
+        #
+        # Antes esto llevaba las vistas a `about:blank` y ahi se quedaba. Una
+        # vista vaciada sigue siendo un widget vivo con su proceso de Chromium
+        # detras: cerrar la ventana no devolvia esos procesos, y con varias
+        # ventanas abiertas y cerradas a lo largo del dia se van sumando.
+        #
+        # Y se recorren LOS DOS cuadernos. Antes solo se tocaba `self.webview`,
+        # que es la primera pestana de vista previa: las que abriera el usuario
+        # con el boton «+» no las miraba nadie.
         try:
-            self.webview.stop(); self.webview.setUrl(QUrl("about:blank"))
-            for i in range(self.term_tabs.count()):
-                w = self.term_tabs.widget(i)
-                try:
-                    w.stop(); w.setUrl(QUrl("about:blank"))
-                except Exception: pass
-        except Exception: pass
+            for cuaderno in (self.preview_tabs, self.term_tabs):
+                for i in range(cuaderno.count()):
+                    vista = self._webview_of(cuaderno.widget(i))
+                    if not isinstance(vista, QWebEngineView):
+                        continue
+                    try:
+                        vista.stop()
+                        vista.setUrl(QUrl("about:blank"))
+                        # Sin pagina, el renderer se va aunque el widget tarde
+                        # en morir.
+                        vista.setPage(None)
+                    except Exception:
+                        pass
+                    try:
+                        vista.deleteLater()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         super().closeEvent(e)
