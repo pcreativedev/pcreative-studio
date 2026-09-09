@@ -5,6 +5,35 @@ All notable changes to Pcreative Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Sin publicar]
+
+### Removed
+
+- **Fuera el visualizador Pixel Office, entero.** Se ha quitado el módulo
+  `pixel_office.py`, la instalación con consentimiento al arrancar, el arranque
+  automático en segundo plano, la parada al salir, la sección de Ajustes, la
+  pestaña «🎮 Office» de la ventana de proyecto y los dos métodos del puente
+  web. También sale de la documentación y de la atribución, porque ya no se
+  descarga nada de ese repositorio.
+
+  Lo que quedó instalado en `~/.local/share/pcreative-studio/pixel-office-openclaw/`
+  no se borra solo: es tuyo y está fuera del programa. Bórralo a mano si no lo
+  quieres.
+
+### Fixed
+
+- **La memoria del navegador incrustado.** Un renderer llevaba 25 horas vivo
+  con 3,0 GB, de los cuales 2,4 GB eran montón de JavaScript y 4 MB eran DOM:
+  una pestaña de vista previa que nadie miraba, acumulando objetos sin tope.
+  Ahora hay techo por renderer (512 MB de montón viejo de V8 y un proceso por
+  sitio) y ciclo de vida de las pestañas: la que se mira sigue activa, las
+  demás se congelan a los 45 s y se descartan a los 10 min, y lo mismo al
+  ocultarse la ventana. Medido: descartar devuelve el 72 % de lo que ocupaba.
+  Los terminales no se tocan, porque congelarlos mata su sesión.
+- **Al cerrar una ventana de proyecto, sus vistas se destruyen.** Antes se
+  vaciaban a `about:blank` y su proceso de Chromium seguía vivo, y solo se
+  tocaba la primera pestaña de vista previa.
+
 ## [2.2.0] - 2026-08-09
 
 ### Fixed

@@ -22,24 +22,6 @@ installed under `terminal/node_modules/` when you run `npm install`:
 The MIT license is included in each package's `LICENSE` file under
 `terminal/node_modules/<package>/LICENSE`.
 
-### Pixel Office visualizer
-
-Pcreative Studio auto-installs (with user consent) a Node application that
-shows AI agent sessions as pixel-art avatars on a virtual office. The
-visualizer is fetched from:
-
-- **Upstream**: <https://github.com/neomatrix25/pixel-office-openclaw>
-  — by **neomatrix25**, MIT.
-- **Fork used by Pcreative Studio**:
-  <https://github.com/pcreativedev/pixel-office-openclaw> — same code +
-  two commits adding a Claude Code session reader and same-origin
-  auto-connect. Also MIT.
-
-Neither the upstream nor the fork is bundled in this repository. They
-are cloned at install time into
-`~/.local/share/pcreative-studio/pixel-office-openclaw/` from the user's
-machine.
-
 ## Invoked as external subprocesses (NOT bundled)
 
 Pcreative Studio does not bundle these tools; it only spawns them as child

@@ -742,31 +742,6 @@ class ProjectWindow(QWidget):
         # Indicador en la barra de status si el server falla
         self._terminal_ready = False
 
-        # Tab "Office" — visualizer pixel-art de sesiones IA. Carga
-        # el dashboard del fork MIT (pixel-office-openclaw + reader de
-        # Claude Code) vía WebEngineView en localhost:3002.
-        try:
-            import pixel_office
-            if pixel_office.is_dashboard_up() or pixel_office.find_install_dir():
-                self.pixel_view = QWebEngineView()
-                self.pixel_view.setUrl(QUrl(pixel_office.DASHBOARD_URL))
-                self.term_tabs.addTab(self.pixel_view, "🎮 Office")
-            else:
-                # Placeholder informativo si no está instalado.
-                self.pixel_view = QWebEngineView()
-                self.pixel_view.setHtml(
-                    "<body style='background:#0c0c0d;color:#888;font:13px monospace;padding:2em'>"
-                    "<h2 style='color:#fff'>🎮 Pixel Office not installed</h2>"
-                    "<p>Enable from Pcreative Studio Settings → 🎮 Office → Install.</p>"
-                    "<p style='color:#555'>Upstream MIT: "
-                    "<a style='color:#62b4ff' href='https://github.com/neomatrix25/pixel-office-openclaw'>"
-                    "neomatrix25/pixel-office-openclaw</a></p>"
-                    "</body>"
-                )
-                self.term_tabs.addTab(self.pixel_view, "🎮 Office")
-        except Exception as e:
-            print(f"[pixel-office] tab no creada: {e}")
-
         # Si auto-lanzamos un agente, dejarlo como pestaña activa.
         if self._auto_agent_tab_index is not None:
             self.term_tabs.setCurrentIndex(self._auto_agent_tab_index)

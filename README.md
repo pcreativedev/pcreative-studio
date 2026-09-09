@@ -259,8 +259,6 @@ python pcreative_studio.py
   MEMORY.md…) ready for ThemeForest / Gumroad / Creative Market.
 - **Gallery** with card view + custom tags + project archive + last
   AI session indicator + command palette (Ctrl+K).
-- **Pixel Office visualizer** (optional) — your active Claude Code
-  sessions as pixel-art avatars in a virtual office.
 
 ## Web UI
 
@@ -344,9 +342,6 @@ from midudev's repository.
   57 font pairings) before it writes a single line of CSS. Invoked
   by Pcreative Studio as `npx uipro-cli init --ai <agent>` when the
   *"uipro UI/UX Pro Max"* checkbox is on.
-- [pixel-office-openclaw](https://github.com/neomatrix25/pixel-office-openclaw)
-  by **neomatrix25** (MIT) — the lovable pixel-art visualizer that
-  turns Claude Code sessions into avatars in a virtual office.
 - [xterm.js](https://xtermjs.org/), [node-pty](https://github.com/microsoft/node-pty),
   [ws](https://github.com/websockets/ws) — the embedded terminal stack (all MIT).
 - The Claude Code, Codex, Gemini and OpenCode teams for shipping

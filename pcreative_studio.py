@@ -8205,52 +8205,6 @@ def main():
         _icon.addFile(str(_assets_dir / "pcreative-studio.png"))
         app.setWindowIcon(_icon)
 
-    # Auto-launch del visualizer pixel-art (pixel-office-openclaw fork MIT
-    # con reader de Claude Code añadido). Lee directo de
-    # ~/.claude/projects/*/*.jsonl así que NO necesita registrar hooks.
-    pixel_proc = None
-    try:
-        import pixel_office
-        if not pixel_office.find_install_dir():
-            r = QMessageBox.question(
-                None, "🎮 Pixel Office",
-                "Pixel Office no está instalado. Es un visualizador pixel-art "
-                "que muestra tus sesiones de Claude Code (y OpenClaw) como "
-                "avatares en una oficina virtual.\n\n"
-                "¿Instalar ahora? (clona el repo en "
-                "~/.local/share/pcreative-studio/pixel-office-openclaw/, ejecuta "
-                "npm install + build. Tarda ~1-2 min.)",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-            if r == QMessageBox.StandardButton.Yes:
-                print("[pixel-office] instalando…", flush=True)
-                ok, msg = pixel_office.install()
-                print(f"[pixel-office] {'OK' if ok else 'FAIL'}: {msg}", flush=True)
-                if not ok:
-                    QMessageBox.warning(
-                        None, "Pixel Office",
-                        f"Instalación falló:\n{msg}\n\n"
-                        "Puedes reintentar desde Settings → 🎮 Office.",
-                    )
-        # Una vez instalado (o si ya lo estaba) → auto-launch
-        pixel_proc = pixel_office.launch_background()
-        if pixel_proc is not None:
-            print("[pixel-office] dashboard arrancado en background (PID", pixel_proc.pid, ")")
-        elif pixel_office.is_dashboard_up():
-            print("[pixel-office] dashboard ya estaba arriba — usando el existente")
-        else:
-            print("[pixel-office] no instalado — actívalo desde Settings → 🎮 Office")
-    except Exception as e:
-        print(f"[pixel-desk] error al auto-launch: {e}")
-
-    def cleanup():
-        try:
-            import pixel_office
-            pixel_office.stop(pixel_proc)
-        except Exception:
-            pass
-
-    app.aboutToQuit.connect(cleanup)
 
     # UI principal: por defecto la interfaz Neo-Tokyo (web prototype exacto
     # renderizado en WebEngine con datos reales vía puente). La UI clásica de

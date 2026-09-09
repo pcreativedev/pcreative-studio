@@ -1692,36 +1692,6 @@ class PcreativeStudioBridge(QObject):
         except Exception as e:
             return json.dumps({"ok": False, "error": str(e)})
 
-    @pyqtSlot(result=str)
-    def pixel_office_launch(self) -> str:
-        """Lanza el dashboard Pixel Office (visualizador de sesiones)."""
-        try:
-            import pixel_office
-            if pixel_office.is_dashboard_up():
-                return json.dumps({"ok": True, "already": True})
-            pixel_office.launch_background()
-            return json.dumps({"ok": True})
-        except Exception as e:
-            return json.dumps({"ok": False, "error": str(e)})
-
-    @pyqtSlot(result=str)
-    def pixel_office_url(self) -> str:
-        """URL del dashboard Pixel Office para la pestaña «Office» (lo arranca si
-        está instalado pero apagado). Devuelve {installed, up, url}."""
-        try:
-            import pixel_office
-            url = getattr(pixel_office, "DASHBOARD_URL", "")
-            up = pixel_office.is_dashboard_up()
-            installed = up or bool(pixel_office.find_install_dir())
-            if installed and not up:
-                try:
-                    pixel_office.launch_background()
-                except Exception:
-                    pass
-            return json.dumps({"installed": installed, "up": up, "url": url})
-        except Exception as e:
-            return json.dumps({"installed": False, "up": False, "url": "", "error": str(e)})
-
     @pyqtSlot(str, result=str)
     def git_push(self, path: str) -> str:
         """git add+commit+push real en el proyecto (async, progreso por señal)."""

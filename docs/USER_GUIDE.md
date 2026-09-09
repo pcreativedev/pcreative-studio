@@ -30,17 +30,16 @@ system, and troubleshooting.
 12. [AI cost tracker](#12-ai-cost-tracker)
 13. [Multi-agent compare](#13-multi-agent-compare)
 14. [GitHub integration](#14-github-integration)
-15. [Pixel Office visualizer](#15-pixel-office-visualizer)
-16. [Settings panel](#16-settings-panel)
-17. [App themes](#17-app-themes)
-18. [Vibe scaffolder](#18-vibe-scaffolder)
-19. [MCP servers](#19-mcp-servers)
-20. [Pcreative Studio mobile (remote engine)](#20-pcreative-studio-mobile-remote-engine)
-21. [Optional licensing system](#21-optional-licensing-system)
-22. [Configuration files](#22-configuration-files)
-23. [Troubleshooting](#23-troubleshooting)
-24. [Operator (Hermes) — autonomous missions](#24-operator-hermes--autonomous-missions)
-25. [Credits and third-party licenses](#25-credits-and-third-party-licenses)
+15. [Settings panel](#15-settings-panel)
+16. [App themes](#16-app-themes)
+17. [Vibe scaffolder](#17-vibe-scaffolder)
+18. [MCP servers](#18-mcp-servers)
+19. [Pcreative Studio mobile (remote engine)](#19-pcreative-studio-mobile-remote-engine)
+20. [Optional licensing system](#20-optional-licensing-system)
+21. [Configuration files](#21-configuration-files)
+22. [Troubleshooting](#22-troubleshooting)
+23. [Operator (Hermes) — autonomous missions](#23-operator-hermes--autonomous-missions)
+24. [Credits and third-party licenses](#24-credits-and-third-party-licenses)
 
 ---
 
@@ -66,8 +65,6 @@ parts of starting a new template project:
   one-click GitHub push/create flow.
 - Optionally integrates your own licensing system (verify endpoint +
   setup wizard + admin panel hooks) into every theme generated.
-- Optionally shows your active AI sessions as pixel-art avatars in a
-  virtual office (via the bundled `pixel-office` visualizer).
 
 Pcreative Studio does **not** generate the actual code of your templates —
 the AI agent does. Pcreative Studio prepares the ground so the agent starts
@@ -646,7 +643,6 @@ a per-project window with:
 │  Tabs of embedded preview  │  Tabs of embedded terminals │
 │  - Preview (default)       │  - Setup / Shell           │
 │  - + (additional pages)    │  - Claude / Codex / Gemini │
-│                            │  - 🎮 Office (visualizer)  │
 ├────────────────────────────┴────────────────────────────┤
 │ Logs of the dev server (live tail)                      │
 └─────────────────────────────────────────────────────────┘
@@ -1177,54 +1173,7 @@ When clicked:
 
 ---
 
-## 15. Pixel Office visualizer
-
-Optional. Visualises your active AI agent sessions as pixel-art
-avatars in a virtual office, served as a web dashboard on
-`localhost:3002`.
-
-Pcreative Studio integrates with the MIT-licensed fork at
-`pcreativedev/pixel-office-openclaw` (based on
-`neomatrix25/pixel-office-openclaw`), with an additional reader for
-Claude Code sessions added to its `server.js`.
-
-### First run
-
-The first time Pcreative Studio launches, if it doesn't find Pixel Office
-installed, it asks:
-
-> Pixel Office no está instalado. ¿Instalar ahora? (clones the repo
-> to `~/.local/share/pcreative-studio/pixel-office-openclaw/`, runs npm
-> install + npm run build. Takes ~1-2 min.)
-
-If you accept, Pcreative Studio installs and auto-launches `node server.js`
-in background. The dashboard is then embedded in every
-ProjectWindow's "🎮 Office" tab.
-
-### How the Claude Code reader works
-
-The server scans `~/.claude/projects/*/*.jsonl` files (where Claude
-Code stores its conversations). For each `.jsonl` younger than the
-active-window threshold (default 60 minutes):
-
-- The file mtime → `lastActivity`.
-- The first `{"type": "ai-title", ...}` line found → `name`.
-- The `model` field of the last assistant message → `model`.
-- The last user or assistant message → `lastMessage`.
-
-These are exposed at `/sessions_list` in the same schema as OpenClaw
-sessions. The React frontend renders one avatar per agent (project),
-with status `active` / `waiting` / `idle` based on recency.
-
-### Disable
-
-Settings → 🎮 Office → ■ Stop. Or set
-`PIXEL_OFFICE_NO_CLAUDE_CODE=1` to scan only OpenClaw, or pass
-`--no-claude-code` to the CLI binary.
-
----
-
-## 16. Settings panel
+## 15. Settings panel
 
 The Settings tab in the main window exposes:
 
@@ -1233,12 +1182,10 @@ The Settings tab in the main window exposes:
 - **Postgres provisioning**: auto-spin a per-project Docker postgres
   container when scaffolding stacks that need a DB (Next + Drizzle,
   Laravel + Postgres, etc.).
-- **🎮 Office**: install / launch / stop / open the Pixel Office
-  dashboard.
 
 ---
 
-## 17. App themes
+## 16. App themes
 
 > **TL;DR.** Pcreative Studio's own UI is fully themable: 8 builtin
 > themes, a visual editor, and a Figma DTCG importer.
@@ -1431,7 +1378,7 @@ sprints.
 
 ---
 
-## 18. Vibe scaffolder
+## 17. Vibe scaffolder
 
 The **"Nuevo proyecto"** tab opens on the **✨ Vibe** sub-tab. Type
 what you want to build in plain Spanish or English — no need to
@@ -1496,7 +1443,7 @@ productivity accelerator, not a requirement.
 
 ---
 
-## 19. MCP servers
+## 18. MCP servers
 
 Pcreative Studio participates in the **Model Context Protocol (MCP)**
 ecosystem in two ways:
@@ -1641,7 +1588,7 @@ later, just delete the `pcreative-studio` entry from
 
 ---
 
-## 20. Pcreative Studio mobile (remote engine)
+## 19. Pcreative Studio mobile (remote engine)
 
 > **TL;DR.** Since **v1.8.0** you can drive the Pcreative Studio engine
 > **from your phone**. A small FastAPI gateway (`api_gateway.py`)
@@ -1770,7 +1717,7 @@ required on the server.
 
 ---
 
-## 21. Optional licensing system
+## 20. Optional licensing system
 
 > **TL;DR — what's bundled and what isn't.**
 >
@@ -1862,7 +1809,7 @@ Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.
 
 ---
 
-## 22. Configuration files
+## 21. Configuration files
 
 Under `~/.config/pcreative-studio/`:
 
@@ -1884,7 +1831,6 @@ Pcreative Studio also persists state outside `~/.config/`:
 | `~/Proyectos/themes-archive/` | Projects archived from the gallery (§11). Reversible. |
 | `~/Proyectos/themes-builds/` | Marketplace ZIPs produced by **📦 ZIP** in ProjectWindow (§10). |
 | `~/.cache/pcreative-studio/thumbnails/<slug>.png` | Card-view thumbnails for the gallery (200×120). Generated from screenshots or as placeholders. Safe to delete — they regenerate. |
-| `~/.local/share/pcreative-studio/pixel-office-openclaw/` | Auto-installed Pixel Office visualizer (§13). |
 
 ### Context override pattern
 
@@ -1906,7 +1852,7 @@ names, no domains, no strategies leak from the repo.
 
 ---
 
-## 23. Troubleshooting
+## 22. Troubleshooting
 
 ### Pcreative Studio does not start (ImportError on PyQt6)
 
@@ -1932,25 +1878,6 @@ project window's bottom log pane.
 QtWebEngine has known performance issues on some Wayland setups. Use
 the 🚀 button to open the preview in Brave/Chromium in `--app` mode
 instead. The native browser handles the page natively.
-
-### "🎮 Pixel Office no está instalado" but I already installed it
-
-The auto-detect checks two paths:
-
-```
-~/.local/share/pcreative-studio/pixel-office-openclaw/
-~/Proyectos/pixel-office-openclaw/
-```
-
-If you cloned elsewhere, either move it or symlink one of the above
-to your install location.
-
-### Project shows the "Connect to OpenClaw" gateway screen
-
-Pcreative Studio's `pixel_office.py` serves the SPA at `localhost:3002`. The
-SPA auto-connects to same-origin if `/sessions_list` responds. If the
-gateway screen appears anyway, reload (Ctrl+R). If it persists, clear
-browser cache for `localhost:3002`.
 
 ### `wp-env start` exits with `Error: No plugins activated`
 
@@ -1993,7 +1920,7 @@ OAuth, or set the key via the Settings panel.
 
 ---
 
-## 24. Operator (Hermes) — autonomous missions
+## 23. Operator (Hermes) — autonomous missions
 
 The **Operator** is an **optional** integration that lets
 [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research, MIT)
@@ -2161,7 +2088,7 @@ token, scope: read). See §19 (MCP servers).
 
 ---
 
-## 25. Credits and third-party licenses
+## 24. Credits and third-party licenses
 
 Pcreative Studio is licensed under **GPL v3** (forced by the PyQt6
 dependency which is GPL v3 or commercial). See `LICENSE`.
@@ -2176,7 +2103,6 @@ dependency which is GPL v3 or commercial). See `LICENSE`.
 | [`node-pty`](https://github.com/microsoft/node-pty) | MIT | PTY backend for the terminal. |
 | [`ws`](https://github.com/websockets/ws) | MIT | WebSocket transport between the terminal frontend and `node-pty`. |
 | [`autoskills`](https://github.com/midudev/autoskills) (midudev) | **CC BY-NC 4.0** | Invoked via `npx autoskills -a <provider>` to install skills declared by each stack. **Non-commercial license** — if you ship a commercial build of Pcreative Studio, the autoskills checkbox must be off-by-default or replaced with a permissive alternative. |
-| [`pixel-office-openclaw`](https://github.com/neomatrix25/pixel-office-openclaw) (neomatrix25) | MIT | Visualizer dashboard. Fork at `pcreativedev/pixel-office-openclaw` adds the Claude Code session reader. |
 
 ### Invoked-as-subprocess
 
@@ -2201,8 +2127,6 @@ These are external CLIs Pcreative Studio invokes; they're not bundled.
 
 - **midudev** for [autoskills](https://github.com/midudev/autoskills)
   and the broader Spanish-speaking dev community he educates.
-- **neomatrix25** for [pixel-office-openclaw](https://github.com/neomatrix25/pixel-office-openclaw),
-  the foundation of the visualizer.
 - The Qt team for PyQt6 and PySide6.
 - Anthropic, OpenAI, Google and the open-source AI community for the
   CLIs that make this workflow possible.

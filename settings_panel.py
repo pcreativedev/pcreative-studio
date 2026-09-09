@@ -191,33 +191,6 @@ class SettingsPanel(QWidget):
         sbox.addLayout(sl, 1); sbox.addLayout(sr, 1)
         skills_box.setLayout(sbox)
 
-        # Office
-        self.pixel_status_label = QLabel("(cargando…)")
-        self.pixel_status_label.setStyleSheet("color:#aaa;font-family:monospace;font-size:12px;")
-        self.btn_pixel_install = QPushButton("📦 Install / Update")
-        self.btn_pixel_install.clicked.connect(self._pixel_install)
-        self.btn_pixel_launch = QPushButton("▶ Start")
-        self.btn_pixel_launch.clicked.connect(self._pixel_launch)
-        self.btn_pixel_open = QPushButton("🌐 Open dashboard")
-        self.btn_pixel_open.clicked.connect(self._pixel_open)
-        self.btn_pixel_stop = QPushButton("✕ Stop")
-        self.btn_pixel_stop.clicked.connect(self._pixel_stop)
-        self.btn_pixel_refresh = QPushButton("↻")
-        self.btn_pixel_refresh.clicked.connect(self._pixel_refresh)
-
-        pixel_box = QGroupBox("🎮 Office (pixel-art visualizer of Claude Code sessions)")
-        pbox = QVBoxLayout()
-        pbox.addWidget(self.pixel_status_label)
-        pbtn = QHBoxLayout()
-        pbtn.addWidget(self.btn_pixel_install)
-        pbtn.addWidget(self.btn_pixel_launch)
-        pbtn.addWidget(self.btn_pixel_open)
-        pbtn.addWidget(self.btn_pixel_stop)
-        pbtn.addWidget(self.btn_pixel_refresh)
-        pbtn.addStretch()
-        pbox.addLayout(pbtn)
-        pixel_box.setLayout(pbox)
-
         # Atajos
         self.btn_open_themeforge = QPushButton("📁 Open ~/Proyectos/pcreative-studio")
         self.btn_open_themeforge.clicked.connect(
@@ -244,7 +217,6 @@ class SettingsPanel(QWidget):
             il.addWidget(theme_box)
         il.addWidget(status_box)
         il.addWidget(skills_box, 1)
-        il.addWidget(pixel_box)
         il.addWidget(shortcuts_box)
 
         scroll = QScrollArea()
@@ -255,7 +227,6 @@ class SettingsPanel(QWidget):
         root.addWidget(scroll)
 
         self.refresh_status()
-        self._pixel_refresh()
         if self.stack_list.count() > 0:
             self.stack_list.setCurrentRow(0)
 
@@ -346,85 +317,6 @@ class SettingsPanel(QWidget):
         except ValueError:
             pass
         self._on_stack_changed(row)
-
-    # ── Office ──────────────────────────────────────────
-    def _pixel_refresh(self):
-        try:
-            import pixel_office
-            s = pixel_office.status()
-        except Exception as e:
-            self.pixel_status_label.setText(f"error: {e}")
-            return
-        installed = "✓ instalado" if s["installed"] else "✗ no instalado"
-        path = s["install_dir"] or "—"
-        dash = "✓ arriba" if s["dashboard_up"] else "✗ parado"
-        self.pixel_status_label.setText(
-            f"{installed}    dashboard: {dash}\n"
-            f"path: {path}\n"
-            f"url: {s['dashboard_url']}"
-        )
-        self.btn_pixel_launch.setEnabled(s["installed"] and not s["dashboard_up"])
-        self.btn_pixel_open.setEnabled(s["dashboard_up"])
-        self.btn_pixel_stop.setEnabled(s["dashboard_up"])
-
-    def _pixel_install(self):
-        try:
-            import pixel_office
-        except Exception as e:
-            QMessageBox.critical(self, "Office", f"Could not import pixel_office: {e}")
-            return
-        if QMessageBox.question(
-            self, "Install Office",
-            f"I'll clone the repo into {pixel_office.INSTALL_DIR} and run npm install.\n\n"
-            "This registers Claude Code hooks globally in ~/.claude/settings.json.\n\n"
-            "Continue?",
-        ) != QMessageBox.StandardButton.Yes:
-            return
-        self.btn_pixel_install.setEnabled(False)
-        self.btn_pixel_install.setText("Installing…")
-        QWidget.repaint(self)
-        ok, msg = pixel_office.install()
-        self.btn_pixel_install.setEnabled(True)
-        self.btn_pixel_install.setText("📦 Install / Update")
-        if ok:
-            QMessageBox.information(self, "Office", msg)
-        else:
-            QMessageBox.warning(self, "Office", msg)
-        self._pixel_refresh()
-
-    def _pixel_launch(self):
-        try:
-            import pixel_office
-        except Exception as e:
-            QMessageBox.critical(self, "Office", f"Could not import pixel_office: {e}")
-            return
-        proc = pixel_office.launch_background()
-        if proc is None and not pixel_office.is_dashboard_up():
-            QMessageBox.warning(self, "Office", "Failed to start — is it installed, and is npm on PATH?")
-        self._pixel_refresh()
-
-    def _pixel_open(self):
-        try:
-            import pixel_office
-            pc.open_url(pixel_office.DASHBOARD_URL)
-        except Exception as e:
-            QMessageBox.warning(self, "Office", f"Could not open the browser: {e}")
-
-    def _pixel_stop(self):
-        # Mata cualquier `npm start` cuya cwd sea el directorio de pixel-office-openclaw.
-        try:
-            import pixel_office
-            install_dir = pixel_office.find_install_dir()
-        except Exception:
-            install_dir = None
-        if install_dir is None:
-            QMessageBox.information(self, "Office", "No está instalado.")
-            return
-        try:
-            pc.kill_processes_under_path(str(install_dir))
-        except Exception as e:
-            QMessageBox.warning(self, "Office", f"No se pudo parar: {e}")
-        self._pixel_refresh()
 
     def _open_dependency_wizard(self):
         """Abre el wizard de detección + instalación de dependencias."""

@@ -251,7 +251,11 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#the-web-ui-neo-tokyo-matrix-kawaii">The Web UI (Neo-Tokyo · Matrix · Kawaii)</a></li>
 <li><a href="#2-system-requirements">2. System requirements</a></li>
 <li><a href="#3-installation">3. Installation</a></li>
-<li><a href="#4-initial-setup">4. Initial setup</a></li>
+<li><a href="#4-initial-setup">4. Initial setup</a><ul>
+<li><a href="#onboarding-wizard-first-run">Onboarding wizard (first run)</a></li>
+<li><a href="#config-files">Config files</a></li>
+</ul>
+</li>
 <li><a href="#5-quickstart-your-first-project">5. Quickstart — your first project</a></li>
 <li><a href="#6-project-creation-modes">6. Project creation modes</a><ul>
 <li><a href="#desde-cero-scratch">Desde cero (scratch)</a></li>
@@ -313,14 +317,8 @@ img { max-width: 100%; border-radius: 6px; }
 </ul>
 </li>
 <li><a href="#14-github-integration">14. GitHub integration</a></li>
-<li><a href="#15-pixel-office-visualizer">15. Pixel Office visualizer</a><ul>
-<li><a href="#first-run">First run</a></li>
-<li><a href="#how-the-claude-code-reader-works">How the Claude Code reader works</a></li>
-<li><a href="#disable">Disable</a></li>
-</ul>
-</li>
-<li><a href="#16-settings-panel">16. Settings panel</a></li>
-<li><a href="#17-app-themes">17. App themes</a><ul>
+<li><a href="#15-settings-panel">15. Settings panel</a></li>
+<li><a href="#16-app-themes">16. App themes</a><ul>
 <li><a href="#171-whats-in-the-box">17.1 What's in the box</a></li>
 <li><a href="#172-theme-tokens-what-each-theme-controls">17.2 Theme tokens — what each theme controls</a></li>
 <li><a href="#173-visual-editor">17.3 Visual editor</a></li>
@@ -336,13 +334,13 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#177-limitations">17.7 Limitations</a></li>
 </ul>
 </li>
-<li><a href="#18-vibe-scaffolder">18. Vibe scaffolder</a><ul>
+<li><a href="#17-vibe-scaffolder">17. Vibe scaffolder</a><ul>
 <li><a href="#decision-rules">Decision rules</a></li>
 <li><a href="#robust-parsing">Robust parsing</a></li>
 <li><a href="#when-to-skip">When to skip</a></li>
 </ul>
 </li>
-<li><a href="#19-mcp-servers">19. MCP servers</a><ul>
+<li><a href="#18-mcp-servers">18. MCP servers</a><ul>
 <li><a href="#191-pcreative-studio-as-an-mcp-server">19.1 Pcreative Studio as an MCP server</a><ul>
 <li><a href="#tools-exposed">Tools exposed</a></li>
 <li><a href="#registering-in-claude-code">Registering in Claude Code</a></li>
@@ -360,7 +358,7 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#193-disabling-mcp-integration">19.3 Disabling MCP integration</a></li>
 </ul>
 </li>
-<li><a href="#20-pcreative-studio-mobile-remote-engine">20. Pcreative Studio mobile (remote engine)</a><ul>
+<li><a href="#19-pcreative-studio-mobile-remote-engine">19. Pcreative Studio mobile (remote engine)</a><ul>
 <li><a href="#201-start-the-gateway">20.1 Start the gateway</a></li>
 <li><a href="#202-configure-the-access-token">20.2 Configure the access token</a></li>
 <li><a href="#203-access-from-the-pwa-capacitor-app">20.3 Access from the PWA / Capacitor app</a></li>
@@ -369,22 +367,20 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#206-optional-push-notifications-fcm">20.6 Optional push notifications (FCM)</a></li>
 </ul>
 </li>
-<li><a href="#21-optional-licensing-system">21. Optional licensing system</a><ul>
+<li><a href="#20-optional-licensing-system">20. Optional licensing system</a><ul>
 <li><a href="#what-gets-dropped-per-stack-family">What gets dropped per stack family</a></li>
 <li><a href="#url-templating">URL templating</a></li>
 <li><a href="#bring-your-own-backend">Bring your own backend</a></li>
 </ul>
 </li>
-<li><a href="#22-configuration-files">22. Configuration files</a><ul>
+<li><a href="#21-configuration-files">21. Configuration files</a><ul>
 <li><a href="#context-override-pattern">Context override pattern</a></li>
 </ul>
 </li>
-<li><a href="#23-troubleshooting">23. Troubleshooting</a><ul>
+<li><a href="#22-troubleshooting">22. Troubleshooting</a><ul>
 <li><a href="#pcreative-studio-does-not-start-importerror-on-pyqt6">Pcreative Studio does not start (ImportError on PyQt6)</a></li>
 <li><a href="#embedded-terminal-does-not-load">Embedded terminal does not load</a></li>
 <li><a href="#embedded-preview-shows-blank-in-wayland">Embedded preview shows blank in Wayland</a></li>
-<li><a href="#pixel-office-no-esta-instalado-but-i-already-installed-it">"🎮 Pixel Office no está instalado" but I already installed it</a></li>
-<li><a href="#project-shows-the-connect-to-openclaw-gateway-screen">Project shows the "Connect to OpenClaw" gateway screen</a></li>
 <li><a href="#wp-env-start-exits-with-error-no-plugins-activated">wp-env start exits with Error: No plugins activated</a></li>
 <li><a href="#start-preview-succeeds-but-stop-is-greyed-out">start preview succeeds but Stop is greyed out</a></li>
 <li><a href="#github-says-no-estas-autenticado-en-gh">📦 GitHub says "No estás autenticado en gh"</a></li>
@@ -393,7 +389,7 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#reference-analysis-dialog-says-need-login-for-gemini">Reference-analysis dialog says "Need login" for Gemini</a></li>
 </ul>
 </li>
-<li><a href="#24-operator-hermes-autonomous-missions">24. Operator (Hermes) — autonomous missions</a><ul>
+<li><a href="#23-operator-hermes-autonomous-missions">23. Operator (Hermes) — autonomous missions</a><ul>
 <li><a href="#241-how-it-works-architecture">24.1 How it works (architecture)</a></li>
 <li><a href="#242-install-hermes">24.2 Install Hermes</a></li>
 <li><a href="#243-configure-the-brain-provider-api-key">24.3 Configure the brain (provider + API key)</a></li>
@@ -406,7 +402,7 @@ img { max-width: 100%; border-radius: 6px; }
 <li><a href="#2410-troubleshooting">24.10 Troubleshooting</a></li>
 </ul>
 </li>
-<li><a href="#25-credits-and-third-party-licenses">25. Credits and third-party licenses</a><ul>
+<li><a href="#24-credits-and-third-party-licenses">24. Credits and third-party licenses</a><ul>
 <li><a href="#direct-integrations">Direct integrations</a></li>
 <li><a href="#invoked-as-subprocess">Invoked-as-subprocess</a></li>
 <li><a href="#referenced-skill-packages-not-redistributed-invoked-by-name">Referenced skill packages (not redistributed — invoked by name)</a></li>
@@ -447,24 +443,23 @@ system, and troubleshooting.</p>
 <li><a href="#12-ai-cost-tracker">AI cost tracker</a></li>
 <li><a href="#13-multi-agent-compare">Multi-agent compare</a></li>
 <li><a href="#14-github-integration">GitHub integration</a></li>
-<li><a href="#15-pixel-office-visualizer">Pixel Office visualizer</a></li>
-<li><a href="#16-settings-panel">Settings panel</a></li>
-<li><a href="#17-app-themes">App themes</a></li>
-<li><a href="#18-vibe-scaffolder">Vibe scaffolder</a></li>
-<li><a href="#19-mcp-servers">MCP servers</a></li>
-<li><a href="#20-pcreative-studio-mobile-remote-engine">Pcreative Studio mobile (remote engine)</a></li>
-<li><a href="#21-optional-licensing-system">Optional licensing system</a></li>
-<li><a href="#22-configuration-files">Configuration files</a></li>
-<li><a href="#23-troubleshooting">Troubleshooting</a></li>
-<li><a href="#24-operator-hermes--autonomous-missions">Operator (Hermes) — autonomous missions</a></li>
-<li><a href="#25-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
+<li><a href="#15-settings-panel">Settings panel</a></li>
+<li><a href="#16-app-themes">App themes</a></li>
+<li><a href="#17-vibe-scaffolder">Vibe scaffolder</a></li>
+<li><a href="#18-mcp-servers">MCP servers</a></li>
+<li><a href="#19-pcreative-studio-mobile-remote-engine">Pcreative Studio mobile (remote engine)</a></li>
+<li><a href="#20-optional-licensing-system">Optional licensing system</a></li>
+<li><a href="#21-configuration-files">Configuration files</a></li>
+<li><a href="#22-troubleshooting">Troubleshooting</a></li>
+<li><a href="#23-operator-hermes--autonomous-missions">Operator (Hermes) — autonomous missions</a></li>
+<li><a href="#24-credits-and-third-party-licenses">Credits and third-party licenses</a></li>
 </ol>
 <hr />
 <h2 id="1-what-is-pcreative-studio">1. What is Pcreative Studio<a class="anchor" href="#1-what-is-pcreative-studio" title="Link to this section">#</a></h2>
 <p>Pcreative Studio is a PyQt6 desktop application that automates the boring
 parts of starting a new template project:</p>
 <ul>
-<li>Scaffolds 60+ modern stacks (Next.js, Astro, Laravel, WordPress
+<li>Scaffolds 80+ modern stacks (Next.js, Astro, Laravel, WordPress
   themes/plugins, Shopify, Flutter, Tauri, Spring, Ktor, Phaser, R3F…)
   with up-to-date defaults and security patches.</li>
 <li>Drops a CLAUDE.md/AGENTS.md context file in the project so any AI
@@ -481,8 +476,6 @@ parts of starting a new template project:</p>
   one-click GitHub push/create flow.</li>
 <li>Optionally integrates your own licensing system (verify endpoint +
   setup wizard + admin panel hooks) into every theme generated.</li>
-<li>Optionally shows your active AI sessions as pixel-art avatars in a
-  virtual office (via the bundled <code>pixel-office</code> visualizer).</li>
 </ul>
 <p>Pcreative Studio does <strong>not</strong> generate the actual code of your templates —
 the AI agent does. Pcreative Studio prepares the ground so the agent starts
@@ -606,6 +599,25 @@ cd ..
 to create it manually pointing at your <code>launch.sh</code> location).</p>
 <hr />
 <h2 id="4-initial-setup">4. Initial setup<a class="anchor" href="#4-initial-setup" title="Link to this section">#</a></h2>
+<h3 id="onboarding-wizard-first-run">Onboarding wizard (first run)<a class="anchor" href="#onboarding-wizard-first-run" title="Link to this section">#</a></h3>
+<p>The <strong>first time</strong> you launch Pcreative Studio, a welcome wizard runs
+automatically (<code>maybe_run_onboarding</code>) to get you to a working state in a
+few steps:</p>
+<ol>
+<li><strong>Welcome.</strong></li>
+<li><strong>Dependencies</strong> — checks for Node / git / the AI CLIs and offers a
+   button to the dependency installer for anything missing.</li>
+<li><strong>AI credentials</strong> — set your provider API keys inline (the same
+   <code>keys.json</code> editor as the Settings panel; see §8).</li>
+<li><strong>Form defaults</strong> — pick your default stack, provider and template
+   type so the new-project form is pre-filled to your taste.</li>
+<li><strong>Done.</strong></li>
+</ol>
+<p>The wizard persists a "seen" flag plus your defaults in
+<code>~/.config/pcreative-studio/app_prefs.json</code>, so it won't pop up again. You can
+<strong>re-open it any time from Settings</strong>. None of the steps are mandatory —
+you can skip straight through and configure things later.</p>
+<h3 id="config-files">Config files<a class="anchor" href="#config-files" title="Link to this section">#</a></h3>
 <p>The first time you launch Pcreative Studio, it creates <code>~/.config/pcreative-studio/</code>
 with:</p>
 <pre><code>~/.config/pcreative-studio/
@@ -711,8 +723,8 @@ in-place with the Pcreative Studio workflow. Pcreative Studio:</p>
 Pcreative Studio umbrella — same preview/terminal/agent UI as new projects.</p>
 <hr />
 <h2 id="7-supported-stacks">7. Supported stacks<a class="anchor" href="#7-supported-stacks" title="Link to this section">#</a></h2>
-<p>The full list lives in <code>stacks.py</code>. As of the current version, 60+
-stacks are supported including (non-exhaustive):</p>
+<p>The full list lives in <code>stacks.py</code>. As of the current version, <strong>84
+stacks</strong> are supported including (non-exhaustive):</p>
 <ul>
 <li><strong>Web frontend</strong>: Next.js (Tailwind / shadcn / Mantine / HeroUI),
   Astro (Tailwind / shadcn), Remix, Nuxt, SvelteKit, Qwik,
@@ -1091,7 +1103,6 @@ a per-project window with:</p>
 │  Tabs of embedded preview  │  Tabs of embedded terminals │
 │  - Preview (default)       │  - Setup / Shell           │
 │  - + (additional pages)    │  - Claude / Codex / Gemini │
-│                            │  - 🎮 Office (visualizer)  │
 ├────────────────────────────┴────────────────────────────┤
 │ Logs of the dev server (live tail)                      │
 └─────────────────────────────────────────────────────────┘
@@ -1736,44 +1747,7 @@ repos and offers update-or-create.</p>
 <li>Logs the URL on success, shows a popup with the link.</li>
 </ol>
 <hr />
-<h2 id="15-pixel-office-visualizer">15. Pixel Office visualizer<a class="anchor" href="#15-pixel-office-visualizer" title="Link to this section">#</a></h2>
-<p>Optional. Visualises your active AI agent sessions as pixel-art
-avatars in a virtual office, served as a web dashboard on
-<code>localhost:3002</code>.</p>
-<p>Pcreative Studio integrates with the MIT-licensed fork at
-<code>pcreativedev/pixel-office-openclaw</code> (based on
-<code>neomatrix25/pixel-office-openclaw</code>), with an additional reader for
-Claude Code sessions added to its <code>server.js</code>.</p>
-<h3 id="first-run">First run<a class="anchor" href="#first-run" title="Link to this section">#</a></h3>
-<p>The first time Pcreative Studio launches, if it doesn't find Pixel Office
-installed, it asks:</p>
-<blockquote>
-<p>Pixel Office no está instalado. ¿Instalar ahora? (clones the repo
-to <code>~/.local/share/pcreative-studio/pixel-office-openclaw/</code>, runs npm
-install + npm run build. Takes ~1-2 min.)</p>
-</blockquote>
-<p>If you accept, Pcreative Studio installs and auto-launches <code>node server.js</code>
-in background. The dashboard is then embedded in every
-ProjectWindow's "🎮 Office" tab.</p>
-<h3 id="how-the-claude-code-reader-works">How the Claude Code reader works<a class="anchor" href="#how-the-claude-code-reader-works" title="Link to this section">#</a></h3>
-<p>The server scans <code>~/.claude/projects/*/*.jsonl</code> files (where Claude
-Code stores its conversations). For each <code>.jsonl</code> younger than the
-active-window threshold (default 60 minutes):</p>
-<ul>
-<li>The file mtime → <code>lastActivity</code>.</li>
-<li>The first <code>{"type": "ai-title", ...}</code> line found → <code>name</code>.</li>
-<li>The <code>model</code> field of the last assistant message → <code>model</code>.</li>
-<li>The last user or assistant message → <code>lastMessage</code>.</li>
-</ul>
-<p>These are exposed at <code>/sessions_list</code> in the same schema as OpenClaw
-sessions. The React frontend renders one avatar per agent (project),
-with status <code>active</code> / <code>waiting</code> / <code>idle</code> based on recency.</p>
-<h3 id="disable">Disable<a class="anchor" href="#disable" title="Link to this section">#</a></h3>
-<p>Settings → 🎮 Office → ■ Stop. Or set
-<code>PIXEL_OFFICE_NO_CLAUDE_CODE=1</code> to scan only OpenClaw, or pass
-<code>--no-claude-code</code> to the CLI binary.</p>
-<hr />
-<h2 id="16-settings-panel">16. Settings panel<a class="anchor" href="#16-settings-panel" title="Link to this section">#</a></h2>
+<h2 id="15-settings-panel">15. Settings panel<a class="anchor" href="#15-settings-panel" title="Link to this section">#</a></h2>
 <p>The Settings tab in the main window exposes:</p>
 <ul>
 <li><strong>AI providers</strong>: API key configuration per provider (see §8).</li>
@@ -1781,11 +1755,9 @@ with status <code>active</code> / <code>waiting</code> / <code>idle</code> based
 <li><strong>Postgres provisioning</strong>: auto-spin a per-project Docker postgres
   container when scaffolding stacks that need a DB (Next + Drizzle,
   Laravel + Postgres, etc.).</li>
-<li><strong>🎮 Office</strong>: install / launch / stop / open the Pixel Office
-  dashboard.</li>
 </ul>
 <hr />
-<h2 id="17-app-themes">17. App themes<a class="anchor" href="#17-app-themes" title="Link to this section">#</a></h2>
+<h2 id="16-app-themes">16. App themes<a class="anchor" href="#16-app-themes" title="Link to this section">#</a></h2>
 <blockquote>
 <p><strong>TL;DR.</strong> Pcreative Studio's own UI is fully themable: 8 builtin
 themes, a visual editor, and a Figma DTCG importer.
@@ -2023,7 +1995,7 @@ team.</p>
 <p>See <a href="../ROADMAP.md#-app-themes"><code>ROADMAP.md</code></a> for the planned
 sprints.</p>
 <hr />
-<h2 id="18-vibe-scaffolder">18. Vibe scaffolder<a class="anchor" href="#18-vibe-scaffolder" title="Link to this section">#</a></h2>
+<h2 id="17-vibe-scaffolder">17. Vibe scaffolder<a class="anchor" href="#17-vibe-scaffolder" title="Link to this section">#</a></h2>
 <p>The <strong>"Nuevo proyecto"</strong> tab opens on the <strong>✨ Vibe</strong> sub-tab. Type
 what you want to build in plain Spanish or English — no need to
 know stack names, just describe the goal:</p>
@@ -2035,7 +2007,7 @@ confianza, conversion-optimized
 <li>Sends the description to the active AI provider (the one selected
    in the Provider field — defaults to Claude).</li>
 <li>Receives a structured JSON proposal with:
-   - <code>stack_key</code> — one of the 60+ stacks (e.g. <code>astro-tailwind</code>).
+   - <code>stack_key</code> — one of the 80+ stacks (e.g. <code>astro-tailwind</code>).
    - <code>template_type</code> — Landing / SaaS / Portfolio / …
    - <code>theme_hint</code> — one of the 8 builtin themes that fits the vibe.
    - <code>dev_prompt</code> — a polished 150-300 word brief in the user's
@@ -2078,7 +2050,7 @@ the proposal is rejected.</p>
 skip the Vibe tab and go straight to <strong>🏗️ Setup</strong>. Vibe is a
 productivity accelerator, not a requirement.</p>
 <hr />
-<h2 id="19-mcp-servers">19. MCP servers<a class="anchor" href="#19-mcp-servers" title="Link to this section">#</a></h2>
+<h2 id="18-mcp-servers">18. MCP servers<a class="anchor" href="#18-mcp-servers" title="Link to this section">#</a></h2>
 <p>Pcreative Studio participates in the <strong>Model Context Protocol (MCP)</strong>
 ecosystem in two ways:</p>
 <h3 id="191-pcreative-studio-as-an-mcp-server">19.1 Pcreative Studio as an MCP server<a class="anchor" href="#191-pcreative-studio-as-an-mcp-server" title="Link to this section">#</a></h3>
@@ -2097,7 +2069,7 @@ to switch to the GUI.</p>
 <tbody>
 <tr>
 <td><code>list_stacks</code></td>
-<td>The 60+ scaffold targets with key + name + category + language</td>
+<td>The 80+ scaffold targets with key + name + category + language</td>
 </tr>
 <tr>
 <td><code>list_themes</code></td>
@@ -2298,7 +2270,7 @@ linking).</p>
 later, just delete the <code>pcreative-studio</code> entry from
 <code>~/.claude.json</code> → <code>mcpServers</code>.</p>
 <hr />
-<h2 id="20-pcreative-studio-mobile-remote-engine">20. Pcreative Studio mobile (remote engine)<a class="anchor" href="#20-pcreative-studio-mobile-remote-engine" title="Link to this section">#</a></h2>
+<h2 id="19-pcreative-studio-mobile-remote-engine">19. Pcreative Studio mobile (remote engine)<a class="anchor" href="#19-pcreative-studio-mobile-remote-engine" title="Link to this section">#</a></h2>
 <blockquote>
 <p><strong>TL;DR.</strong> Since <strong>v1.8.0</strong> you can drive the Pcreative Studio engine
 <strong>from your phone</strong>. A small FastAPI gateway (<code>api_gateway.py</code>)
@@ -2404,7 +2376,7 @@ you just won't get push alerts.</p>
 service-account key, so no extra Firebase SDK or heavy dependency is
 required on the server.</p>
 <hr />
-<h2 id="21-optional-licensing-system">21. Optional licensing system<a class="anchor" href="#21-optional-licensing-system" title="Link to this section">#</a></h2>
+<h2 id="20-optional-licensing-system">20. Optional licensing system<a class="anchor" href="#20-optional-licensing-system" title="Link to this section">#</a></h2>
 <blockquote>
 <p><strong>TL;DR — what's bundled and what isn't.</strong></p>
 <p>Pcreative Studio ships the <strong>client side</strong> of a license verification flow:
@@ -2503,7 +2475,7 @@ Content-Type: application/json
 work. Drop-in compatible backends: Lemon Squeezy License API, Polar,
 Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.</p>
 <hr />
-<h2 id="22-configuration-files">22. Configuration files<a class="anchor" href="#22-configuration-files" title="Link to this section">#</a></h2>
+<h2 id="21-configuration-files">21. Configuration files<a class="anchor" href="#21-configuration-files" title="Link to this section">#</a></h2>
 <p>Under <code>~/.config/pcreative-studio/</code>:</p>
 <table>
 <thead>
@@ -2576,10 +2548,6 @@ Paddle MoR, Gumroad license verify, or your own PHP/Node endpoint.</p>
 <td><code>~/.cache/pcreative-studio/thumbnails/&lt;slug&gt;.png</code></td>
 <td>Card-view thumbnails for the gallery (200×120). Generated from screenshots or as placeholders. Safe to delete — they regenerate.</td>
 </tr>
-<tr>
-<td><code>~/.local/share/pcreative-studio/pixel-office-openclaw/</code></td>
-<td>Auto-installed Pixel Office visualizer (§13).</td>
-</tr>
 </tbody>
 </table>
 <h3 id="context-override-pattern">Context override pattern<a class="anchor" href="#context-override-pattern" title="Link to this section">#</a></h3>
@@ -2598,7 +2566,7 @@ project you build locally.</p>
 <p>The public stubs in <code>context/</code> are intentionally neutral — no product
 names, no domains, no strategies leak from the repo.</p>
 <hr />
-<h2 id="23-troubleshooting">23. Troubleshooting<a class="anchor" href="#23-troubleshooting" title="Link to this section">#</a></h2>
+<h2 id="22-troubleshooting">22. Troubleshooting<a class="anchor" href="#22-troubleshooting" title="Link to this section">#</a></h2>
 <h3 id="pcreative-studio-does-not-start-importerror-on-pyqt6">Pcreative Studio does not start (ImportError on PyQt6)<a class="anchor" href="#pcreative-studio-does-not-start-importerror-on-pyqt6" title="Link to this section">#</a></h3>
 <p>Install <code>python-pyqt6</code> and <code>python-pyqt6-webengine</code> from your distro.
 On Arch: <code>sudo pacman -S python-pyqt6 python-pyqt6-webengine</code>. On
@@ -2615,18 +2583,6 @@ project window's bottom log pane.</p>
 <p>QtWebEngine has known performance issues on some Wayland setups. Use
 the 🚀 button to open the preview in Brave/Chromium in <code>--app</code> mode
 instead. The native browser handles the page natively.</p>
-<h3 id="pixel-office-no-esta-instalado-but-i-already-installed-it">"🎮 Pixel Office no está instalado" but I already installed it<a class="anchor" href="#pixel-office-no-esta-instalado-but-i-already-installed-it" title="Link to this section">#</a></h3>
-<p>The auto-detect checks two paths:</p>
-<pre><code>~/.local/share/pcreative-studio/pixel-office-openclaw/
-~/Proyectos/pixel-office-openclaw/
-</code></pre>
-<p>If you cloned elsewhere, either move it or symlink one of the above
-to your install location.</p>
-<h3 id="project-shows-the-connect-to-openclaw-gateway-screen">Project shows the "Connect to OpenClaw" gateway screen<a class="anchor" href="#project-shows-the-connect-to-openclaw-gateway-screen" title="Link to this section">#</a></h3>
-<p>Pcreative Studio's <code>pixel_office.py</code> serves the SPA at <code>localhost:3002</code>. The
-SPA auto-connects to same-origin if <code>/sessions_list</code> responds. If the
-gateway screen appears anyway, reload (Ctrl+R). If it persists, clear
-browser cache for <code>localhost:3002</code>.</p>
 <h3 id="wp-env-start-exits-with-error-no-plugins-activated"><code>wp-env start</code> exits with <code>Error: No plugins activated</code><a class="anchor" href="#wp-env-start-exits-with-error-no-plugins-activated" title="Link to this section">#</a></h3>
 <p>A previous version of Pcreative Studio's wp-env config injected a buggy
 <code>afterStart</code> hook. Open the <code>.wp-env.json</code> in your WordPress project
@@ -2655,7 +2611,7 @@ default; <code>ntfs-3g</code> provides FUSE-based access.</p>
 <code>GEMINI_API_KEY</code> env var. Run <code>gemini</code> once in a terminal to complete
 OAuth, or set the key via the Settings panel.</p>
 <hr />
-<h2 id="24-operator-hermes-autonomous-missions">24. Operator (Hermes) — autonomous missions<a class="anchor" href="#24-operator-hermes-autonomous-missions" title="Link to this section">#</a></h2>
+<h2 id="23-operator-hermes-autonomous-missions">23. Operator (Hermes) — autonomous missions<a class="anchor" href="#23-operator-hermes-autonomous-missions" title="Link to this section">#</a></h2>
 <p>The <strong>Operator</strong> is an <strong>optional</strong> integration that lets
 <a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a> (Nous Research, MIT)
 act as an <strong>autonomous orchestration brain</strong> for Pcreative Studio: you give it a brief
@@ -2798,7 +2754,7 @@ token, scope: read). See §19 (MCP servers).</p>
   preview profile. Run the project's install (<code>npm install</code>, etc.) first.</li>
 </ul>
 <hr />
-<h2 id="25-credits-and-third-party-licenses">25. Credits and third-party licenses<a class="anchor" href="#25-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
+<h2 id="24-credits-and-third-party-licenses">24. Credits and third-party licenses<a class="anchor" href="#24-credits-and-third-party-licenses" title="Link to this section">#</a></h2>
 <p>Pcreative Studio is licensed under <strong>GPL v3</strong> (forced by the PyQt6
 dependency which is GPL v3 or commercial). See <code>LICENSE</code>.</p>
 <h3 id="direct-integrations">Direct integrations<a class="anchor" href="#direct-integrations" title="Link to this section">#</a></h3>
@@ -2840,11 +2796,6 @@ dependency which is GPL v3 or commercial). See <code>LICENSE</code>.</p>
 <td><a href="https://github.com/midudev/autoskills"><code>autoskills</code></a> (midudev)</td>
 <td><strong>CC BY-NC 4.0</strong></td>
 <td>Invoked via <code>npx autoskills -a &lt;provider&gt;</code> to install skills declared by each stack. <strong>Non-commercial license</strong> — if you ship a commercial build of Pcreative Studio, the autoskills checkbox must be off-by-default or replaced with a permissive alternative.</td>
-</tr>
-<tr>
-<td><a href="https://github.com/neomatrix25/pixel-office-openclaw"><code>pixel-office-openclaw</code></a> (neomatrix25)</td>
-<td>MIT</td>
-<td>Visualizer dashboard. Fork at <code>pcreativedev/pixel-office-openclaw</code> adds the Claude Code session reader.</td>
 </tr>
 </tbody>
 </table>
@@ -2891,8 +2842,6 @@ dependency which is GPL v3 or commercial). See <code>LICENSE</code>.</p>
 <ul>
 <li><strong>midudev</strong> for <a href="https://github.com/midudev/autoskills">autoskills</a>
   and the broader Spanish-speaking dev community he educates.</li>
-<li><strong>neomatrix25</strong> for <a href="https://github.com/neomatrix25/pixel-office-openclaw">pixel-office-openclaw</a>,
-  the foundation of the visualizer.</li>
 <li>The Qt team for PyQt6 and PySide6.</li>
 <li>Anthropic, OpenAI, Google and the open-source AI community for the
   CLIs that make this workflow possible.</li>
