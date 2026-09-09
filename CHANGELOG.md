@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Sin publicar]
 
+## [2.3.0] - 2026-09-10
+
+### Added
+
+- **Sexto stack de temas: React Router 8.** El sucesor de Remix, con su
+  esqueleto y sus skills.
+- **Tipo de plantilla «CRM»**, con sus propios nichos verticales en vez de
+  heredar los de una web de empresa.
+- **`context7` y `chrome-devtools` en el cableado automatico de MCP.**
+  `context7` trae la documentacion de la VERSION que el proyecto tiene
+  instalada: sin el, el agente escribe contra la ultima —que es la que
+  documenta cada web— y en un proyecto con dependencias viejas eso compila y
+  falla despues.
+- **`astro-shadcn` declara la skill de diseno**, como el resto de stacks.
+
 ### Removed
 
 - **Fuera el visualizador Pixel Office, entero.** Se ha quitado el módulo
@@ -33,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Al cerrar una ventana de proyecto, sus vistas se destruyen.** Antes se
   vaciaban a `about:blank` y su proceso de Chromium seguía vivo, y solo se
   tocaba la primera pestaña de vista previa.
+- **Las skills se instalaban en silencio** y parecía que no se instalaban: el
+  proceso no daba señales hasta terminar.
+- **El selector de nicho del móvil escondía 81 de los 141 nichos.**
 
 ## [2.2.0] - 2026-08-09
 
