@@ -60,6 +60,23 @@ CATALOG: list[MCPEntry] = [
         },
     ),
     MCPEntry(
+        key="context7",
+        name="Context7 (Upstash)",
+        license="MIT",
+        repo="https://github.com/upstash/context7",
+        description=(
+            "Documentacion de la VERSION concreta que usa el proyecto, no de la "
+            "ultima. Es lo que evita que el agente escriba codigo de una version "
+            "que no esta instalada: compila, parece que funciona, y falla en "
+            "cuanto se toca. Sin clave funciona; con una gratuita sube el limite."
+        ),
+        relevance=["any"],
+        install={
+            "command": "npx",
+            "args": ["-y", "@upstash/context7-mcp@latest"],
+        },
+    ),
+    MCPEntry(
         key="fetch",
         name="Fetch (modelcontextprotocol)",
         license="MIT",

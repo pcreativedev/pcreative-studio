@@ -439,7 +439,17 @@ def has_21st_key() -> bool:
 # MCPs de UI/web que se cablean en CUALQUIER proyecto frontend. Todos SIN API
 # key (salvo `magic`, que se salta si no hay key 21st.dev). `higgsfield` NO está
 # aquí a propósito: es de pago, se activa a mano.
-AUTO_MCP_KEYS = ("magic", "magicui", "shadcn", "reactbits", "fetch", "playwright")
+# 🔴 `context7` va el primero a proposito.
+#
+# Trae la documentacion de la VERSION que el proyecto tiene instalada. Sin el,
+# el agente escribe contra la ultima —que es la que documenta cada web— y en un
+# proyecto con dependencias viejas eso compila y falla despues. El caso que lo
+# demostro: un panel con framer-motion 6 y una web que solo documenta la 13.
+#
+# `chrome-devtools` entra porque mirar lo que se hace vale mas que suponerlo:
+# consola, red y perfilado del repintado de una animacion.
+AUTO_MCP_KEYS = ("context7", "magic", "magicui", "shadcn", "reactbits",
+                 "fetch", "playwright", "chrome-devtools")
 
 
 def ensure_mcps(project_path: str | Path, keys=AUTO_MCP_KEYS) -> list:
